@@ -17,14 +17,7 @@ const recordPaymentSchema = z.object({
   notes: z.string().optional(),
 });
 
-const shortDeliverySchema = z.object({
-  orderId: z.string().uuid(),
-  customerId: z.string().uuid(),
-  items: z.array(z.object({
-    productId: z.string().uuid(),
-    quantityShort: z.number().int().positive(),
-  })).min(1),
-});
+
 
 /**
  * POST /api/payments
@@ -33,7 +26,7 @@ const shortDeliverySchema = z.object({
 router.post('/', authenticate, requireAdmin, auditLog('CREATE', 'payment'), asyncHandler(async (req: Request, res: Response) => {
   try {
     const validatedData = recordPaymentSchema.parse(req.body);
-    
+
     const payment = await paymentService.recordPayment({
       ...validatedData,
       paymentDate: new Date(validatedData.paymentDate),
@@ -158,7 +151,7 @@ router.get('/invoice/:invoiceId', authenticate, asyncHandler(async (req: Request
 
     // Get invoice to check authorization
     const payments = await paymentService.getInvoicePayments(invoiceId);
-    
+
     if (payments.length > 0) {
       const firstPayment = payments[0];
       // Check authorization - customers can only view their own invoice payments
@@ -183,72 +176,6 @@ router.get('/invoice/:invoiceId', authenticate, asyncHandler(async (req: Request
   }
 }));
 
-/**
- * GET /api/credits/customer/:customerId
- * Get customer credit balance and history
- */
-router.get('/credits/customer/:customerId', authenticate, asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const { customerId } = req.params;
-
-    // Check authorization - customers can only view their own credits
-    if (req.user?.role !== 'admin' && customerId !== req.user?.userId) {
-      return res.status(403).json({
-        error: {
-          code: 'FORBIDDEN',
-          message: 'Access denied',
-        },
-      });
-    }
-
-    const [balance, credits] = await Promise.all([
-      paymentService.getCreditBalance(customerId),
-      paymentService.getCustomerCredits(customerId),
-    ]);
-
-    return res.json({
-      balance,
-      credits,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      error: {
-        code: 'SERVER_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to retrieve credits',
-      },
-    });
-  }
-}));
-
-/**
- * POST /api/credits/short-delivery
- * Record short delivery and create credit (admin only)
- */
-router.post('/credits/short-delivery', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const validatedData = shortDeliverySchema.parse(req.body);
-    
-    const credit = await paymentService.recordShortDelivery(validatedData);
-
-    return res.status(201).json(credit);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid input data',
-          details: error.errors,
-        },
-      });
-    }
-
-    return res.status(400).json({
-      error: {
-        code: 'SHORT_DELIVERY_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to record short delivery',
-      },
-    });
-  }
-}));
+// Credit routes moved to credits.routes.ts
 
 export default router;

@@ -118,7 +118,7 @@ export default function InvoicesManagement() {
                   {invoice.id.slice(0, 8)}...
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {invoice.customerId.slice(0, 8)}...
+                  {invoice.customer?.name || invoice.customerId.slice(0, 8)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   R {toNumber(invoice.subtotal).toFixed(2)}
@@ -131,13 +131,12 @@ export default function InvoicesManagement() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      invoice.status === 'paid'
+                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${invoice.status === 'paid'
                         ? 'bg-green-100 text-green-800'
                         : invoice.status === 'partial'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}
                   >
                     {invoice.status}
                   </span>

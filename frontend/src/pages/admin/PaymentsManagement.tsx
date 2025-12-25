@@ -6,7 +6,7 @@ import { toNumber } from '../../lib/utils';
 export default function PaymentsManagement() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
-  
+
   const { data: unpaidInvoices } = useAdminInvoices({ status: 'unpaid' });
   const { data: partialInvoices } = useAdminInvoices({ status: 'partial' });
 
@@ -29,7 +29,7 @@ export default function PaymentsManagement() {
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
           Outstanding Invoices
         </h2>
-        
+
         {outstandingInvoices.length === 0 ? (
           <p className="text-gray-500">No outstanding invoices</p>
         ) : (
@@ -71,11 +71,10 @@ export default function PaymentsManagement() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          invoice.status === 'partial'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${invoice.status === 'partial'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                          }`}
                       >
                         {invoice.status}
                       </span>
@@ -141,7 +140,7 @@ function PaymentHistorySection({ customerId }: PaymentHistorySectionProps) {
       <h2 className="text-xl font-semibold text-gray-900 mb-4">
         Payment History - Customer {customerId.slice(0, 8)}...
       </h2>
-      
+
       {!payments || payments.length === 0 ? (
         <p className="text-gray-500">No payment history</p>
       ) : (
@@ -201,7 +200,7 @@ function PaymentModal({ preselectedCustomerId, onClose }: PaymentModalProps) {
   const [formData, setFormData] = useState({
     invoiceId: '',
     customerId: preselectedCustomerId || '',
-    amount: 0,
+    amount: '',
     method: 'cash' as 'cash' | 'yoco' | 'eft',
     paymentDate: new Date().toISOString().split('T')[0],
     notes: '',
@@ -214,24 +213,33 @@ function PaymentModal({ preselectedCustomerId, onClose }: PaymentModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.invoiceId || !formData.customerId) {
       alert('Please select an invoice');
       return;
     }
 
+    const amountValue = parseFloat(formData.amount);
+    if (isNaN(amountValue) || amountValue <= 0) {
+      alert('Please enter a valid positive amount');
+      return;
+    }
+
     try {
-      await recordPayment.mutateAsync(formData);
-      
+      await recordPayment.mutateAsync({
+        ...formData,
+        amount: amountValue,
+      });
+
       // Check if overpayment
       const invoice = invoices?.find(inv => inv.id === formData.invoiceId);
-      if (invoice && formData.amount > toNumber(invoice.total)) {
-        const credit = formData.amount - toNumber(invoice.total);
+      if (invoice && amountValue > toNumber(invoice.total)) {
+        const credit = amountValue - toNumber(invoice.total);
         alert(`Payment recorded! Overpayment of R ${credit.toFixed(2)} added to customer credit balance.`);
       } else {
         alert('Payment recorded successfully!');
       }
-      
+
       onClose();
     } catch (error) {
       alert('Failed to record payment');
@@ -301,12 +309,12 @@ function PaymentModal({ preselectedCustomerId, onClose }: PaymentModalProps) {
               step="0.01"
               required
               value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
-            {selectedInvoice && formData.amount > toNumber(selectedInvoice.total) && (
+            {selectedInvoice && formData.amount && parseFloat(formData.amount) > toNumber(selectedInvoice.total) && (
               <p className="text-sm text-orange-600 mt-1">
-                ⚠️ Overpayment of R {(formData.amount - toNumber(selectedInvoice.total)).toFixed(2)} will be added as credit
+                ⚠️ Overpayment of R {(parseFloat(formData.amount) - toNumber(selectedInvoice.total)).toFixed(2)} will be added as credit
               </p>
             )}
           </div>

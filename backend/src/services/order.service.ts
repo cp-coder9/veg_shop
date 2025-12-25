@@ -68,10 +68,26 @@ export class OrderService {
       throw new Error('Some products do not exist or are not available');
     }
 
+    // Fetch customer details for ID generation
+    const customer = await prisma.user.findUnique({
+      where: { id: customerId },
+    });
+
+    if (!customer) {
+      throw new Error('Customer not found');
+    }
+
+    // Generate Custom Order ID: NAME-YYYYMMDD-XXXX
+    const sanitizedName = customer.name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().substring(0, 10);
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const customId = `${sanitizedName}-${dateStr}-${randomSuffix}`;
+
     // Create the order and items in a transaction
     const order = await prisma.$transaction(async (tx) => {
       const newOrder = await tx.order.create({
         data: {
+          id: customId,
           customerId,
           deliveryDate: data.deliveryDate,
           deliveryMethod: data.deliveryMethod,

@@ -54,6 +54,7 @@ export class ReportService {
    * Requirement 12.1: Generate weekly sales reports showing total revenue and products sold
    */
   async generateSalesReport(startDate: Date, endDate: Date): Promise<SalesReport> {
+    console.log('Generating Sales Report:', { startDate, endDate });
     // Get all orders within date range (excluding cancelled)
     const orders = await prisma.order.findMany({
       where: {

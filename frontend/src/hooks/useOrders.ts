@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '../stores/authStore';
 import api from '../lib/api';
 import { Order, OrderItem } from '../types';
 
@@ -29,13 +30,13 @@ export function useCustomerOrders() {
     queryKey: ['orders', 'customer'],
     queryFn: async () => {
       // Get current user from auth store
-      const { useAuthStore } = await import('../stores/authStore');
+
       const user = useAuthStore.getState().user;
-      
+
       if (!user) {
         throw new Error('User not authenticated');
       }
-      
+
       const response = await api.get<Order[]>(`/orders/customer/${user.id}`);
       return response.data;
     },

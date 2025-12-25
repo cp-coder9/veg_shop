@@ -8,6 +8,12 @@ import productRoutes from './routes/product.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import invoiceRoutes from './routes/invoice.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
+import creditRoutes from './routes/credits.routes.js';
+
+// ... (existing imports)
+
+// ... (later in file)
+// Imports fixed
 import packingListRoutes from './routes/packing-list.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import reportRoutes from './routes/report.routes.js';
@@ -55,7 +61,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api', paymentRoutes); // For /api/credits/* routes
+app.use('/api/credits', creditRoutes);
 app.use('/api/packing-lists', packingListRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);

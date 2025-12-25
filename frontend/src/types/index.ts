@@ -44,6 +44,7 @@ export interface Invoice {
   id: string;
   orderId: string;
   customerId: string;
+  customer?: { id: string; name: string };
   subtotal: number | string; // Prisma Decimal serializes as string
   creditApplied: number | string; // Prisma Decimal serializes as string
   total: number | string; // Prisma Decimal serializes as string
