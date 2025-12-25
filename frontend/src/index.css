@@ -7,11 +7,18 @@
 @layer base {
   body {
     @apply bg-warm-gray-50 text-warm-gray-900 font-sans;
+    @apply dark:bg-warm-gray-900 dark:text-warm-gray-100;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
-  
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-display;
   }
 }
@@ -19,46 +26,55 @@
 @layer components {
   .btn-primary {
     @apply bg-organic-green-600 hover:bg-organic-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-card hover:shadow-card-hover;
+    @apply dark:bg-organic-green-500 dark:hover:bg-organic-green-600;
   }
-  
+
   .btn-secondary {
     @apply bg-warm-gray-200 hover:bg-warm-gray-300 text-warm-gray-800 font-semibold px-6 py-3 rounded-lg transition-all duration-200;
+    @apply dark:bg-warm-gray-700 dark:hover:bg-warm-gray-600 dark:text-warm-gray-200;
   }
-  
+
   .card {
     @apply bg-white rounded-xl shadow-card hover:shadow-card-hover transition-all duration-300;
+    @apply dark:bg-warm-gray-800 dark:shadow-none dark:border dark:border-warm-gray-700;
   }
-  
+
   .card-hover {
     @apply hover:shadow-card-hover transform hover:-translate-y-1 transition-all duration-300;
   }
-  
+
   .input-field {
     @apply w-full px-4 py-3 border border-warm-gray-300 rounded-lg focus:ring-2 focus:ring-organic-green-500 focus:border-organic-green-500 transition-colors bg-white;
+    @apply dark:bg-warm-gray-800 dark:border-warm-gray-600 dark:text-warm-gray-100 dark:focus:border-organic-green-400;
   }
-  
+
   .badge {
     @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
   }
-  
+
   .badge-success {
     @apply badge bg-organic-green-100 text-organic-green-800;
+    @apply dark:bg-organic-green-900/50 dark:text-organic-green-300;
   }
-  
+
   .badge-warning {
     @apply badge bg-amber-100 text-amber-800;
+    @apply dark:bg-amber-900/50 dark:text-amber-300;
   }
-  
+
   .badge-error {
     @apply badge bg-red-100 text-red-800;
+    @apply dark:bg-red-900/50 dark:text-red-300;
   }
-  
+
   .loading-spinner {
     @apply animate-spin rounded-full border-2 border-organic-green-300 border-t-organic-green-600;
+    @apply dark:border-organic-green-700 dark:border-t-organic-green-400;
   }
-  
+
   .glass-effect {
     @apply bg-white/80 backdrop-blur-sm border border-white/20;
+    @apply dark:bg-warm-gray-900/80 dark:border-warm-gray-700/50;
   }
 }
 

@@ -13,6 +13,8 @@ import ProductsPage from './pages/ProductsPage';
 import CartPage from './pages/CartPage';
 import OrdersPage from './pages/OrdersPage';
 import ProfilePage from './pages/ProfilePage';
+import DashboardPage from './pages/DashboardPage';
+import PaymentHistoryPage from './pages/PaymentHistoryPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ProductsManagement from './pages/admin/ProductsManagement';
 import OrdersManagement from './pages/admin/OrdersManagement';
@@ -86,6 +88,24 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/payments"
+              element={
+                <ProtectedRoute>
+                  <PaymentHistoryPage />
                 </ProtectedRoute>
               }
             />

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
+import ThemeToggle from '../ThemeToggle';
 
 export default function Header() {
   const { user, logout } = useAuthStore();
@@ -13,39 +14,45 @@ export default function Header() {
   };
 
   return (
-    <header className="glass-effect sticky top-0 z-50 shadow-soft backdrop-blur-md">
+    <header className="glass-effect sticky top-0 z-50 shadow-soft backdrop-blur-md dark:bg-warm-gray-900/90 dark:border-b dark:border-warm-gray-700">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-organic-green-600 rounded-lg flex items-center justify-center group-hover:bg-organic-green-700 transition-colors">
+            <div className="w-10 h-10 bg-organic-green-600 rounded-lg flex items-center justify-center group-hover:bg-organic-green-700 transition-colors dark:bg-organic-green-500">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
             </div>
-            <span className="text-xl font-display font-bold text-organic-green-900 group-hover:text-organic-green-700 transition-colors">
+            <span className="text-xl font-display font-bold text-organic-green-900 group-hover:text-organic-green-700 transition-colors dark:text-organic-green-400">
               Organic Veg
             </span>
           </Link>
-          
-          {user && (
-            <nav className="flex items-center gap-4">
-              <NavLink to="/products" icon="products">Products</NavLink>
-              <NavLink to="/cart" icon="cart" badge={totalItems}>Cart</NavLink>
-              <NavLink to="/orders" icon="orders">Orders</NavLink>
-              <NavLink to="/profile" icon="profile">Profile</NavLink>
-              
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 text-warm-gray-600 hover:text-organic-green-700 hover:bg-organic-green-50 rounded-lg transition-all duration-200"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                <span className="font-medium">Logout</span>
-              </button>
-            </nav>
-          )}
+
+          <div className="flex items-center gap-4">
+            {user && (
+              <nav className="flex items-center gap-4">
+                <NavLink to="/dashboard" icon="dashboard">Dashboard</NavLink>
+                <NavLink to="/products" icon="products">Products</NavLink>
+                <NavLink to="/cart" icon="cart" badge={totalItems}>Cart</NavLink>
+                <NavLink to="/orders" icon="orders">Orders</NavLink>
+                <NavLink to="/profile" icon="profile">Profile</NavLink>
+
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-4 py-2 text-warm-gray-600 hover:text-organic-green-700 hover:bg-organic-green-50 rounded-lg transition-all duration-200 dark:text-warm-gray-300 dark:hover:text-organic-green-400 dark:hover:bg-warm-gray-800"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span className="font-medium">Logout</span>
+                </button>
+              </nav>
+            )}
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </header>
@@ -55,12 +62,15 @@ export default function Header() {
 interface NavLinkProps {
   to: string;
   children: React.ReactNode;
-  icon: 'products' | 'cart' | 'orders' | 'profile';
+  icon: 'dashboard' | 'products' | 'cart' | 'orders' | 'profile';
   badge?: number;
 }
 
 function NavLink({ to, children, icon, badge }: NavLinkProps) {
   const icons = {
+    dashboard: (
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+    ),
     products: (
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
     ),
@@ -78,14 +88,14 @@ function NavLink({ to, children, icon, badge }: NavLinkProps) {
   return (
     <Link
       to={to}
-      className="relative flex items-center gap-2 px-4 py-2 text-warm-gray-600 hover:text-organic-green-700 hover:bg-organic-green-50 rounded-lg transition-all duration-200 group"
+      className="relative flex items-center gap-2 px-4 py-2 text-warm-gray-600 hover:text-organic-green-700 hover:bg-organic-green-50 rounded-lg transition-all duration-200 group dark:text-warm-gray-300 dark:hover:text-organic-green-400 dark:hover:bg-warm-gray-800"
     >
       <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         {icons[icon]}
       </svg>
       <span className="font-medium">{children}</span>
       {badge && badge > 0 && (
-        <span className="absolute -top-1 -right-1 bg-organic-green-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-bounce">
+        <span className="absolute -top-1 -right-1 bg-organic-green-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-bounce dark:bg-organic-green-500">
           {badge}
         </span>
       )}

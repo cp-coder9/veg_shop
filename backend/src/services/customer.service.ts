@@ -142,7 +142,7 @@ export class CustomerService {
    */
   async getCustomerProfile(id: string): Promise<CustomerProfile | null> {
     const customer = await this.getCustomer(id);
-    
+
     if (!customer) {
       return null;
     }
@@ -167,6 +167,133 @@ export class CustomerService {
       invoices,
     };
   }
+
+  /**
+   * Get customer dashboard summary data
+   */
+  async getCustomerDashboard(id: string) {
+    const customer = await this.getCustomer(id);
+
+    if (!customer) {
+      return null;
+    }
+
+    // Get recent orders (last 5)
+    const recentOrders = await prisma.order.findMany({
+      where: { customerId: id },
+      include: {
+        items: {
+          include: { product: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    });
+
+    // Get credit balance
+    const creditBalance = await paymentService.getCreditBalance(id);
+
+    // Get outstanding invoices
+    const invoices = await prisma.invoice.findMany({
+      where: {
+        customerId: id,
+        status: { in: ['unpaid', 'partial'] }
+      },
+      include: { order: true },
+    });
+
+    const outstandingAmount = invoices.reduce((sum, inv) => sum + Number(inv.total), 0);
+
+    // Get next delivery date (soonest pending/confirmed order)
+    const nextOrder = await prisma.order.findFirst({
+      where: {
+        customerId: id,
+        status: { in: ['pending', 'confirmed'] },
+        deliveryDate: { gte: new Date() }
+      },
+      orderBy: { deliveryDate: 'asc' },
+    });
+
+    // Get total orders placed
+    const totalOrdersCount = await prisma.order.count({
+      where: { customerId: id }
+    });
+
+    // Get total spent
+    const allInvoices = await prisma.invoice.findMany({
+      where: { customerId: id, status: 'paid' }
+    });
+    const totalSpent = allInvoices.reduce((sum, inv) => sum + Number(inv.total), 0);
+
+    return {
+      customer: {
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+      },
+      stats: {
+        creditBalance,
+        outstandingAmount,
+        outstandingInvoices: invoices.length,
+        totalOrders: totalOrdersCount,
+        totalSpent,
+      },
+      recentOrders: recentOrders.map(order => ({
+        id: order.id,
+        status: order.status,
+        deliveryDate: order.deliveryDate,
+        createdAt: order.createdAt,
+        itemCount: order.items.length,
+        total: order.items.reduce((sum, item) => sum + Number(item.priceAtOrder) * item.quantity, 0),
+      })),
+      nextDelivery: nextOrder ? {
+        orderId: nextOrder.id,
+        date: nextOrder.deliveryDate,
+        method: nextOrder.deliveryMethod,
+      } : null,
+      outstandingInvoices: invoices.map(inv => ({
+        id: inv.id,
+        total: Number(inv.total),
+        dueDate: inv.dueDate,
+        status: inv.status,
+      })),
+    };
+  }
+
+  /**
+   * Get customer payment history
+   */
+  async getCustomerPayments(id: string) {
+    const payments = await prisma.payment.findMany({
+      where: { customerId: id },
+      include: {
+        invoice: {
+          include: {
+            order: {
+              select: { id: true, deliveryDate: true }
+            }
+          }
+        }
+      },
+      orderBy: { paymentDate: 'desc' },
+    });
+
+    return payments.map(payment => ({
+      id: payment.id,
+      amount: Number(payment.amount),
+      method: payment.method,
+      paymentDate: payment.paymentDate,
+      notes: payment.notes,
+      invoice: payment.invoice ? {
+        id: payment.invoice.id,
+        total: Number(payment.invoice.total),
+        status: payment.invoice.status,
+        orderId: payment.invoice.orderId,
+      } : null,
+    }));
+  }
 }
 
 export const customerService = new CustomerService();
+

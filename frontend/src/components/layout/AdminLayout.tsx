@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import ThemeToggle from '../ThemeToggle';
 
 export default function AdminLayout() {
   const location = useLocation();
@@ -89,22 +90,25 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen flex bg-warm-gray-50">
+    <div className="min-h-screen flex bg-warm-gray-50 dark:bg-warm-gray-900 transition-colors duration-300">
       {/* Sidebar */}
-      <aside className="w-72 bg-white shadow-lg border-r border-warm-gray-200">
+      <aside className="w-72 bg-white shadow-lg border-r border-warm-gray-200 dark:bg-warm-gray-800 dark:border-warm-gray-700">
         <div className="h-full flex flex-col">
           {/* Logo/Brand */}
-          <div className="p-6 border-b border-warm-gray-200 bg-gradient-to-r from-organic-green-50 to-organic-green-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-organic-green-600 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                </svg>
+          <div className="p-6 border-b border-warm-gray-200 bg-gradient-to-r from-organic-green-50 to-organic-green-100 dark:from-organic-green-900/30 dark:to-organic-green-800/30 dark:border-warm-gray-700">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-organic-green-600 rounded-xl flex items-center justify-center dark:bg-organic-green-500">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h1 className="text-xl font-display font-bold text-organic-green-900 dark:text-organic-green-400">Admin Panel</h1>
+                  <p className="text-sm text-warm-gray-600 dark:text-warm-gray-400">Organic Veg Shop</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl font-display font-bold text-organic-green-900">Admin Panel</h1>
-                <p className="text-sm text-warm-gray-600">Organic Veg Shop</p>
-              </div>
+              <ThemeToggle />
             </div>
           </div>
 
@@ -115,8 +119,8 @@ export default function AdminLayout() {
                 key={item.path}
                 to={item.path}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive(item.path)
-                    ? 'bg-organic-green-600 text-white shadow-lg'
-                    : 'text-warm-gray-700 hover:bg-organic-green-50 hover:text-organic-green-700'
+                  ? 'bg-organic-green-600 text-white shadow-lg dark:bg-organic-green-500'
+                  : 'text-warm-gray-700 hover:bg-organic-green-50 hover:text-organic-green-700 dark:text-warm-gray-300 dark:hover:bg-warm-gray-700 dark:hover:text-organic-green-400'
                   }`}
               >
                 <span className={`transition-transform group-hover:scale-110 ${isActive(item.path) ? 'text-white' : ''
@@ -132,8 +136,8 @@ export default function AdminLayout() {
           </nav>
 
           {/* User Info & Logout */}
-          <div className="p-4 border-t border-warm-gray-200 bg-warm-gray-50">
-            <div className="flex items-center gap-3 p-3 bg-white rounded-xl mb-3">
+          <div className="p-4 border-t border-warm-gray-200 bg-warm-gray-50 dark:border-warm-gray-700 dark:bg-warm-gray-900/50">
+            <div className="flex items-center gap-3 p-3 bg-white rounded-xl mb-3 dark:bg-warm-gray-800">
               <div className="w-10 h-10 bg-organic-green-100 rounded-full flex items-center justify-center">
                 <span className="text-organic-green-700 font-semibold">
                   {user?.name?.charAt(0).toUpperCase()}

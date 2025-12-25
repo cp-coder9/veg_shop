@@ -183,4 +183,45 @@ router.get('/me', authenticate, asyncHandler(async (req: Request, res: Response)
   }
 }));
 
+/**
+ * GET /api/customers/me/dashboard
+ * Get dashboard summary for current customer
+ */
+router.get('/me/dashboard', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const customerId = req.user!.userId;
+    const dashboardData = await customerService.getCustomerDashboard(customerId);
+    return res.json(dashboardData);
+  } catch (error) {
+    console.error('Error fetching customer dashboard:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to fetch dashboard data',
+      },
+    });
+  }
+}));
+
+/**
+ * GET /api/customers/me/payments
+ * Get payment history for current customer
+ */
+router.get('/me/payments', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const customerId = req.user!.userId;
+    const payments = await customerService.getCustomerPayments(customerId);
+    return res.json(payments);
+  } catch (error) {
+    console.error('Error fetching customer payments:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to fetch payment history',
+      },
+    });
+  }
+}));
+
 export default router;
+
