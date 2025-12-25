@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "TypeScript Check on Task Complete",
+  "description": "Automatically runs TypeScript type checking across the project when a task is completed to catch any type errors before moving forward",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": []
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A task has been marked as complete. Run TypeScript type checking on both the frontend and backend projects to ensure there are no type errors. Check frontend/tsconfig.json and backend/tsconfig.json. Report any TypeScript errors found and suggest fixes if needed."
+  }
+}

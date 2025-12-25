@@ -1,0 +1,55 @@
+
+D:\veg_shop\backend\src\routes\invoice.routes.ts
+  187:20  error  Unexpected any. Specify a different type                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
+  189:29  error  Unsafe member access .customerId on an `any` value                                                                                                                                                                                          @typescript-eslint/no-unsafe-member-access
+  190:28  error  Unsafe member access .startDate on an `any` value                                                                                                                                                                                           @typescript-eslint/no-unsafe-member-access
+  191:26  error  Unsafe member access .endDate on an `any` value                                                                                                                                                                                             @typescript-eslint/no-unsafe-member-access
+  193:62  error  Unsafe argument of type `any` assigned to a parameter of type `{ customerId?: string | undefined; startDate?: Date | undefined; endDate?: Date | undefined; } | undefined`                                                                  @typescript-eslint/no-unsafe-argument
+  215:20  error  Unexpected any. Specify a different type                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
+  217:29  error  Unsafe member access .customerId on an `any` value                                                                                                                                                                                          @typescript-eslint/no-unsafe-member-access
+  218:31  error  Unsafe member access .customerName on an `any` value                                                                                                                                                                                        @typescript-eslint/no-unsafe-member-access
+  219:25  error  Unsafe member access .status on an `any` value                                                                                                                                                                                              @typescript-eslint/no-unsafe-member-access
+  220:28  error  Unsafe member access .startDate on an `any` value                                                                                                                                                                                           @typescript-eslint/no-unsafe-member-access
+  221:26  error  Unsafe member access .endDate on an `any` value                                                                                                                                                                                             @typescript-eslint/no-unsafe-member-access
+  223:58  error  Unsafe argument of type `any` assigned to a parameter of type `{ customerId?: string | undefined; customerName?: string | undefined; status?: string | undefined; startDate?: Date | undefined; endDate?: Date | undefined; } | undefined`  @typescript-eslint/no-unsafe-argument
+
+D:\veg_shop\backend\src\services\invoice.service.ts
+  216:18  error  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  219:13  error  Unsafe member access .customerId on an `any` value  @typescript-eslint/no-unsafe-member-access
+  223:13  error  Unsafe member access .status on an `any` value      @typescript-eslint/no-unsafe-member-access
+  227:13  error  Unsafe member access .createdAt on an `any` value   @typescript-eslint/no-unsafe-member-access
+  229:15  error  Unsafe member access .createdAt on an `any` value   @typescript-eslint/no-unsafe-member-access
+  232:15  error  Unsafe member access .createdAt on an `any` value   @typescript-eslint/no-unsafe-member-access
+  238:13  error  Unsafe member access .customer on an `any` value    @typescript-eslint/no-unsafe-member-access
+  247:7   error  Unsafe assignment of an `any` value                 @typescript-eslint/no-unsafe-assignment
+  399:18  error  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  402:13  error  Unsafe member access .customerId on an `any` value  @typescript-eslint/no-unsafe-member-access
+  406:13  error  Unsafe member access .createdAt on an `any` value   @typescript-eslint/no-unsafe-member-access
+  408:15  error  Unsafe member access .createdAt on an `any` value   @typescript-eslint/no-unsafe-member-access
+  411:15  error  Unsafe member access .createdAt on an `any` value   @typescript-eslint/no-unsafe-member-access
+  417:7   error  Unsafe assignment of an `any` value                 @typescript-eslint/no-unsafe-assignment
+
+D:\veg_shop\backend\src\services\scheduler.service.ts
+   9:5   warning  Missing return type on function                                         @typescript-eslint/explicit-function-return-type
+  39:82  error    Unsafe return of an `any` typed value                                   @typescript-eslint/no-unsafe-return
+  43:71  error    Unsafe argument of type `any` assigned to a parameter of type `string`  @typescript-eslint/no-unsafe-argument
+
+D:\veg_shop\backend\src\services\yoko.service.ts
+  39:19  error    Unsafe assignment of an `any` value                          @typescript-eslint/no-unsafe-assignment
+  41:22  error    Unsafe member access .status on an `any` value               @typescript-eslint/no-unsafe-member-access
+  44:21  error    Unsafe assignment of an `any` value                          @typescript-eslint/no-unsafe-assignment
+  44:36  error    Unsafe member access .id on an `any` value                   @typescript-eslint/no-unsafe-member-access
+  45:21  error    Unsafe assignment of an `any` value                          @typescript-eslint/no-unsafe-assignment
+  45:34  error    Unsafe member access .status on an `any` value               @typescript-eslint/no-unsafe-member-access
+  50:21  error    Unsafe assignment of an `any` value                          @typescript-eslint/no-unsafe-assignment
+  50:40  error    Unsafe member access .errorMessage on an `any` value         @typescript-eslint/no-unsafe-member-access
+  51:21  error    Unsafe assignment of an `any` value                          @typescript-eslint/no-unsafe-assignment
+  51:34  error    Unsafe member access .status on an `any` value               @typescript-eslint/no-unsafe-member-access
+  59:21  error    Unsafe assignment of an `any` value                          @typescript-eslint/no-unsafe-assignment
+  59:55  error    Unsafe member access .displayMessage on an `any` value       @typescript-eslint/no-unsafe-member-access
+  73:5   warning  Missing return type on function                              @typescript-eslint/explicit-function-return-type
+  73:5   error    Async method 'createCheckoutLink' has no 'await' expression  @typescript-eslint/require-await
+  73:84  error    Unexpected any. Specify a different type                     @typescript-eslint/no-explicit-any
+
+Γ£û 44 problems (42 errors, 2 warnings)
+

@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String    @id @default(uuid())
+  phone              String?   @unique
+  email              String?   @unique
+  name               String
+  address            String?
+  deliveryPreference String    @default("delivery")
+  role               String    @default("customer")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  orders        Order[]
+  invoices      Invoice[]
+  payments      Payment[]
+  credits       Credit[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model ProductCategory {
+  id          String    @id @default(uuid())
+  key         String    @unique
+  label       String
+  description String?
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  products Product[]
+
+  @@map("product_categories")
+}
+
+model Product {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  price       Decimal
+  category    String
+  unit        String
+  description String?
+  imageUrl    String?
+  isAvailable Boolean   @default(true)
+  isSeasonal  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  categoryRef   ProductCategory? @relation(fields: [category], references: [key])
+  orderItems    OrderItem[]
+  priceHistory  PriceHistory[]
+
+  @@map("products")
+}
+
+model Order {
+  id                  String    @id @default(uuid())
+  customerId          String
+  deliveryDate        DateTime
+  deliveryMethod      String    @default("delivery")
+  deliveryAddress     String?
+  specialInstructions String?
+  status              String    @default("pending")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  customer User        @relation(fields: [customerId], references: [id])
+  items    OrderItem[]
+  invoice  Invoice?
+
+  @@index([customerId])
+  @@index([deliveryDate])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id           String  @id @default(uuid())
+  orderId      String
+  productId    String
+  quantity     Int
+  priceAtOrder Decimal
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Invoice {
+  id            String    @id @default(uuid())
+  orderId       String    @unique
+  customerId    String
+  subtotal      Decimal
+  creditApplied Decimal   @default(0)
+  total         Decimal
+  status        String    @default("unpaid")
+  pdfUrl        String?
+  createdAt     DateTime  @default(now())
+  dueDate       DateTime
+
+  order    Order     @relation(fields: [orderId], references: [id])
+  customer User      @relation(fields: [customerId], references: [id])
+  payments Payment[]
+
+  @@index([customerId, status])
+  @@map("invoices")
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  customerId  String
+  amount      Decimal
+  method      String
+  paymentDate DateTime
+  notes       String?
+
+  invoice  Invoice @relation(fields: [invoiceId], references: [id])
+  customer User    @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
+  @@map("payments")
+}
+
+model Credit {
+  id         String   @id @default(uuid())
+  customerId String
+  amount     Decimal
+  reason     String
+  type       String
+  createdAt  DateTime @default(now())
+
+  customer User @relation(fields: [customerId], references: [id])
+
+  @@map("credits")
+}
+
+model PriceHistory {
+  id            String   @id @default(uuid())
+  productId     String
+  price         Decimal
+  effectiveDate DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("price_history")
+}
+
+model Notification {
+  id         String    @id @default(uuid())
+  customerId String
+  type       String
+  method     String
+  content    String
+  status     String    @default("pending")
+  sentAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  customer User @relation(fields: [customerId], references: [id])
+
+  @@map("notifications")
+}
+
+model VerificationCode {
+  id        String   @id @default(uuid())
+  contact   String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([contact])
+  @@map("verification_codes")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String
+  resource   String
+  resourceId String?
+  details    String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
