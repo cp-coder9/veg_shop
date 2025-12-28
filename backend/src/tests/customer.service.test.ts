@@ -489,6 +489,7 @@ describe('CustomerService', () => {
           specialInstructions: null,
           status: 'delivered',
           items: [],
+          deliveryFees: new Decimal(0),
           createdAt: new Date(),
           updatedAt: new Date(),
         },

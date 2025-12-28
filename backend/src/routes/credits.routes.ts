@@ -9,7 +9,7 @@ const router = Router();
 
 // Validation schemas
 const shortDeliverySchema = z.object({
-    orderId: z.string().uuid(),
+    orderId: z.string().min(1), // Accept custom format (NAME-YYYYMMDD-XXXX)
     customerId: z.string().uuid(),
     items: z.array(z.object({
         productId: z.string().uuid(),

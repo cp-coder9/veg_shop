@@ -188,6 +188,7 @@ describe('OrderService', () => {
         status: 'pending',
         createdAt: new Date(),
         updatedAt: new Date(),
+        deliveryFees: new Decimal(0),
         items: [
           {
             id: 'item-1',
@@ -256,6 +257,7 @@ describe('OrderService', () => {
           status: 'pending',
           createdAt: new Date(),
           updatedAt: new Date(),
+          deliveryFees: new Decimal(0),
           items: [],
         },
       ];
@@ -295,6 +297,7 @@ describe('OrderService', () => {
           status: 'pending',
           createdAt: new Date(),
           updatedAt: new Date(),
+          deliveryFees: new Decimal(0),
           items: [],
           customer: {
             id: 'customer-1',
@@ -333,6 +336,7 @@ describe('OrderService', () => {
         status: newStatus,
         createdAt: new Date(),
         updatedAt: new Date(),
+        deliveryFees: new Decimal(0),
       };
 
       vi.mocked(prisma.order.update).mockResolvedValue(mockOrder);
@@ -369,6 +373,7 @@ describe('OrderService', () => {
           status: 'pending',
           createdAt: new Date(),
           updatedAt: new Date(),
+          deliveryFees: new Decimal(0),
           items: [
             {
               id: 'item-1',
@@ -402,6 +407,7 @@ describe('OrderService', () => {
           status: 'confirmed',
           createdAt: new Date(),
           updatedAt: new Date(),
+          deliveryFees: new Decimal(0),
           items: [
             {
               id: 'item-2',

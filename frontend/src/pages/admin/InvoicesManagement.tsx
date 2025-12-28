@@ -80,8 +80,8 @@ export default function InvoicesManagement() {
         </div>
       </div>
 
-      {/* Invoices Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      {/* Invoices Table - Desktop */}
+      <div className="hidden md:block bg-white rounded-lg shadow-md overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -132,10 +132,10 @@ export default function InvoicesManagement() {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
                     className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${invoice.status === 'paid'
-                        ? 'bg-green-100 text-green-800'
-                        : invoice.status === 'partial'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
+                      ? 'bg-green-100 text-green-800'
+                      : invoice.status === 'partial'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
                       }`}
                   >
                     {invoice.status}
@@ -166,6 +166,58 @@ export default function InvoicesManagement() {
         </table>
       </div>
 
+      {/* Invoices List - Mobile Cards */}
+      <div className="md:hidden space-y-4">
+        {invoices?.map((invoice) => (
+          <div key={invoice.id} className="bg-white p-4 rounded-lg shadow space-y-3">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-sm font-bold text-gray-900">#{invoice.id.slice(0, 8)}...</h3>
+                <p className="text-sm text-gray-600">{invoice.customer?.name || invoice.customerId.slice(0, 8)}</p>
+              </div>
+              <span
+                className={`px-2 py-1 text-xs font-semibold rounded-full ${invoice.status === 'paid'
+                  ? 'bg-green-100 text-green-800'
+                  : invoice.status === 'partial'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-red-100 text-red-800'
+                  }`}
+              >
+                {invoice.status}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <span className="text-gray-500">Total:</span>
+                <span className="ml-1 font-semibold text-gray-900">R {toNumber(invoice.total).toFixed(2)}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Due:</span>
+                <span className="ml-1 text-gray-900">{new Date(invoice.dueDate).toLocaleDateString()}</span>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-gray-100 flex justify-end gap-3">
+              <button
+                onClick={() => setSelectedInvoiceId(invoice.id)}
+                className="w-full sm:w-auto px-3 py-1 bg-blue-50 text-blue-600 rounded text-sm font-medium hover:bg-blue-100"
+              >
+                View Details
+              </button>
+              {invoice.pdfUrl && (
+                <button
+                  onClick={() => handleDownloadPDF(invoice.id)}
+                  className="w-full sm:w-auto px-3 py-1 bg-green-50 text-green-600 rounded text-sm font-medium hover:bg-green-100"
+                >
+                  PDF
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Invoice Detail Modal */}
       {selectedInvoiceId && (
         <InvoiceDetailModal
@@ -188,8 +240,8 @@ function InvoiceDetailModal({ invoiceId, onClose }: InvoiceDetailModalProps) {
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg p-6 w-full max-w-full mx-4 md:max-w-3xl">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
         </div>
       </div>
@@ -199,8 +251,8 @@ function InvoiceDetailModal({ invoiceId, onClose }: InvoiceDetailModalProps) {
   if (!invoice) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-full mx-4 md:max-w-3xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Invoice Details</h2>
 
         <div className="space-y-4">
@@ -235,42 +287,44 @@ function InvoiceDetailModal({ invoiceId, onClose }: InvoiceDetailModalProps) {
           {invoice.order && (
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">Order Items</h3>
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      Product
-                    </th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      Quantity
-                    </th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      Price
-                    </th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      Subtotal
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {invoice.order.items.map((item: { id: string; productId: string; quantity: number; priceAtOrder: number | string; product?: { name: string; unit?: string } }) => (
-                    <tr key={item.id}>
-                      <td className="px-4 py-2 text-sm text-gray-900">
-                        {item.product?.name || 'Unknown Product'}
-                      </td>
-                      <td className="px-4 py-2 text-sm text-gray-500">
-                        {item.quantity} {item.product?.unit || ''}
-                      </td>
-                      <td className="px-4 py-2 text-sm text-gray-500">
-                        R {toNumber(item.priceAtOrder).toFixed(2)}
-                      </td>
-                      <td className="px-4 py-2 text-sm text-gray-900">
-                        R {(toNumber(item.priceAtOrder) * item.quantity).toFixed(2)}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                        Product
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                        Quantity
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                        Price
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                        Subtotal
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {invoice.order.items.map((item: { id: string; productId: string; quantity: number; priceAtOrder: number | string; product?: { name: string; unit?: string } }) => (
+                      <tr key={item.id}>
+                        <td className="px-4 py-2 text-sm text-gray-900">
+                          {item.product?.name || 'Unknown Product'}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-500">
+                          {item.quantity} {item.product?.unit || ''}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-500">
+                          R {toNumber(item.priceAtOrder).toFixed(2)}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-900">
+                          R {(toNumber(item.priceAtOrder) * item.quantity).toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -296,17 +350,17 @@ function InvoiceDetailModal({ invoiceId, onClose }: InvoiceDetailModalProps) {
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 mt-6">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 mt-6">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+            className="w-full sm:w-auto px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
           >
             Close
           </button>
           {invoice.pdfUrl && (
             <button
               onClick={() => downloadPDF.mutateAsync(invoice.id)}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
             >
               Download PDF
             </button>

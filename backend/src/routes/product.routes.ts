@@ -4,6 +4,7 @@ import { productService, ProductFilters } from '../services/product.service.js';
 import { authenticate, requireAdmin } from '../middleware/auth.middleware.js';
 import { auditLog } from '../middleware/audit.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
+import { PRODUCT_CATEGORIES, PRODUCT_UNITS } from '../constants/enums.js';
 
 const router = Router();
 
@@ -11,8 +12,8 @@ const router = Router();
 const createProductSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   price: z.number().positive('Price must be positive'),
-  category: z.enum(['vegetables', 'fruits', 'dairy_eggs', 'bread_bakery', 'pantry', 'meat_protein']),
-  unit: z.enum(['kg', 'g', 'L', 'ml', 'dozen', 'loaf', 'pack', 'piece']),
+  category: z.enum(PRODUCT_CATEGORIES),
+  unit: z.enum(PRODUCT_UNITS),
   description: z.string().optional(),
   imageUrl: z.string().url().optional().or(z.literal('')),
   isAvailable: z.boolean(),
@@ -22,8 +23,8 @@ const createProductSchema = z.object({
 const updateProductSchema = z.object({
   name: z.string().min(1).optional(),
   price: z.number().positive().optional(),
-  category: z.enum(['vegetables', 'fruits', 'dairy_eggs', 'bread_bakery', 'pantry', 'meat_protein']).optional(),
-  unit: z.enum(['kg', 'g', 'L', 'ml', 'dozen', 'loaf', 'pack', 'piece']).optional(),
+  category: z.enum(PRODUCT_CATEGORIES).optional(),
+  unit: z.enum(PRODUCT_UNITS).optional(),
   description: z.string().optional(),
   imageUrl: z.string().url().optional().or(z.literal('')),
   isAvailable: z.boolean().optional(),
@@ -39,15 +40,15 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     const { category, isAvailable, isSeasonal } = req.query;
 
     const filters: ProductFilters = {};
-    
+
     if (category) {
       filters.category = category as string;
     }
-    
+
     if (isAvailable !== undefined) {
       filters.isAvailable = isAvailable === 'true';
     }
-    
+
     if (isSeasonal !== undefined) {
       filters.isSeasonal = isSeasonal === 'true';
     }

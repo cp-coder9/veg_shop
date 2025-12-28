@@ -417,6 +417,7 @@ describe('PaymentService', () => {
         status: 'delivered',
         createdAt: new Date(),
         updatedAt: new Date(),
+        deliveryFees: new Decimal(0),
         items: [
           {
             id: 'item-1',
@@ -501,6 +502,7 @@ describe('PaymentService', () => {
         status: 'delivered',
         createdAt: new Date(),
         updatedAt: new Date(),
+        deliveryFees: new Decimal(0),
         items: [
           {
             id: 'item-1',
@@ -602,6 +604,7 @@ describe('PaymentService', () => {
         status: 'delivered',
         createdAt: new Date(),
         updatedAt: new Date(),
+        deliveryFees: new Decimal(0),
         items: [],
       };
 
@@ -634,6 +637,7 @@ describe('PaymentService', () => {
         status: 'delivered',
         createdAt: new Date(),
         updatedAt: new Date(),
+        deliveryFees: new Decimal(0),
         items: [
           {
             id: 'item-1',
@@ -693,6 +697,7 @@ describe('PaymentService', () => {
             status: 'delivered',
             createdAt: new Date(),
             updatedAt: new Date(),
+            deliveryFees: new Decimal(0),
           },
         },
         customer: {
@@ -761,6 +766,7 @@ describe('PaymentService', () => {
               status: 'delivered',
               createdAt: new Date(),
               updatedAt: new Date(),
+              deliveryFees: new Decimal(0),
             },
           },
         },

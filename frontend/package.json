@@ -14,6 +14,7 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@prisma/client": "^7.2.0",
     "@tanstack/react-query": "^5.17.9",
     "axios": "^1.6.5",
     "react": "^18.2.0",
@@ -39,6 +40,7 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "jsdom": "^27.0.1",
     "postcss": "^8.4.33",
+    "prisma": "^7.2.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3",
     "vite": "^5.0.11",

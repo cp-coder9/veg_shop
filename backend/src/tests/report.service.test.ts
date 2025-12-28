@@ -43,6 +43,7 @@ describe('ReportService', () => {
           status: 'delivered',
           createdAt: new Date('2025-10-10'),
           updatedAt: new Date('2025-10-15'),
+          deliveryFees: new Decimal(0),
           items: [
             {
               id: 'item-1',
@@ -108,6 +109,7 @@ describe('ReportService', () => {
           status: 'delivered',
           createdAt: new Date('2025-10-15'),
           updatedAt: new Date('2025-10-20'),
+          deliveryFees: new Decimal(0),
           items: [
             {
               id: 'item-3',
@@ -154,12 +156,12 @@ describe('ReportService', () => {
       expect(result.totalRevenue).toBe(234); // 157.50 + 76.50
       expect(result.totalOrders).toBe(2);
       expect(result.productsSold).toHaveLength(2);
-      
+
       // Tomatoes should be first (higher revenue)
       expect(result.productsSold[0].productName).toBe('Tomatoes');
       expect(result.productsSold[0].quantitySold).toBe(8); // 5 + 3
       expect(result.productsSold[0].revenue).toBe(204); // 8 * 25.50
-      
+
       // Lettuce should be second
       expect(result.productsSold[1].productName).toBe('Lettuce');
       expect(result.productsSold[1].quantitySold).toBe(2);
@@ -181,6 +183,7 @@ describe('ReportService', () => {
           status: 'delivered',
           createdAt: new Date('2025-10-10'),
           updatedAt: new Date('2025-10-15'),
+          deliveryFees: new Decimal(0),
           items: [
             {
               id: 'item-1',
@@ -338,12 +341,12 @@ describe('ReportService', () => {
 
       expect(result.totalOutstanding).toBe(350); // 100 + 150 + 100
       expect(result.customers).toHaveLength(2);
-      
+
       // Customer 1 should be first (higher outstanding)
       expect(result.customers[0].customerName).toBe('John Doe');
       expect(result.customers[0].outstandingBalance).toBe(200); // (200 - 100) + 100
       expect(result.customers[0].lastPaymentDate).toEqual(new Date('2025-10-15'));
-      
+
       // Customer 2 should be second
       expect(result.customers[1].customerName).toBe('Jane Smith');
       expect(result.customers[1].outstandingBalance).toBe(150);
@@ -435,6 +438,7 @@ describe('ReportService', () => {
             status: 'delivered',
             createdAt: new Date('2025-10-10'),
             updatedAt: new Date('2025-10-15'),
+            deliveryFees: new Decimal(0),
           },
         },
         {
@@ -466,6 +470,7 @@ describe('ReportService', () => {
             status: 'delivered',
             createdAt: new Date('2025-10-15'),
             updatedAt: new Date('2025-10-20'),
+            deliveryFees: new Decimal(0),
           },
         },
         {
@@ -497,6 +502,7 @@ describe('ReportService', () => {
             status: 'delivered',
             createdAt: new Date('2025-10-10'),
             updatedAt: new Date('2025-10-15'),
+            deliveryFees: new Decimal(0),
           },
         },
       ];
@@ -508,13 +514,13 @@ describe('ReportService', () => {
       expect(result.startDate).toEqual(startDate);
       expect(result.endDate).toEqual(endDate);
       expect(result.products).toHaveLength(2);
-      
+
       // Tomatoes should be first (higher quantity)
       expect(result.products[0].productName).toBe('Tomatoes');
       expect(result.products[0].orderCount).toBe(2); // 2 unique orders
       expect(result.products[0].totalQuantity).toBe(8); // 5 + 3
       expect(result.products[0].revenue).toBe(204); // 8 * 25.50
-      
+
       // Lettuce should be second
       expect(result.products[1].productName).toBe('Lettuce');
       expect(result.products[1].orderCount).toBe(1); // 1 unique order
@@ -566,6 +572,7 @@ describe('ReportService', () => {
           status: 'delivered',
           createdAt: new Date('2025-10-10'),
           updatedAt: new Date('2025-10-15'),
+          deliveryFees: new Decimal(0),
           customer: {
             id: 'customer-1',
             name: 'John Doe',
@@ -600,6 +607,7 @@ describe('ReportService', () => {
           status: 'delivered',
           createdAt: new Date('2025-10-15'),
           updatedAt: new Date('2025-10-20'),
+          deliveryFees: new Decimal(0),
           customer: {
             id: 'customer-1',
             name: 'John Doe',
@@ -634,6 +642,7 @@ describe('ReportService', () => {
           status: 'delivered',
           createdAt: new Date('2025-10-20'),
           updatedAt: new Date('2025-10-25'),
+          deliveryFees: new Decimal(0),
           customer: {
             id: 'customer-2',
             name: 'Jane Smith',
@@ -667,14 +676,14 @@ describe('ReportService', () => {
       expect(result.startDate).toEqual(startDate);
       expect(result.endDate).toEqual(endDate);
       expect(result.customers).toHaveLength(2);
-      
+
       // Customer 1 should be first (higher total spent)
       expect(result.customers[0].customerName).toBe('John Doe');
       expect(result.customers[0].orderCount).toBe(2);
       expect(result.customers[0].totalSpent).toBe(300); // 200 + 100
       expect(result.customers[0].averageOrderValue).toBe(150); // 300 / 2
       expect(result.customers[0].lastOrderDate).toEqual(new Date('2025-10-15'));
-      
+
       // Customer 2 should be second
       expect(result.customers[1].customerName).toBe('Jane Smith');
       expect(result.customers[1].orderCount).toBe(1);

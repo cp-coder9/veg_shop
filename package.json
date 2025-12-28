@@ -12,7 +12,9 @@
     "dev:frontend": "npm run dev --workspace=frontend",
     "build": "npm run build --workspaces",
     "lint": "npm run lint --workspaces",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1",
+    "deploy:push": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1 -Push"
   },
   "devDependencies": {
     "baseline-browser-mapping": "^2.9.11",

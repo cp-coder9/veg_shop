@@ -18,14 +18,14 @@ export default function PaymentsManagement() {
         <h1 className="text-3xl font-bold text-gray-900">Payments Management</h1>
         <button
           onClick={() => setShowPaymentModal(true)}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 w-full sm:w-auto text-center"
         >
           Record Payment
         </button>
       </div>
 
       {/* Outstanding Invoices */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
           Outstanding Invoices
         </h2>
@@ -33,71 +33,113 @@ export default function PaymentsManagement() {
         {outstandingInvoices.length === 0 ? (
           <p className="text-gray-500">No outstanding invoices</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Invoice ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Customer
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Due Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {outstandingInvoices.map((invoice) => (
-                  <tr key={invoice.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {invoice.id.slice(0, 8)}...
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {invoice.customerId.slice(0, 8)}...
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                      R {toNumber(invoice.total).toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${invoice.status === 'partial'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                          }`}
-                      >
-                        {invoice.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(invoice.dueDate).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => {
-                          setSelectedCustomerId(invoice.customerId);
-                          setShowPaymentModal(true);
-                        }}
-                        className="text-green-600 hover:text-green-900"
-                      >
-                        Record Payment
-                      </button>
-                    </td>
+          <>
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Invoice ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Customer
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Due Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {outstandingInvoices.map((invoice) => (
+                    <tr key={invoice.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {invoice.id.slice(0, 8)}...
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {invoice.customerId.slice(0, 8)}...
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                        R {toNumber(invoice.total).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${invoice.status === 'partial'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                            }`}
+                        >
+                          {invoice.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(invoice.dueDate).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            setSelectedCustomerId(invoice.customerId);
+                            setShowPaymentModal(true);
+                          }}
+                          className="text-green-600 hover:text-green-900"
+                        >
+                          Record Payment
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-4">
+              {outstandingInvoices.map((invoice) => (
+                <div key={invoice.id} className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="font-medium text-gray-900">#{invoice.id.slice(0, 8)}...</span>
+                      <p className="text-xs text-gray-500">Cust: {invoice.customerId.slice(0, 8)}...</p>
+                    </div>
+                    <span
+                      className={`px-2 py-0.5 text-xs font-semibold rounded-full ${invoice.status === 'partial'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
+                        }`}
+                    >
+                      {invoice.status}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Total:</span>
+                    <span className="font-semibold text-gray-900">R {toNumber(invoice.total).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Due:</span>
+                    <span>{new Date(invoice.dueDate).toLocaleDateString()}</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedCustomerId(invoice.customerId);
+                      setShowPaymentModal(true);
+                    }}
+                    className="w-full mt-2 px-3 py-2 bg-green-50 text-green-700 rounded text-sm font-medium hover:bg-green-100"
+                  >
+                    Record Payment
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -136,56 +178,82 @@ function PaymentHistorySection({ customerId }: PaymentHistorySectionProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">
+    <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+      <h2 className="text-xl font-semibold text-gray-900 mb-4 truncate">
         Payment History - Customer {customerId.slice(0, 8)}...
       </h2>
 
       {!payments || payments.length === 0 ? (
         <p className="text-gray-500">No payment history</p>
       ) : (
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Amount
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Method
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Invoice
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Notes
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+        <>
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Amount
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Method
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Invoice
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Notes
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {payments.map((payment) => (
+                  <tr key={payment.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {new Date(payment.paymentDate).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                      R {toNumber(payment.amount).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {payment.method.toUpperCase()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {payment.invoiceId.slice(0, 8)}...
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {payment.notes || '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-3">
             {payments.map((payment) => (
-              <tr key={payment.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {new Date(payment.paymentDate).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                  R {toNumber(payment.amount).toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {payment.method.toUpperCase()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {payment.invoiceId.slice(0, 8)}...
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {payment.notes || '-'}
-                </td>
-              </tr>
+              <div key={payment.id} className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-medium text-gray-500">{new Date(payment.paymentDate).toLocaleDateString()}</span>
+                  <span className="text-sm font-bold text-green-600">R {toNumber(payment.amount).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm mb-1">
+                  <span className="text-gray-700 capitalize">{payment.method}</span>
+                  <span className="text-gray-500">Inv: {payment.invoiceId.slice(0, 8)}</span>
+                </div>
+                {payment.notes && (
+                  <p className="text-xs text-gray-500 italic border-t border-gray-200 pt-1 mt-1">
+                    {payment.notes}
+                  </p>
+                )}
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </>
       )}
     </div>
   );
@@ -229,6 +297,7 @@ function PaymentModal({ preselectedCustomerId, onClose }: PaymentModalProps) {
       await recordPayment.mutateAsync({
         ...formData,
         amount: amountValue,
+        paymentDate: new Date(formData.paymentDate).toISOString(),
       });
 
       // Check if overpayment
@@ -249,8 +318,8 @@ function PaymentModal({ preselectedCustomerId, onClose }: PaymentModalProps) {
   const selectedInvoice = invoices?.find(inv => inv.id === formData.invoiceId);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-full mx-4 md:max-w-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Record Payment</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -382,18 +451,18 @@ function PaymentModal({ preselectedCustomerId, onClose }: PaymentModalProps) {
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+              className="w-full sm:w-auto px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={recordPayment.isPending}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+              className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
             >
               {recordPayment.isPending ? 'Recording...' : 'Record Payment'}
             </button>

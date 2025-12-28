@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import api from '../../lib/api';
 
 interface DashboardMetrics {
@@ -185,9 +186,9 @@ export default function AdminDashboard() {
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {quickActions.map((action) => (
-              <a
+              <Link
                 key={action.name}
-                href={action.path}
+                to={action.path}
                 className={`group block p-6 border-2 border-warm-gray-200 rounded-xl transition-all duration-200 ${action.color} hover:shadow-card`}
               >
                 <div className="flex items-start gap-4">
@@ -209,7 +210,7 @@ export default function AdminDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -228,12 +229,12 @@ export default function AdminDashboard() {
                   Latest orders from customers
                 </p>
               </div>
-              <a
-                href="/admin/orders"
+              <Link
+                to="/admin/orders"
                 className="text-sm font-medium text-organic-green-600 hover:text-organic-green-700"
               >
                 View All
-              </a>
+              </Link>
             </div>
           </div>
           <div className="p-6">
@@ -253,19 +254,21 @@ export default function AdminDashboard() {
                         {order.customerName}
                       </p>
                       <p className="text-sm text-warm-gray-600">
-                        Order #{order.id.slice(-6)}
+                        Order #{order.id.slice(0, 8)}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-organic-green-900">
                         R{order.totalAmount.toFixed(2)}
                       </p>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${order.status === 'PENDING' ? 'bg-amber-100 text-amber-800' :
-                          order.status === 'PROCESSING' ? 'bg-blue-100 text-blue-800' :
-                            order.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
-                              'bg-gray-100 text-gray-800'
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${order.status === 'pending' ? 'bg-amber-100 text-amber-800' :
+                        order.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                          order.status === 'packed' ? 'bg-purple-100 text-purple-800' :
+                            order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                              order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
                         }`}>
-                        {order.status}
+                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                       </span>
                     </div>
                   </div>

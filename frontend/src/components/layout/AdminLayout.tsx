@@ -1,10 +1,12 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import ThemeToggle from '../ThemeToggle';
+import { useState } from 'react';
 
 export default function AdminLayout() {
   const location = useLocation();
   const { user, logout } = useAuthStore();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const navigation = [
     {
@@ -90,12 +92,23 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen flex bg-warm-gray-50 dark:bg-warm-gray-900 transition-colors duration-300">
+    <div className="min-h-screen flex bg-warm-gray-50 dark:bg-warm-gray-900 transition-colors duration-300 relative">
+      {/* Mobile Backdrop */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-72 bg-white shadow-lg border-r border-warm-gray-200 dark:bg-warm-gray-800 dark:border-warm-gray-700">
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-lg border-r border-warm-gray-200 dark:bg-warm-gray-800 dark:border-warm-gray-700 transform transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+      >
         <div className="h-full flex flex-col">
           {/* Logo/Brand */}
-          <div className="p-6 border-b border-warm-gray-200 bg-gradient-to-r from-organic-green-50 to-organic-green-100 dark:from-organic-green-900/30 dark:to-organic-green-800/30 dark:border-warm-gray-700">
+          <div className="p-6 border-b border-warm-gray-200 bg-gradient-to-r from-organic-green-50 to-organic-green-100 dark:from-organic-green-900/30 dark:to-organic-green-800/30 dark:border-warm-gray-700 relative">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-organic-green-600 rounded-xl flex items-center justify-center dark:bg-organic-green-500">
@@ -108,8 +121,16 @@ export default function AdminLayout() {
                   <p className="text-sm text-warm-gray-600 dark:text-warm-gray-400">Organic Veg Shop</p>
                 </div>
               </div>
-              <ThemeToggle />
             </div>
+            {/* Close button for mobile */}
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-sm lg:hidden dark:bg-warm-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-300"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
 
           {/* Navigation */}
@@ -118,6 +139,7 @@ export default function AdminLayout() {
               <Link
                 key={item.path}
                 to={item.path}
+                onClick={() => setIsSidebarOpen(false)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive(item.path)
                   ? 'bg-organic-green-600 text-white shadow-lg dark:bg-organic-green-500'
                   : 'text-warm-gray-700 hover:bg-organic-green-50 hover:text-organic-green-700 dark:text-warm-gray-300 dark:hover:bg-warm-gray-700 dark:hover:text-organic-green-400'
@@ -161,13 +183,32 @@ export default function AdminLayout() {
               </svg>
               <span className="font-medium">Logout</span>
             </button>
+            <div className="mt-4 flex justify-center lg:hidden">
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-8">
+      <main className="flex-1 overflow-auto w-full transition-all duration-300">
+        {/* Mobile Header */}
+        <div className="lg:hidden bg-white border-b border-warm-gray-200 p-4 sticky top-0 z-30 flex items-center justify-between dark:bg-warm-gray-800 dark:border-warm-gray-700 shadow-sm">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 -ml-2 text-warm-gray-600 hover:bg-organic-green-50 rounded-lg dark:text-warm-gray-300 dark:hover:bg-warm-gray-700"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <span className="font-bold text-lg text-organic-green-900 dark:text-organic-green-400">Organic Veg Admin</span>
+          </div>
+          <ThemeToggle />
+        </div>
+
+        <div className="p-4 md:p-8">
           <Outlet />
         </div>
       </main>

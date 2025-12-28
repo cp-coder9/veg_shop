@@ -69,6 +69,7 @@ describe('InvoiceService', () => {
         status: 'pending',
         createdAt: new Date(),
         updatedAt: new Date(),
+        deliveryFees: new Decimal(0),
         items: [
           {
             id: 'item-1',
@@ -182,6 +183,7 @@ describe('InvoiceService', () => {
         status: 'pending',
         createdAt: new Date(),
         updatedAt: new Date(),
+        deliveryFees: new Decimal(0),
         items: [
           {
             id: 'item-1',

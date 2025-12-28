@@ -2,10 +2,7 @@ import { prisma } from '../lib/prisma.js';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { auditService } from './audit.service.js';
-
-const JWT_SECRET: string = process.env.JWT_SECRET || 'default-secret-key';
-const JWT_ACCESS_EXPIRY: string = process.env.JWT_ACCESS_EXPIRY || '15m';
-const JWT_REFRESH_EXPIRY: string = process.env.JWT_REFRESH_EXPIRY || '7d';
+import { env } from '../config/env.js';
 
 export interface AuthToken {
   accessToken: string;
@@ -119,8 +116,8 @@ export class AuthService {
         userId: user.id,
         role: user.role,
       },
-      JWT_SECRET,
-      { expiresIn: JWT_ACCESS_EXPIRY } as jwt.SignOptions
+      env.JWT_SECRET,
+      { expiresIn: env.JWT_ACCESS_EXPIRY } as jwt.SignOptions
     );
 
     const refreshToken = jwt.sign(
@@ -128,8 +125,8 @@ export class AuthService {
         userId: user.id,
         role: user.role,
       },
-      JWT_SECRET,
-      { expiresIn: JWT_REFRESH_EXPIRY } as jwt.SignOptions
+      env.JWT_SECRET,
+      { expiresIn: env.JWT_REFRESH_EXPIRY } as jwt.SignOptions
     );
 
     return {
@@ -148,7 +145,7 @@ export class AuthService {
    */
   validateToken(token: string): { userId: string; role: string } {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as {
+      const decoded = jwt.verify(token, env.JWT_SECRET) as {
         userId: string;
         role: string;
       };

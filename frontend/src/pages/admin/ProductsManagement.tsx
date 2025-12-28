@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
-import { Product, CATEGORY_LABELS } from '../../types';
+import { Product, CATEGORY_LABELS, UNIT_LABELS, ProductUnit } from '../../types';
 import {
   useAdminProducts,
   useCreateProduct,
@@ -71,18 +71,18 @@ export default function ProductsManagement() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Products Management</h1>
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <button
             onClick={handleShowWhatsAppList}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Generate WhatsApp List
           </button>
           <button
             onClick={() => handleOpenModal()}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
           >
             Add Product
           </button>
@@ -126,8 +126,8 @@ export default function ProductsManagement() {
         </div>
       </div>
 
-      {/* Products Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      {/* Products Table - Desktop */}
+      <div className="hidden md:block bg-white rounded-lg shadow-md overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -177,11 +177,10 @@ export default function ProductsManagement() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      product.isAvailable
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
+                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.isAvailable
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                      }`}
                   >
                     {product.isAvailable ? 'Available' : 'Unavailable'}
                   </span>
@@ -206,6 +205,60 @@ export default function ProductsManagement() {
         </table>
       </div>
 
+      {/* Products Cards - Mobile */}
+      <div className="md:hidden space-y-4">
+        {products?.map((product) => (
+          <div key={product.id} className="bg-white p-4 rounded-lg shadow space-y-3">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-bold text-gray-900">{product.name}</p>
+                {product.isSeasonal && (
+                  <span className="text-xs text-orange-600 font-medium">Seasonal</span>
+                )}
+              </div>
+              <span
+                className={`px-2 py-1 text-xs font-semibold rounded-full ${product.isAvailable
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800'
+                  }`}
+              >
+                {product.isAvailable ? 'Available' : 'Unavailable'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <span className="text-gray-500">Category:</span>
+                <span className="ml-1 text-gray-900">
+                  {allCategories[product.category] || product.category}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-500">Price:</span>
+                <span className="ml-1 text-gray-900">
+                  R {toNumber(product.price).toFixed(2)} / {product.unit}
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-gray-100 flex justify-end gap-3">
+              <button
+                onClick={() => handleOpenModal(product)}
+                className="px-3 py-1 bg-blue-50 text-blue-600 rounded text-sm font-medium hover:bg-blue-100"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => handleDelete(product.id)}
+                className="px-3 py-1 bg-red-50 text-red-600 rounded text-sm font-medium hover:bg-red-100"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Product Modal */}
       {showProductModal && (
         <ProductModal
@@ -213,14 +266,12 @@ export default function ProductsManagement() {
           onClose={handleCloseModal}
           onSave={async (data) => {
             if (editingProduct) {
-              // Convert price to number for update
               const updateData = {
                 ...data,
                 price: data.price !== undefined ? toNumber(data.price) : undefined,
               };
               await updateProduct.mutateAsync({ id: editingProduct.id, data: updateData });
             } else {
-              // For create, ensure all required fields are present and price is a number
               const createData = {
                 name: data.name!,
                 price: toNumber(data.price!),
@@ -266,7 +317,7 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
     isAvailable: product?.isAvailable ?? true,
     isSeasonal: product?.isSeasonal ?? false,
   });
-  
+
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategoryKey, setNewCategoryKey] = useState('');
   const [newCategoryLabel, setNewCategoryLabel] = useState('');
@@ -292,30 +343,26 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
       alert('Please enter both category key and label');
       return;
     }
-    
-    // Validate key format (lowercase, underscores only)
+
     if (!/^[a-z_]+$/.test(newCategoryKey)) {
       alert('Category key must be lowercase letters and underscores only');
       return;
     }
-    
-    // Check if key already exists
+
     if (allCategories[newCategoryKey]) {
       alert('Category key already exists');
       return;
     }
-    
+
     try {
       await createCategory.mutateAsync({
         key: newCategoryKey,
         label: newCategoryLabel,
         description: newCategoryDescription || undefined,
       });
-      
-      // Set the new category as selected
+
       setFormData({ ...formData, category: newCategoryKey as Product['category'] });
-      
-      // Reset and close
+
       setNewCategoryKey('');
       setNewCategoryLabel('');
       setNewCategoryDescription('');
@@ -330,13 +377,11 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       alert('Please select an image file');
       return;
     }
 
-    // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       alert('File size must be less than 5MB');
       return;
@@ -344,18 +389,15 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
 
     try {
       setUploadingImage(true);
-      
-      // Create preview
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
 
-      // Upload file
       const result = await uploadImage.mutateAsync(file);
-      
-      // Update form data with uploaded image URL
+
       setFormData({ ...formData, imageUrl: result.url });
     } catch (error) {
       console.error('Failed to upload image:', error);
@@ -380,8 +422,8 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-full mx-4 md:max-w-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">
           {product ? 'Edit Product' : 'Add Product'}
         </h2>
@@ -421,17 +463,14 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
               </label>
               <select
                 value={formData.unit}
-                onChange={(e) => setFormData({ ...formData, unit: e.target.value as 'kg' | 'g' | 'L' | 'ml' | 'dozen' | 'loaf' | 'pack' | 'piece' })}
+                onChange={(e) => setFormData({ ...formData, unit: e.target.value as ProductUnit })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               >
-                <option value="kg">kg</option>
-                <option value="g">g</option>
-                <option value="L">L</option>
-                <option value="ml">ml</option>
-                <option value="dozen">dozen</option>
-                <option value="loaf">loaf</option>
-                <option value="pack">pack</option>
-                <option value="piece">piece</option>
+                {Object.entries(UNIT_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -480,7 +519,7 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Product Image
             </label>
-            
+
             {/* Image Preview */}
             {imagePreview && (
               <div className="mb-3 relative inline-block">
@@ -573,17 +612,17 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
             </label>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+              className="w-full sm:w-auto px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
             >
               {product ? 'Update' : 'Create'}
             </button>
@@ -592,10 +631,10 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
 
         {/* Add Category Modal */}
         {showAddCategory && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-full mx-4 md:max-w-md">
               <h3 className="text-xl font-bold text-gray-900 mb-4">Add New Category</h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -649,7 +688,7 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 mt-6">
                 <button
                   type="button"
                   onClick={() => {
@@ -657,7 +696,7 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
                     setNewCategoryKey('');
                     setNewCategoryLabel('');
                   }}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                  className="w-full sm:w-auto px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
                 >
                   Cancel
                 </button>
@@ -665,7 +704,7 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
                   type="button"
                   onClick={handleAddCategory}
                   disabled={createCategory.isPending}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                  className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                 >
                   {createCategory.isPending ? 'Creating...' : 'Add Category'}
                 </button>
@@ -690,26 +729,26 @@ function WhatsAppListModal({ content, onClose }: WhatsAppListModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-full mx-4 md:max-w-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">
           WhatsApp Product List
         </h2>
 
-        <div className="bg-gray-50 p-4 rounded-lg mb-4 whitespace-pre-wrap font-mono text-sm">
-          {content}
+        <div className="bg-gray-50 p-4 rounded-lg mb-4 whitespace-pre-wrap font-mono text-sm text-gray-800">
+          {typeof content === 'string' ? content : JSON.stringify(content, null, 2)}
         </div>
 
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+            className="w-full sm:w-auto px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
           >
             Close
           </button>
           <button
             onClick={handleCopy}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
           >
             Copy to Clipboard
           </button>

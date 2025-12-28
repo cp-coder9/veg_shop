@@ -71,7 +71,7 @@ export default function CustomerInvoiceDetailModal({
         className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
         onClick={handleBackdropClick}
       >
-        <div className="bg-white rounded-lg p-8 max-w-4xl w-full">
+        <div className="bg-white rounded-lg p-8 w-full max-w-full mx-4 md:max-w-4xl">
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
@@ -89,7 +89,7 @@ export default function CustomerInvoiceDetailModal({
         className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
         onClick={handleBackdropClick}
       >
-        <div className="bg-white rounded-lg p-8 max-w-4xl w-full">
+        <div className="bg-white rounded-lg p-8 w-full max-w-full mx-4 md:max-w-4xl">
           <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg">
             Failed to load invoice details. Please try again later.
           </div>
@@ -117,10 +117,10 @@ export default function CustomerInvoiceDetailModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full my-8">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-full mx-4 md:max-w-4xl my-8 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <div>
@@ -153,7 +153,7 @@ export default function CustomerInvoiceDetailModal({
         </div>
 
         {/* Content */}
-        <div className="px-6 py-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+        <div className="px-6 py-4">
           {/* Invoice Metadata */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <div>
@@ -171,13 +171,12 @@ export default function CustomerInvoiceDetailModal({
             <div>
               <p className="text-sm text-gray-600">Status</p>
               <span
-                className={`inline-block px-3 py-1 text-sm font-semibold rounded-full ${
-                  invoice.status === 'paid'
+                className={`inline-block px-3 py-1 text-sm font-semibold rounded-full ${invoice.status === 'paid'
                     ? 'bg-green-100 text-green-800'
                     : invoice.status === 'partial'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-red-100 text-red-800'
-                }`}
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}
               >
                 {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
               </span>
@@ -334,11 +333,11 @@ export default function CustomerInvoiceDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 px-6 py-4 flex justify-between items-center">
+        <div className="border-t border-gray-200 px-6 py-4 flex flex-col-reverse sm:flex-row justify-between items-center gap-4 sm:gap-0">
           <button
             onClick={() => downloadPDF.mutate({ invoiceId: invoice.id })}
             disabled={downloadPDF.isPending}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center gap-2"
+            className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
           >
             {downloadPDF.isPending ? (
               <>
@@ -366,7 +365,7 @@ export default function CustomerInvoiceDetailModal({
           </button>
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+            className="w-full sm:w-auto px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
           >
             Close
           </button>

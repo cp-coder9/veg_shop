@@ -11,6 +11,7 @@ export interface CreateOrderDto {
   deliveryMethod: 'delivery' | 'collection';
   deliveryAddress?: string;
   specialInstructions?: string;
+  deliveryFees?: number;
   items: {
     productId: string;
     quantity: number;
@@ -93,6 +94,7 @@ export class OrderService {
           deliveryMethod: data.deliveryMethod,
           deliveryAddress: data.deliveryAddress,
           specialInstructions: data.specialInstructions,
+          deliveryFees: data.deliveryFees || 0,
           status: 'pending',
           items: {
             create: data.items.map(item => {
@@ -377,7 +379,7 @@ export class OrderService {
     return orders.map(order => {
       const totalAmount = order.items.reduce((sum, item) => {
         return sum + (Number(item.priceAtOrder) * item.quantity);
-      }, 0);
+      }, Number(order.deliveryFees || 0));
 
       return {
         ...order,

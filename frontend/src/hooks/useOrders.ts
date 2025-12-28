@@ -8,6 +8,7 @@ interface CreateOrderRequest {
   deliveryMethod: 'delivery' | 'collection';
   deliveryAddress?: string;
   specialInstructions?: string;
+  deliveryFees?: number;
   items: OrderItem[];
 }
 

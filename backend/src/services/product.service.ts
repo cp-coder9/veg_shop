@@ -178,7 +178,7 @@ export class ProductService {
 
     // Group products by category
     const categoryMap: Record<string, Product[]> = {};
-    
+
     products.forEach(product => {
       if (!categoryMap[product.category]) {
         categoryMap[product.category] = [];
@@ -186,32 +186,35 @@ export class ProductService {
       categoryMap[product.category].push(product);
     });
 
-    // Category display names
+    // Category display names (matching seed data labels)
     const categoryNames: Record<string, string> = {
+      bakery: '🍞 Pantry & Bakery',
+      broths: '🥣 Broths & Brothcicles',
+      nuts_fruit: '🥜 Nuts & Dried Fruit',
       vegetables: '🥬 Vegetables',
-      fruits: '🍎 Fruits',
-      dairy_eggs: '🥛 Dairy & Eggs',
-      bread_bakery: '🍞 Bread & Bakery',
-      pantry: '🥫 Pantry Items',
-      meat_protein: '🥩 Meat & Protein',
+      fruit: '🍎 Fruit',
+      local_produce: '🏞️ Local Farm Produce',
+      plant_based: '🌱 Plant Based (Tabu)',
+      dairy: '🥛 Dairy',
+      meat: '🥩 Meat & Poultry',
     };
 
     // Build WhatsApp message
     let message = '*🌱 Weekly Product List 🌱*\n\n';
 
-    // Sort categories in the desired order
-    const categoryOrder = ['vegetables', 'fruits', 'dairy_eggs', 'bread_bakery', 'pantry', 'meat_protein'];
-    
+    // Sort categories in the desired order (matching seed data)
+    const categoryOrder = ['bakery', 'broths', 'nuts_fruit', 'vegetables', 'fruit', 'local_produce', 'plant_based', 'dairy', 'meat'];
+
     categoryOrder.forEach(category => {
       if (categoryMap[category] && categoryMap[category].length > 0) {
         message += `*${categoryNames[category] || category}*\n`;
-        
+
         categoryMap[category].forEach(product => {
           const price = Number(product.price).toFixed(2);
           const seasonal = product.isSeasonal ? ' 🌟' : '';
           message += `• ${product.name} - R${price}/${product.unit}${seasonal}\n`;
         });
-        
+
         message += '\n';
       }
     });

@@ -12,6 +12,7 @@ const createOrderSchema = z.object({
   deliveryMethod: z.enum(['delivery', 'collection']),
   deliveryAddress: z.string().optional(),
   specialInstructions: z.string().optional(),
+  deliveryFees: z.number().optional().default(0),
   items: z.array(z.object({
     productId: z.string().uuid(),
     quantity: z.number().int().positive(),

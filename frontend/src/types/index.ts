@@ -1,11 +1,11 @@
-export type ProductCategory = 'vegetables' | 'fruits' | 'dairy_eggs' | 'bread_bakery' | 'pantry' | 'meat_protein';
+export type ProductCategory = 'bakery' | 'broths' | 'nuts_fruit' | 'vegetables' | 'fruit' | 'local_produce' | 'plant_based' | 'dairy' | 'meat';
 
 export interface Product {
   id: string;
   name: string;
   price: number | string; // Prisma Decimal serializes as string
   category: ProductCategory;
-  unit: 'kg' | 'g' | 'L' | 'ml' | 'dozen' | 'loaf' | 'pack' | 'piece';
+  unit: ProductUnit;
   description: string | null;
   imageUrl: string | null;
   isAvailable: boolean;
@@ -55,12 +55,39 @@ export interface Invoice {
 }
 
 export const CATEGORY_LABELS: Record<ProductCategory, string> = {
-  vegetables: 'Vegetables',
-  fruits: 'Fruits',
-  dairy_eggs: 'Dairy & Eggs',
-  bread_bakery: 'Bread & Bakery',
-  pantry: 'Pantry Items',
-  meat_protein: 'Meat & Protein',
+  bakery: '🍞 Pantry & Bakery',
+  broths: '🥣 Broths & Brothcicles',
+  nuts_fruit: '🥜 Nuts & Dried Fruit',
+  vegetables: '🥬 Vegetables',
+  fruit: '🍎 Fruit',
+  local_produce: '🏞️ Local Farm Produce',
+  plant_based: '🌱 Plant Based (Tabu)',
+  dairy: '🥛 Dairy',
+  meat: '🥩 Meat & Poultry',
+};
+
+export type ProductUnit =
+  | 'bottle' | 'box' | 'bucket' | 'bunch' | 'dozen' | 'each' | 'g' | 'kg'
+  | 'kg_approx' | 'litres' | 'loaf' | 'ml' | 'pack' | 'punnet' | 'tray' | 'tub' | 'unit';
+
+export const UNIT_LABELS: Record<ProductUnit, string> = {
+  bottle: 'bottle',
+  box: 'box',
+  bucket: 'bucket',
+  bunch: 'bunch',
+  dozen: 'dozen',
+  each: 'each',
+  g: 'g',
+  kg: 'kg',
+  kg_approx: 'kg (approx)',
+  litres: 'litres',
+  loaf: 'loaf',
+  ml: 'ml',
+  pack: 'pack',
+  punnet: 'punnet',
+  tray: 'tray',
+  tub: 'tub',
+  unit: 'unit',
 };
 
 export interface SalesReport {

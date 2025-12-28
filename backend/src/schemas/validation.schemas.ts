@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PRODUCT_CATEGORIES, PRODUCT_UNITS } from '../constants/enums.js';
 
 // ============================================
 // Authentication Schemas
@@ -31,33 +32,13 @@ export const refreshTokenSchema = z.object({
 // Product Schemas
 // ============================================
 
-const productCategories = [
-  'vegetables',
-  'fruits',
-  'dairy',
-  'bread',
-  'pantry',
-  'meat',
-] as const;
-
-const productUnits = [
-  'kg',
-  'g',
-  'unit',
-  'bunch',
-  'pack',
-  'dozen',
-  'litre',
-  'ml',
-] as const;
-
 export const createProductSchema = z.object({
   name: z.string().min(1, 'Product name is required').max(100, 'Product name too long'),
   price: z.number().positive('Price must be positive').max(10000, 'Price too high'),
-  category: z.enum(productCategories, {
+  category: z.enum(PRODUCT_CATEGORIES, {
     errorMap: () => ({ message: 'Invalid product category' }),
   }),
-  unit: z.enum(productUnits, {
+  unit: z.enum(PRODUCT_UNITS, {
     errorMap: () => ({ message: 'Invalid product unit' }),
   }),
   description: z.string().max(500, 'Description too long').optional(),
@@ -153,7 +134,7 @@ export const createPaymentSchema = z.object({
 });
 
 export const shortDeliverySchema = z.object({
-  orderId: z.string().uuid('Invalid order ID'),
+  orderId: z.string().min(1, 'Order ID is required'), // Accept custom format (NAME-YYYYMMDD-XXXX)
   items: z.array(
     z.object({
       productId: z.string().uuid('Invalid product ID'),

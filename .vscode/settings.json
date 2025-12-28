@@ -1,0 +1,5 @@
+{
+    "typescript.autoClosingTags": false,
+    "idf.pythonInstallPath": "E:\\Espressif\\tools\\idf-python\\3.11.2\\python.exe",
+    "css.lint.unknownAtRules": "ignore"
+}

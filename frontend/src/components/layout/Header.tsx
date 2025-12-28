@@ -2,15 +2,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
 import ThemeToggle from '../ThemeToggle';
+import { useState } from 'react';
 
 export default function Header() {
   const { user, logout } = useAuthStore();
   const totalItems = useCartStore((state) => state.getTotalItems());
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -31,30 +34,81 @@ export default function Header() {
 
           <div className="flex items-center gap-4">
             {user && (
-              <nav className="flex items-center gap-4">
-                <NavLink to="/dashboard" icon="dashboard">Dashboard</NavLink>
-                <NavLink to="/products" icon="products">Products</NavLink>
-                <NavLink to="/cart" icon="cart" badge={totalItems}>Cart</NavLink>
-                <NavLink to="/orders" icon="orders">Orders</NavLink>
-                <NavLink to="/profile" icon="profile">Profile</NavLink>
+              <>
+                {/* Desktop Navigation */}
+                <nav className="hidden md:flex items-center gap-4">
+                  <NavLink to="/dashboard" icon="dashboard">Dashboard</NavLink>
+                  <NavLink to="/products" icon="products">Products</NavLink>
+                  <NavLink to="/cart" icon="cart" badge={totalItems}>Cart</NavLink>
+                  <NavLink to="/orders" icon="orders">Orders</NavLink>
+                  <NavLink to="/profile" icon="profile">Profile</NavLink>
 
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 px-4 py-2 text-warm-gray-600 hover:text-organic-green-700 hover:bg-organic-green-50 rounded-lg transition-all duration-200 dark:text-warm-gray-300 dark:hover:text-organic-green-400 dark:hover:bg-warm-gray-800"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span className="font-medium">Logout</span>
+                  </button>
+                </nav>
+
+                {/* Mobile Menu Button */}
                 <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 text-warm-gray-600 hover:text-organic-green-700 hover:bg-organic-green-50 rounded-lg transition-all duration-200 dark:text-warm-gray-300 dark:hover:text-organic-green-400 dark:hover:bg-warm-gray-800"
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="md:hidden p-2 text-warm-gray-600 hover:bg-organic-green-50 rounded-lg transition-colors dark:text-warm-gray-300 dark:hover:bg-warm-gray-800"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  <span className="font-medium">Logout</span>
+                  {isMobileMenuOpen ? (
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  ) : (
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  )}
                 </button>
-              </nav>
+              </>
             )}
 
-            {/* Theme Toggle */}
+            {/* Theme Toggle - Visible on both */}
             <ThemeToggle />
           </div>
         </div>
+
       </div>
+
+      {/* Mobile Menu Portal/Overlay Strategy */}
+      {user && isMobileMenuOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          {/* Menu Panel */}
+          <nav className="absolute top-[64px] left-0 right-0 bg-white dark:bg-warm-gray-900 shadow-xl border-t dark:border-warm-gray-700 p-4 flex flex-col gap-2 animate-in slide-in-from-top-2">
+            <div onClick={() => setIsMobileMenuOpen(false)} className="flex flex-col gap-2">
+              <NavLink to="/dashboard" icon="dashboard">Dashboard</NavLink>
+              <NavLink to="/products" icon="products">Products</NavLink>
+              <NavLink to="/cart" icon="cart" badge={totalItems}>Cart</NavLink>
+              <NavLink to="/orders" icon="orders">Orders</NavLink>
+              <NavLink to="/profile" icon="profile">Profile</NavLink>
+
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-3 text-warm-gray-600 hover:text-organic-green-700 hover:bg-organic-green-50 rounded-lg transition-all duration-200 dark:text-warm-gray-300 dark:hover:text-organic-green-400 dark:hover:bg-warm-gray-800 w-full"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span className="font-medium">Logout</span>
+              </button>
+            </div>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
