@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -7,15 +8,19 @@ async function main() {
 
   // Create admin user
   console.log('Creating admin user...');
+  const adminPassword = await bcrypt.hash('admin123', 10);
   const admin = await prisma.user.upsert({
     where: { email: 'admin@vegshop.com' },
-    update: {},
+    update: {
+      password: adminPassword,
+    },
     create: {
       email: 'admin@vegshop.com',
       phone: '+27821234567',
       name: 'Admin User',
       address: '123 Admin Street, Cape Town',
       role: 'admin',
+      password: adminPassword,
       deliveryPreference: 'delivery',
     },
   });
@@ -23,16 +28,20 @@ async function main() {
 
   // Create sample customers
   console.log('Creating sample customers...');
+  const customerPassword = await bcrypt.hash('customer123', 10);
   const customers = await Promise.all([
     prisma.user.upsert({
       where: { email: 'john@example.com' },
-      update: {},
+      update: {
+        password: customerPassword,
+      },
       create: {
         email: 'john@example.com',
         phone: '+27821111111',
         name: 'John Smith',
         address: '10 Oak Street, Cape Town',
         role: 'customer',
+        password: customerPassword,
         deliveryPreference: 'delivery',
       },
     }),
