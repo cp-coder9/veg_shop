@@ -5,7 +5,7 @@ name: Deploy to Render
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   workflow_dispatch: # Allow manual trigger
 
 jobs:

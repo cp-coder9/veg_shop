@@ -4,7 +4,7 @@ import { notificationService } from '../services/notification.service.js';
 import { asyncHandler } from '../utils/async-handler.js';
 import { verificationCodeLimiter, loginAttemptLimiter } from '../middleware/rate-limit.middleware.js';
 import { validate } from '../middleware/validation.middleware.js';
-import { sendCodeSchema, verifyCodeSchema, refreshTokenSchema } from '../schemas/validation.schemas.js';
+import { sendCodeSchema, verifyCodeSchema, refreshTokenSchema, registerSchema, loginSchema } from '../schemas/validation.schemas.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { prisma } from '../lib/prisma.js';
 
@@ -111,13 +111,68 @@ router.post(
 );
 
 /**
+ * POST /api/auth/register
+ * Register a new user
+ */
+router.post(
+  '/register',
+  validate(registerSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const data = req.body;
+
+    try {
+      const authToken = await authService.register(data);
+      return res.status(201).json(authToken);
+    } catch (error) {
+      if (error instanceof Error && (error.message.includes('already registered'))) {
+        return res.status(409).json({
+          error: {
+            code: 'USER_EXISTS',
+            message: error.message,
+          },
+        });
+      }
+      throw error;
+    }
+  })
+);
+
+/**
+ * POST /api/auth/login
+ * Login with email and password
+ */
+router.post(
+  '/login',
+  loginAttemptLimiter,
+  validate(loginSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const data = req.body;
+
+    try {
+      const authToken = await authService.login(data);
+      return res.json(authToken);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid email or password') {
+        return res.status(401).json({
+          error: {
+            code: 'INVALID_CREDENTIALS',
+            message: 'Invalid email or password',
+          },
+        });
+      }
+      throw error;
+    }
+  })
+);
+
+/**
  * GET /api/auth/me
  * Get current user profile
  */
 router.get('/me', authenticate, asyncHandler(async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
-    
+
     if (!userId) {
       return res.status(401).json({
         error: {

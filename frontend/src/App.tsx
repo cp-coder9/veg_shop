@@ -7,7 +7,7 @@ import AdminLayout from './components/layout/AdminLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
 import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
+import AuthPage from './pages/AuthPage';
 import VerifyCodePage from './pages/VerifyCodePage';
 import ProductsPage from './pages/ProductsPage';
 import CartPage from './pages/CartPage';
@@ -49,7 +49,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<AuthPage />} />
           <Route path="/verify" element={<VerifyCodePage />} />
 
           {/* Customer Routes */}

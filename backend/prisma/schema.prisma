@@ -11,6 +11,7 @@ model User {
   id                 String    @id @default(uuid())
   phone              String?   @unique
   email              String?   @unique
+  password           String?   // Hashed password for email login
   name               String
   address            String?
   deliveryPreference String    @default("delivery")

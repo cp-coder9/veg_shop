@@ -12,6 +12,19 @@ interface VerifyCodeRequest {
   code: string;
 }
 
+interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+  address?: string;
+}
+
+interface LoginRequest {
+  email: string;
+  password: string;
+}
+
 interface AuthResponse {
   accessToken: string;
   refreshToken: string;
@@ -40,6 +53,36 @@ export function useVerifyCode() {
   return useMutation({
     mutationFn: async (data: VerifyCodeRequest) => {
       const response = await api.post<AuthResponse>('/auth/verify-code', data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setTokens(data.accessToken, data.refreshToken);
+      setUser(data.user);
+    },
+  });
+}
+
+export function useRegister() {
+  const { setTokens, setUser } = useAuthStore();
+
+  return useMutation({
+    mutationFn: async (data: RegisterRequest) => {
+      const response = await api.post<AuthResponse>('/auth/register', data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setTokens(data.accessToken, data.refreshToken);
+      setUser(data.user);
+    },
+  });
+}
+
+export function useLogin() {
+  const { setTokens, setUser } = useAuthStore();
+
+  return useMutation({
+    mutationFn: async (data: LoginRequest) => {
+      const response = await api.post<AuthResponse>('/auth/login', data);
       return response.data;
     },
     onSuccess: (data) => {

@@ -1,6 +1,7 @@
 import { prisma } from '../lib/prisma.js';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { auditService } from './audit.service.js';
 import { env } from '../config/env.js';
 
@@ -84,12 +85,13 @@ export class AuthService {
     });
 
     if (!user) {
-      // Create new customer user
+      // If logging in via phone/email code and user doesn't exist, create a customer account
+      // Note: This is "implicit registration" via OTP
       user = await prisma.user.create({
         data: {
           phone: contact.includes('@') ? null : contact,
           email: contact.includes('@') ? contact : null,
-          name: contact,
+          name: contact, // Temporary name
           role: 'customer',
         },
       });
@@ -100,10 +102,101 @@ export class AuthService {
       userId: user.id,
       action: 'AUTH_SUCCESS',
       resource: 'authentication',
-      details: JSON.stringify({ contact }),
+      details: JSON.stringify({ contact, method: 'otp' }),
     });
 
-    // Generate tokens
+    return this.generateTokens(user);
+  }
+
+  /**
+   * Register a new user with email and password
+   */
+  async register(data: { name: string; email: string; password: string; phone?: string; address?: string }): Promise<AuthToken> {
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: data.email },
+    });
+
+    if (existingUser) {
+      throw new Error('Email already registered');
+    }
+
+    // Check if phone already exists (if provided)
+    if (data.phone) {
+      const existingPhone = await prisma.user.findUnique({
+        where: { phone: data.phone },
+      });
+      if (existingPhone) {
+        throw new Error('Phone number already registered');
+      }
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        name: data.name,
+        email: data.email,
+        password: hashedPassword,
+        phone: data.phone || null,
+        address: data.address || null,
+        role: 'customer', // Default role
+      },
+    });
+
+    // Log successful registration
+    await auditService.log({
+      userId: user.id,
+      action: 'REGISTER_SUCCESS',
+      resource: 'authentication',
+      details: JSON.stringify({ email: data.email }),
+    });
+
+    return this.generateTokens(user);
+  }
+
+  /**
+   * Login with email and password
+   */
+  async login(data: { email: string; password: string }): Promise<AuthToken> {
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { email: data.email },
+    });
+
+    if (!user || !user.password) {
+      // Log failed attempt
+      await auditService.log({
+        action: 'AUTH_FAILED',
+        resource: 'authentication',
+        details: JSON.stringify({ email: data.email, reason: 'User not found or no password set' }),
+      });
+      throw new Error('Invalid email or password');
+    }
+
+    // Verify password
+    const isValid = await bcrypt.compare(data.password, user.password);
+
+    if (!isValid) {
+      // Log failed attempt
+      await auditService.log({
+        action: 'AUTH_FAILED',
+        resource: 'authentication',
+        details: JSON.stringify({ email: data.email, reason: 'Invalid password' }),
+      });
+      throw new Error('Invalid email or password');
+    }
+
+    // Log successful login
+    await auditService.log({
+      userId: user.id,
+      action: 'AUTH_SUCCESS',
+      resource: 'authentication',
+      details: JSON.stringify({ email: data.email, method: 'password' }),
+    });
+
     return this.generateTokens(user);
   }
 
