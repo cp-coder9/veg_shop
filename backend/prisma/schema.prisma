@@ -24,6 +24,13 @@ model User {
   payments      Payment[]
   credits       Credit[]
   notifications Notification[]
+  
+  // Driver relations
+  driverOrders  Order[]     @relation("DriverOrders")
+  driverLogs    DriverLog[]
+
+  // Packer relations
+  packerOrders  Order[]     @relation("PackerOrders")
 
   @@map("users")
 }
@@ -53,6 +60,7 @@ model Product {
   imageUrl    String?
   isAvailable Boolean   @default(true)
   isSeasonal  Boolean   @default(false)
+  packingType String    @default("box") // "box", "bag", "fridge", "freezer"
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -79,10 +87,40 @@ model Order {
   items    OrderItem[]
   invoice  Invoice?
 
+  // Driver fields
+  driverId      String?
+  driver        User?   @relation("DriverOrders", fields: [driverId], references: [id])
+  deliveryProof String? // "handed_to_client" | "left_at_door"
+  driverNotes   String?
+
+  // Packer fields
+  packerId      String?
+  packer        User?   @relation("PackerOrders", fields: [packerId], references: [id])
+
   @@index([customerId])
   @@index([deliveryDate])
   @@index([status])
+  @@index([driverId])
+  @@index([packerId])
   @@map("orders")
+}
+
+model DriverLog {
+  id         String   @id @default(uuid())
+  driverId   String
+  date       DateTime @default(now())
+  startKm    Decimal
+  endKm      Decimal?
+  vehicleReg String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  driver User @relation(fields: [driverId], references: [id])
+
+  @@index([driverId])
+  @@index([date])
+  @@map("driver_logs")
 }
 
 model OrderItem {

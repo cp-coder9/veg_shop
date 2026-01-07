@@ -118,7 +118,7 @@ router.post(
   '/register',
   validate(registerSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const data = req.body;
+    const data = req.body as { name: string; email: string; password: string; phone?: string; address?: string };
 
     try {
       const authToken = await authService.register(data);
@@ -146,7 +146,7 @@ router.post(
   loginAttemptLimiter,
   validate(loginSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const data = req.body;
+    const data = req.body as { email: string; password: string };
 
     try {
       const authToken = await authService.login(data);

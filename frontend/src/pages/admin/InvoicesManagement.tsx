@@ -3,14 +3,20 @@ import {
   useAdminInvoices,
   useInvoice,
   useDownloadInvoicePDF,
+  useSendPaymentLink,
 } from '../../hooks/useAdminInvoices';
 import { toNumber } from '../../lib/utils';
+import { toast } from 'react-hot-toast';
 
 export default function InvoicesManagement() {
   const [statusFilter, setStatusFilter] = useState('');
   const [startDateFilter, setStartDateFilter] = useState('');
   const [endDateFilter, setEndDateFilter] = useState('');
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  const [paymentLinkModal, setPaymentLinkModal] = useState<{ open: boolean; invoiceId: string | null }>({
+    open: false,
+    invoiceId: null,
+  });
 
   const filters = {
     status: statusFilter || undefined,
@@ -159,6 +165,14 @@ export default function InvoicesManagement() {
                       PDF
                     </button>
                   )}
+                  {invoice.status !== 'paid' && (
+                    <button
+                      onClick={() => setPaymentLinkModal({ open: true, invoiceId: invoice.id })}
+                      className="text-indigo-600 hover:text-indigo-900"
+                    >
+                      Link
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -213,6 +227,14 @@ export default function InvoicesManagement() {
                   PDF
                 </button>
               )}
+              {invoice.status !== 'paid' && (
+                <button
+                  onClick={() => setPaymentLinkModal({ open: true, invoiceId: invoice.id })}
+                  className="w-full sm:w-auto px-3 py-1 bg-indigo-50 text-indigo-600 rounded text-sm font-medium hover:bg-indigo-100"
+                >
+                  Pay Link
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -225,6 +247,80 @@ export default function InvoicesManagement() {
           onClose={() => setSelectedInvoiceId(null)}
         />
       )}
+
+      {/* Payment Link Modal */}
+      {paymentLinkModal.open && paymentLinkModal.invoiceId && (
+        <PaymentLinkModal
+          invoiceId={paymentLinkModal.invoiceId}
+          onClose={() => setPaymentLinkModal({ open: false, invoiceId: null })}
+        />
+      )}
+    </div>
+  );
+}
+
+function PaymentLinkModal({ invoiceId, onClose }: { invoiceId: string; onClose: () => void }) {
+  const sendLimit = useSendPaymentLink();
+  const [method, setMethod] = useState<'whatsapp' | 'email'>('whatsapp');
+
+  const handleSend = async () => {
+    try {
+      await sendLimit.mutateAsync({ invoiceId, method });
+      toast.success('Payment link sent!');
+      onClose();
+    } catch (error) {
+      toast.error('Failed to send link');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-sm">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Send Payment Link</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Choose how to send the payment link for this invoice.
+        </p>
+
+        <div className="space-y-3 mb-6">
+          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 target:border-green-500">
+            <input
+              type="radio"
+              name="method"
+              checked={method === 'whatsapp'}
+              onChange={() => setMethod('whatsapp')}
+              className="text-green-600 focus:ring-green-500"
+            />
+            <span className="text-gray-900 font-medium">WhatsApp</span>
+          </label>
+
+          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 target:border-green-500">
+            <input
+              type="radio"
+              name="method"
+              checked={method === 'email'}
+              onChange={() => setMethod('email')}
+              className="text-green-600 focus:ring-green-500"
+            />
+            <span className="text-gray-900 font-medium">Email</span>
+          </label>
+        </div>
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSend}
+            disabled={sendLimit.isPending}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+          >
+            {sendLimit.isPending ? 'Sending...' : 'Send Link'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

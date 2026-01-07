@@ -416,16 +416,73 @@ export class PaymentService {
     }
 
     // Create credit record
-    const credit = await prisma.credit.create({
-      data: {
-        customerId: data.customerId,
-        amount: new Decimal(totalCreditAmount),
-        reason: `Short delivery on order ${data.orderId}: ${creditDetails.join('; ')}`,
-        type: 'short_delivery',
-      },
-      include: {
-        customer: true,
-      },
+    const credit = await prisma.$transaction(async (tx) => {
+      // 1. Create the Short Delivery Credit (User gets money back)
+      const newCredit = await tx.credit.create({
+        data: {
+          customerId: data.customerId,
+          amount: new Decimal(totalCreditAmount),
+          reason: `Short delivery on order ${data.orderId}: ${creditDetails.join('; ')}`,
+          type: 'short_delivery',
+        },
+        include: {
+          customer: true,
+        },
+      });
+
+      // 2. Check if there's an existing invoice for this order
+      const invoice = await tx.invoice.findUnique({
+        where: { orderId: data.orderId },
+        include: { payments: true }
+      });
+
+      // If invoice exists and not fully paid, we can deduct this credit immediately
+      if (invoice && invoice.status !== 'paid' && invoice.status !== 'cancelled') {
+        // Calculate how much to deduct (cannot be more than the credit, and technically cannot be more than remaining invoice balance, 
+        // but typically short delivery implies removing that cost entirely).
+        // Since we are "Correcting" the invoice, we apply the full credit amount to reduce the total due.
+
+        const creditToApply = new Decimal(totalCreditAmount);
+
+        // a. Create an 'Applied' Credit transaction (User spends money to pay off invoice)
+        await tx.credit.create({
+          data: {
+            customerId: data.customerId,
+            amount: creditToApply.negated(), // Negative amount
+            reason: `Applied to invoice ${invoice.id} (Short Delivery Adjustment)`,
+            type: 'applied',
+          },
+        });
+
+        // b. Update Invoice: Increase creditApplied, Decrease Total
+        const currentTotal = invoice.total;
+        const newTotal = currentTotal.sub(creditToApply);
+        const newCreditApplied = invoice.creditApplied.add(creditToApply);
+
+        // Check if invoice is now Paid (Total Paid >= New Total)
+        const totalPaid = invoice.payments.reduce((sum, p) => sum.add(p.amount), new Decimal(0));
+        let newStatus = invoice.status;
+
+        if (totalPaid.gte(newTotal)) {
+          newStatus = 'paid';
+          // If they overpaid relative to the new total, that is handled by payments logic, 
+          // but here we just mark paid.
+        } else if (newTotal.eq(0)) {
+          newStatus = 'paid';
+        }
+
+        await tx.invoice.update({
+          where: { id: invoice.id },
+          data: {
+            total: newTotal,
+            creditApplied: newCreditApplied,
+            status: newStatus,
+            pdfUrl: null, // Force regeneration
+          },
+        });
+      }
+
+      return newCredit;
     });
 
     return credit;

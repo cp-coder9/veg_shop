@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { prisma } from '../lib/prisma.js';
-import { Order, OrderItem } from '@prisma/client';
+import { Order, OrderItem, Prisma } from '@prisma/client';
 import { notificationService } from './notification.service.js';
 
 export interface CreateOrderDto {
@@ -203,6 +203,16 @@ export class OrderService {
   }
 
   /**
+   * Update order details (e.g. packer assignment)
+   */
+  async updateOrder(id: string, data: Prisma.OrderUpdateInput): Promise<Order> {
+    return prisma.order.update({
+      where: { id },
+      data,
+    });
+  }
+
+  /**
    * Generate bulk order consolidation for supplier
    */
   async generateBulkOrder(weekStartDate: Date, bufferPercentage: number = 10): Promise<BulkOrder> {
@@ -351,19 +361,40 @@ export class OrderService {
   /**
    * Get all orders with optional limit and filtering
    */
-  async getOrders(options: { limit?: number; status?: string; deliveryDate?: string; customerId?: string } = {}): Promise<any[]> {
-    const { limit, status, deliveryDate, customerId } = options;
+  async getOrders(options: {
+    limit?: number;
+    status?: string;
+    deliveryDate?: string;
+    startDate?: string;
+    endDate?: string;
+    customerId?: string
+  } = {}): Promise<Array<Order & { customerName: string; totalAmount: number; items: unknown[] }>> {
+    const { limit, status, deliveryDate, startDate, endDate, customerId } = options;
 
-    const where: any = {};
+    const where: Prisma.OrderWhereInput = {};
     if (status) where.status = status;
-    if (deliveryDate) where.deliveryDate = new Date(deliveryDate);
+
+    // Exact date match (legacy support)
+    if (deliveryDate) {
+      where.deliveryDate = new Date(deliveryDate);
+    }
+
+    // Date range filtering
+    if (startDate || endDate) {
+      where.deliveryDate = {
+        ...((where.deliveryDate as Prisma.DateTimeFilter) || {}),
+        ...(startDate ? { gte: new Date(startDate) } : {}),
+        ...(endDate ? { lte: new Date(endDate) } : {}),
+      };
+    }
+
     if (customerId) where.customerId = customerId;
 
     const orders = await prisma.order.findMany({
       where,
       take: limit,
       orderBy: {
-        createdAt: 'desc',
+        deliveryDate: 'desc', // Changed from createdAt to deliveryDate for better logical ordering
       },
       include: {
         items: {

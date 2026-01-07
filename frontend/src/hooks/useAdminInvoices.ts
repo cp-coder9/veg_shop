@@ -16,7 +16,7 @@ export function useAdminInvoices(filters?: {
       if (filters?.status) params.append('status', filters.status);
       if (filters?.startDate) params.append('startDate', filters.startDate);
       if (filters?.endDate) params.append('endDate', filters.endDate);
-      
+
       const response = await api.get(`/invoices?${params.toString()}`);
       return response.data;
     },
@@ -51,7 +51,7 @@ export function useInvoice(id: string) {
 
 export function useGenerateInvoice() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (orderId: string) => {
       const response = await api.post(`/invoices/generate/${orderId}`);
@@ -70,7 +70,7 @@ export function useDownloadInvoicePDF() {
       const response = await api.get(`/invoices/${invoiceId}/pdf`, {
         responseType: 'blob',
       });
-      
+
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -79,6 +79,15 @@ export function useDownloadInvoicePDF() {
       document.body.appendChild(link);
       link.click();
       link.remove();
+    },
+  });
+}
+
+export function useSendPaymentLink() {
+  return useMutation({
+    mutationFn: async (data: { invoiceId: string; method: 'whatsapp' | 'email' }) => {
+      const response = await api.post('/payments/send-link', data);
+      return response.data;
     },
   });
 }

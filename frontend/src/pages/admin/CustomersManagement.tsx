@@ -9,6 +9,7 @@ export default function CustomersManagement() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'delivery' | 'collection'>('all');
+  const [alphabetFilter, setAlphabetFilter] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState<CreateCustomerRequest>({
@@ -24,16 +25,25 @@ export default function CustomersManagement() {
     const email = customer.email || '';
     const phone = customer.phone || '';
 
+    // 1. Search Term
     const matchesSearch =
       name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       phone.includes(searchTerm);
 
+    // 2. Delivery Filter
     const matchesDelivery =
       deliveryFilter === 'all' || customer.deliveryPreference === deliveryFilter;
 
-    return matchesSearch && matchesDelivery;
+    // 3. Alphabet Filter
+    const matchesAlphabet = alphabetFilter
+      ? name.toUpperCase().startsWith(alphabetFilter)
+      : true;
+
+    return matchesSearch && matchesDelivery && matchesAlphabet;
   });
+
+  const alphabet = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
 
   const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,6 +205,35 @@ export default function CustomersManagement() {
               <option value="collection">Collection</option>
             </select>
           </div>
+        </div>
+
+        {/* ABC Filter Bar */}
+        <div className="flex flex-wrap gap-1 border-t border-gray-100 pt-3 mt-4">
+          <button
+            onClick={() => setAlphabetFilter(null)}
+            className={`
+              px-2 py-1 text-xs font-semibold rounded-md transition-colors
+              ${!alphabetFilter
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
+            `}
+          >
+            ALL
+          </button>
+          {alphabet.map(letter => (
+            <button
+              key={letter}
+              onClick={() => setAlphabetFilter(letter)}
+              className={`
+                px-2 py-1 text-xs font-semibold rounded-md transition-colors
+                ${alphabetFilter === letter
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
+              `}
+            >
+              {letter}
+            </button>
+          ))}
         </div>
       </div>
 

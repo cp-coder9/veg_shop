@@ -21,6 +21,7 @@ import customerRoutes from './routes/customer.routes.js';
 import auditRoutes from './routes/audit.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
+import driverRoutes from './routes/driver.routes.js';
 import { schedulerService } from './services/scheduler.service.js';
 
 // Log configuration on startup
@@ -68,6 +69,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/driver', driverRoutes);
 
 // Start server with increased header size
 const server = app.listen(PORT, () => {

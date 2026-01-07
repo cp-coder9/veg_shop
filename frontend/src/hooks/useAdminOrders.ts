@@ -19,6 +19,8 @@ interface BulkOrder {
 
 export function useAdminOrders(filters?: {
   deliveryDate?: string;
+  startDate?: string;
+  endDate?: string;
   status?: string;
   customerId?: string;
 }) {
@@ -27,9 +29,11 @@ export function useAdminOrders(filters?: {
     queryFn: async () => {
       const params = new URLSearchParams();
       if (filters?.deliveryDate) params.append('deliveryDate', filters.deliveryDate);
+      if (filters?.startDate) params.append('startDate', filters.startDate);
+      if (filters?.endDate) params.append('endDate', filters.endDate);
       if (filters?.status) params.append('status', filters.status);
       if (filters?.customerId) params.append('customerId', filters.customerId);
-      
+
       const response = await api.get(`/orders?${params.toString()}`);
       return response.data;
     },
@@ -49,7 +53,7 @@ export function useOrder(id: string) {
 
 export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: Order['status'] }) => {
       const response = await api.patch(`/orders/${id}/status`, { status });

@@ -16,8 +16,9 @@ const createProductSchema = z.object({
   unit: z.enum(PRODUCT_UNITS),
   description: z.string().optional(),
   imageUrl: z.string().url().optional().or(z.literal('')),
-  isAvailable: z.boolean(),
-  isSeasonal: z.boolean(),
+  isAvailable: z.boolean().optional(),
+  isSeasonal: z.boolean().optional(),
+  packingType: z.enum(['box', 'bag', 'fridge', 'freezer']).optional(),
 });
 
 const updateProductSchema = z.object({
@@ -29,6 +30,7 @@ const updateProductSchema = z.object({
   imageUrl: z.string().url().optional().or(z.literal('')),
   isAvailable: z.boolean().optional(),
   isSeasonal: z.boolean().optional(),
+  packingType: z.enum(['box', 'bag', 'fridge', 'freezer']).optional(),
 });
 
 /**

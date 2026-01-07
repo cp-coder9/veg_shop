@@ -321,12 +321,14 @@ router.patch('/:id/status', authenticate, requireAdmin, asyncHandler(async (req:
  */
 router.get('/', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { status, deliveryDate, customerId } = req.query;
+    const { status, deliveryDate, startDate, endDate, customerId } = req.query;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
 
     const orders = await orderService.getOrders({
       status: status as string,
       deliveryDate: deliveryDate as string,
+      startDate: startDate as string,
+      endDate: endDate as string,
       customerId: customerId as string,
       limit,
     });

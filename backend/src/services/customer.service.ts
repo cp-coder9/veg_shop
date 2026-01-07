@@ -133,6 +133,22 @@ export class CustomerService {
       },
       orderBy: {
         name: 'asc',
+        orderBy: {
+          name: 'asc',
+        },
+      });
+  }
+
+  /**
+   * Get users by role
+   */
+  async getUsersByRole(role: string): Promise<User[]> {
+    return prisma.user.findMany({
+      where: {
+        role,
+      },
+      orderBy: {
+        name: 'asc',
       },
     });
   }
@@ -171,7 +187,7 @@ export class CustomerService {
   /**
    * Get customer dashboard summary data
    */
-  async getCustomerDashboard(id: string) {
+  async getCustomerDashboard(id: string): Promise<unknown> {
     const customer = await this.getCustomer(id);
 
     if (!customer) {
@@ -264,7 +280,7 @@ export class CustomerService {
   /**
    * Get customer payment history
    */
-  async getCustomerPayments(id: string) {
+  async getCustomerPayments(id: string): Promise<unknown[]> {
     const payments = await prisma.payment.findMany({
       where: { customerId: id },
       include: {

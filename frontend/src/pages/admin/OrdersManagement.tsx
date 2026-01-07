@@ -5,22 +5,37 @@ import {
   useOrder,
   useUpdateOrderStatus,
   useGenerateBulkOrder,
+  useGenerateBulkOrder,
 } from '../../hooks/useAdminOrders';
 import { useGenerateInvoice } from '../../hooks/useAdminInvoices';
+import { useAdminUsers } from '../../hooks/useAdminUsers';
 
 export default function OrdersManagement() {
   const [deliveryDateFilter, setDeliveryDateFilter] = useState('');
+  const [startDateFilter, setStartDateFilter] = useState('');
+  const [endDateFilter, setEndDateFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [showBulkOrderModal, setShowBulkOrderModal] = useState(false);
 
   const filters = {
     deliveryDate: deliveryDateFilter || undefined,
+    startDate: startDateFilter || undefined,
+    endDate: endDateFilter || undefined,
     status: statusFilter || undefined,
   };
 
   const { data: orders, isLoading } = useAdminOrders(filters);
+  const { data: packers } = useAdminUsers('packer');
   const updateOrderStatus = useUpdateOrderStatus();
+  const updateOrder = useMutation({
+    mutationFn: async ({ id, packerId }: { id: string; packerId: string | null }) => {
+      await api.patch(`/orders/${id}`, { packerId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] });
+    }
+  });
 
   const handleStatusChange = async (orderId: string, status: Order['status']) => {
     await updateOrderStatus.mutateAsync({ id: orderId, status });
@@ -46,17 +61,48 @@ export default function OrdersManagement() {
         </button>
       </div>
 
-      {/* Filters */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Delivery Date
+              Specific Date
             </label>
             <input
               type="date"
               value={deliveryDateFilter}
-              onChange={(e) => setDeliveryDateFilter(e.target.value)}
+              onChange={(e) => {
+                setDeliveryDateFilter(e.target.value);
+                setStartDateFilter('');
+                setEndDateFilter('');
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Start Date
+            </label>
+            <input
+              type="date"
+              value={startDateFilter}
+              onChange={(e) => {
+                setStartDateFilter(e.target.value);
+                setDeliveryDateFilter('');
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              End Date
+            </label>
+            <input
+              type="date"
+              value={endDateFilter}
+              onChange={(e) => {
+                setEndDateFilter(e.target.value);
+                setDeliveryDateFilter('');
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
@@ -102,6 +148,9 @@ export default function OrdersManagement() {
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Packer
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Items
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -135,6 +184,20 @@ export default function OrdersManagement() {
                       <option value="packed">Packed</option>
                       <option value="delivered">Delivered</option>
                       <option value="cancelled">Cancelled</option>
+                    </select>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <select
+                      value={order.packerId || ''}
+                      onChange={(e) => updateOrder.mutate({ id: order.id, packerId: e.target.value || null })}
+                      className="text-sm border border-gray-300 rounded px-2 py-1 w-32"
+                    >
+                      <option value="">Unassigned</option>
+                      {packers?.map((packer) => (
+                        <option key={packer.id} value={packer.id}>
+                          {packer.name}
+                        </option>
+                      ))}
                     </select>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

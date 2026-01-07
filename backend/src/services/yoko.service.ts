@@ -74,14 +74,14 @@ export class YokoService {
     }
 
     /**
-     * For online checkout, Yoko often uses a redirect/link. 
-     * This method would generate a checkout link if using Yoko Checkout.
+     * Generate a payment page URL for an invoice
+     * Since we might not have a dynamic link capability configured, we'll route to our frontend payment page.
      */
-    async createCheckoutLink(_amountInCents: number, _currency = 'ZAR', _metadata: Record<string, unknown> = {}): Promise<void> {
-        // This would typically involve Yoko's checkout API
-        // For now, we'll keep it simple with the charge API if tokens are handled on frontend
-        console.log('Checkout link functionality to be implemented if required');
-        await Promise.resolve();
+    getPaymentPageUrl(invoiceId: string, _amount: number): string {
+        // Construct a URL to the frontend payment page
+        // Ensure VITE_APP_URL is set in environment, or fallback to localhost
+        const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        return `${baseUrl}/payment/${invoiceId}`;
     }
 }
 

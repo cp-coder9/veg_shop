@@ -2,7 +2,10 @@ import { Router, Request, Response } from 'express';
 import { reportService } from '../services/report.service.js';
 import { orderService } from '../services/order.service.js';
 import { authenticate, requireAdmin } from '../middleware/auth.middleware.js';
-import { asyncHandler } from '../utils/async-handler.js';
+import { reportService } from '../services/report.service.js';
+import { orderService } from '../services/order.service.js';
+import { customerService } from '../services/customer.service.js';
+import { authenticate, requireAdmin } from '../middleware/auth.middleware.js';
 
 const router = Router();
 

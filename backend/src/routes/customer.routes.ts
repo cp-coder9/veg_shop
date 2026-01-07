@@ -190,7 +190,7 @@ router.get('/me', authenticate, asyncHandler(async (req: Request, res: Response)
 router.get('/me/dashboard', authenticate, asyncHandler(async (req: Request, res: Response) => {
   try {
     const customerId = req.user!.userId;
-    const dashboardData = await customerService.getCustomerDashboard(customerId);
+    const dashboardData = await customerService.getCustomerDashboard(customerId) as Record<string, unknown>;
     return res.json(dashboardData);
   } catch (error) {
     console.error('Error fetching customer dashboard:', error);

@@ -830,6 +830,75 @@ export class NotificationService {
   }
 
   /**
+   * Send Manual Payment Link
+   */
+  async sendPaymentLink(
+    invoiceId: string,
+    link: string,
+    amount: number,
+    method: 'whatsapp' | 'email'
+  ): Promise<void> {
+    const invoice = await prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: { customer: true }
+    });
+
+    if (!invoice || !invoice.customer) {
+      throw new Error('Invoice or customer not found');
+    }
+
+    const { customer } = invoice;
+    const formattedAmount = Number(amount).toFixed(2);
+
+    if (method === 'whatsapp' && customer.phone) {
+      const message = `Hi ${customer.name},\n\nPlease find your payment link for Invoice #${invoice.id.substring(0, 8)} (R${formattedAmount}):\n${link}\n\nThank you for your business!`;
+
+      const notification = await this.createNotification(
+        customer.id,
+        'payment_reminder',
+        'whatsapp',
+        message
+      );
+
+      try {
+        await this.sendWhatsAppMessage(customer.phone, message);
+        await this.updateNotificationStatus(notification.id, 'sent', new Date());
+      } catch (error) {
+        await this.updateNotificationStatus(notification.id, 'failed');
+        throw error;
+      }
+    } else if (method === 'email' && customer.email) {
+      const htmlContent = `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>Payment Link</h2>
+          <p>Hi ${customer.name},</p>
+          <p>Please click the button below to pay for Invoice #${invoice.id.substring(0, 8)} (R${formattedAmount}):</p>
+          <a href="${link}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Pay Now (R${formattedAmount})</a>
+          <p>Or use this link: <a href="${link}">${link}</a></p>
+          <p>Thank you!</p>
+        </div>
+      `;
+
+      const notification = await this.createNotification(
+        customer.id,
+        'payment_reminder',
+        'email',
+        htmlContent
+      );
+
+      try {
+        await this.sendEmailMessage(customer.email, `Payment Link for Invoice #${invoice.id.substring(0, 8)}`, htmlContent);
+        await this.updateNotificationStatus(notification.id, 'sent', new Date());
+      } catch (error) {
+        await this.updateNotificationStatus(notification.id, 'failed');
+        throw error;
+      }
+    } else {
+      throw new Error(`Customer does not have a ${method} contact set up.`);
+    }
+  }
+
+  /**
    * Generate WhatsApp product list
    */
   private generateProductListWhatsApp(products: ProductInfo[]): string {

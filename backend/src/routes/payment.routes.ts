@@ -3,10 +3,13 @@ import { paymentService } from '../services/payment.service.js';
 import { authenticate, requireAdmin } from '../middleware/auth.middleware.js';
 import { auditLog } from '../middleware/audit.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
+import { prisma } from '../lib/prisma.js';
 import { z } from 'zod';
 
-const router = Router();
+import { yokoService } from '../services/yoko.service.js';
+import { notificationService } from '../services/notification.service.js';
 
+const router = Router();
 // Validation schemas
 const recordPaymentSchema = z.object({
   invoiceId: z.string().uuid(),
@@ -18,6 +21,38 @@ const recordPaymentSchema = z.object({
 });
 
 
+
+// Send payment link
+router.post('/send-link', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+  const { invoiceId, method } = req.body; // method: 'whatsapp' | 'email'
+
+  if (!invoiceId || !method) {
+    return res.status(400).json({
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Invoice ID and method are required',
+      },
+    });
+  }
+
+  const invoice = await prisma.invoice.findUnique({
+    where: { id: invoiceId },
+  });
+
+  if (!invoice) {
+    return res.status(404).json({
+      error: {
+        code: 'NOT_FOUND',
+        message: 'Invoice not found',
+      },
+    });
+  }
+
+  const link = yokoService.getPaymentPageUrl(invoice.id, Number(invoice.total));
+  await notificationService.sendPaymentLink(invoice.id, link, Number(invoice.total), method);
+
+  return res.json({ success: true, message: `Payment link sent via ${method}` });
+}));
 
 /**
  * POST /api/payments

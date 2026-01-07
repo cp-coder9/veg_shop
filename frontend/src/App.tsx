@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './stores/authStore';
 import Layout from './components/layout/Layout';
 import AdminLayout from './components/layout/AdminLayout';
+import DriverLayout from './layouts/DriverLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
 import HomePage from './pages/HomePage';
@@ -27,7 +28,10 @@ import ReportsManagement from './pages/admin/ReportsManagement';
 import CustomersManagement from './pages/admin/CustomersManagement';
 import CustomerDetail from './pages/admin/CustomerDetail';
 import AdminProfile from './pages/admin/AdminProfile';
+import CustomerDetail from './pages/admin/CustomerDetail';
+import AdminProfile from './pages/admin/AdminProfile';
 import SettingsPage from './pages/admin/SettingsPage';
+import DriverDashboard from './pages/driver/DriverDashboard';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -132,6 +136,18 @@ function App() {
             <Route path="/admin/customers/:customerId" element={<CustomerDetail />} />
             <Route path="/admin/settings" element={<SettingsPage />} />
             <Route path="/admin/profile" element={<AdminProfile />} />
+          </Route>
+
+          {/* Driver Routes */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <DriverLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/driver" element={<DriverDashboard />} />
+            <Route path="/driver/logs" element={<div className="p-4">Logbook Page (Coming Soon)</div>} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -144,6 +144,9 @@ export default function ProductsManagement() {
                 Unit
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Packing
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -174,6 +177,9 @@ export default function ProductsManagement() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {product.unit}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
+                  {product.packingType || 'box'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
@@ -281,6 +287,7 @@ export default function ProductsManagement() {
                 imageUrl: data.imageUrl,
                 isAvailable: data.isAvailable!,
                 isSeasonal: data.isSeasonal!,
+                packingType: data.packingType!,
               };
               await createProduct.mutateAsync(createData);
             }
@@ -316,6 +323,7 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
     imageUrl: product?.imageUrl || '',
     isAvailable: product?.isAvailable ?? true,
     isSeasonal: product?.isSeasonal ?? false,
+    packingType: product?.packingType || 'box',
   });
 
   const [showAddCategory, setShowAddCategory] = useState(false);

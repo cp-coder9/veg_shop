@@ -10,6 +10,7 @@ export interface Product {
   imageUrl: string | null;
   isAvailable: boolean;
   isSeasonal: boolean;
+  packingType: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -27,6 +28,7 @@ export interface Order {
   deliveryAddress: string | null;
   specialInstructions: string | null;
   status: 'pending' | 'confirmed' | 'packed' | 'delivered' | 'cancelled';
+  packerId?: string | null;
   items: {
     id: string;
     productId: string;
