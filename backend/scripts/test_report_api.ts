@@ -28,7 +28,7 @@ async function main() {
         console.log('Report Response:', JSON.stringify(reportRes.data, null, 2));
 
     } catch (error) {
-        console.error('Error:', error.response ? error.response.data : error.message);
+        console.error('Error:', (error as any).response ? (error as any).response.data : (error as any).message);
     }
 }
 

@@ -11,6 +11,7 @@ export interface Product {
   isAvailable: boolean;
   isSeasonal: boolean;
   packingType: string;
+  supplierId?: string | null;
   createdAt: string;
   updatedAt: string;
 }

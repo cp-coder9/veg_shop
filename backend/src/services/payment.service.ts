@@ -127,8 +127,6 @@ export class PaymentService {
       if (totalPaid >= invoiceTotal) {
         newStatus = 'paid';
 
-        // If overpayment, create credit
-        const overpayment = totalPaid - invoiceTotal;
         if (overpayment > 0) {
           await tx.credit.create({
             data: {
@@ -143,6 +141,18 @@ export class PaymentService {
         newStatus = 'partial';
       } else {
         newStatus = 'unpaid';
+      }
+
+      // Award Loyalty Points for EFT
+      if (data.method === 'eft') {
+        await tx.user.update({
+          where: { id: data.customerId },
+          data: {
+            loyaltyPoints: {
+              increment: 5
+            }
+          }
+        });
       }
 
       // Update invoice status

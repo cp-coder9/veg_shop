@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -16,6 +16,7 @@ model User {
   address            String?
   deliveryPreference String    @default("delivery")
   role               String    @default("customer")
+  loyaltyPoints      Int       @default(0)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -51,24 +52,39 @@ model ProductCategory {
 }
 
 model Product {
-  id          String    @id @default(uuid())
-  name        String    @unique
-  price       Decimal
+  id          String    @id @default(cuid())
+  name        String
+  price       Decimal 
   category    String
   unit        String
   description String?
   imageUrl    String?
+  isAvailable Boolean  @default(true)
+  isSeasonal  Boolean  @default(false)
+  packingType String   @default("box") // "box", "bag", "fridge", "freezer"
+  supplierId  String?
+  supplier    Supplier? @relation(fields: [supplierId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categoryRef   ProductCategory? @relation(fields: [category], references: [key]) // Kept existing relation
+  orderItems    OrderItem[] // Kept existing relation
+  priceHistory  PriceHistory[] // Kept existing relation
+
+  @@map("products")
+  @@index([supplierId])
+}
+
+model Supplier {
+  id          String    @id @default(cuid())
+  name        String
+  contactInfo String?
   isAvailable Boolean   @default(true)
-  isSeasonal  Boolean   @default(false)
-  packingType String    @default("box") // "box", "bag", "fridge", "freezer"
+  products    Product[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  categoryRef   ProductCategory? @relation(fields: [category], references: [key])
-  orderItems    OrderItem[]
-  priceHistory  PriceHistory[]
-
-  @@map("products")
+  @@map("suppliers")
 }
 
 model Order {

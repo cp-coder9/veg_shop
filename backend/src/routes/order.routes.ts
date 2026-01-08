@@ -274,6 +274,42 @@ router.post('/bulk/send', authenticate, requireAdmin, asyncHandler(async (req: R
 }));
 
 /**
+ * PATCH /api/orders/:id
+ * Update order details (admin only)
+ */
+router.patch('/:id', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schema = z.object({
+      packerId: z.string().nullable().optional(),
+    });
+
+    const data = schema.parse(req.body);
+
+    const order = await orderService.updateOrder(id, data as any);
+
+    return res.json(order);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid request data',
+          details: error.errors,
+        },
+      });
+    }
+    console.error('Update order error:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to update order',
+      },
+    });
+  }
+}));
+
+/**
  * PATCH /api/orders/:id/status
  * Update order status (admin only)
  */

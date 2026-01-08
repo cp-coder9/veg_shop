@@ -8,6 +8,7 @@ interface User {
   phone: string | null;
   address: string | null;
   role: 'customer' | 'admin';
+  loyaltyPoints?: number;
 }
 
 interface AuthState {
@@ -26,28 +27,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   accessToken: null,
   refreshToken: null,
   isLoading: true,
-  
+
   setUser: (user) => set({ user }),
-  
+
   setTokens: (accessToken, refreshToken) => {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
     set({ accessToken, refreshToken });
   },
-  
+
   logout: () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     set({ user: null, accessToken: null, refreshToken: null });
   },
-  
+
   initialize: async () => {
     const accessToken = localStorage.getItem('accessToken');
     const refreshToken = localStorage.getItem('refreshToken');
-    
+
     if (accessToken && refreshToken) {
       set({ accessToken, refreshToken });
-      
+
       try {
         // Fetch user profile to validate token
         const response = await api.get('/auth/me');

@@ -133,10 +133,8 @@ export class CustomerService {
       },
       orderBy: {
         name: 'asc',
-        orderBy: {
-          name: 'asc',
-        },
-      });
+      },
+    });
   }
 
   /**
