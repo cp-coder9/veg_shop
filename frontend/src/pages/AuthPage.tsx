@@ -293,6 +293,12 @@ export default function AuthPage() {
                                     <button onClick={() => handleDevLogin('john@example.com')} className="px-3 py-2 text-xs bg-gray-100 rounded hover:bg-gray-200">
                                         Login Customer
                                     </button>
+                                    <button onClick={() => handleDevLogin('packer@vegshop.com')} className="px-3 py-2 text-xs bg-gray-100 rounded hover:bg-gray-200">
+                                        Login Packer
+                                    </button>
+                                    <button onClick={() => handleDevLogin('driver@vegshop.com')} className="px-3 py-2 text-xs bg-gray-100 rounded hover:bg-gray-200">
+                                        Login Driver
+                                    </button>
                                 </div>
                             </div>
                         )}

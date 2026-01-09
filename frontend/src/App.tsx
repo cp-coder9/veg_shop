@@ -19,6 +19,7 @@ import DashboardPage from './pages/DashboardPage';
 import PaymentHistoryPage from './pages/PaymentHistoryPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ProductsManagement from './pages/admin/ProductsManagement';
+import SuppliersManagement from './pages/admin/SuppliersManagement';
 import OrdersManagement from './pages/admin/OrdersManagement';
 import InvoicesManagement from './pages/admin/InvoicesManagement';
 import PaymentsManagement from './pages/admin/PaymentsManagement';
@@ -127,6 +128,7 @@ function App() {
           >
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/products" element={<ProductsManagement />} />
+            <Route path="/admin/suppliers" element={<SuppliersManagement />} />
             <Route path="/admin/orders" element={<OrdersManagement />} />
             <Route path="/admin/invoices" element={<InvoicesManagement />} />
             <Route path="/admin/payments" element={<PaymentsManagement />} />

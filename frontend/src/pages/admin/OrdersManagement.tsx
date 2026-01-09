@@ -4,6 +4,7 @@ import {
   useAdminOrders,
   useOrder,
   useUpdateOrderStatus,
+  useUpdateOrder,
   useGenerateBulkOrder,
   useOrderWeeklyCollation,
   CollationItem,
@@ -20,7 +21,32 @@ export default function OrdersManagement() {
   const [showBulkOrderModal, setShowBulkOrderModal] = useState(false);
   const [showCollationModal, setShowCollationModal] = useState(false);
 
-  // ... existing code ...
+  const { data: orders, isLoading } = useAdminOrders({
+    deliveryDate: deliveryDateFilter || undefined,
+    startDate: startDateFilter || undefined,
+    endDate: endDateFilter || undefined,
+    status: statusFilter || undefined,
+  });
+
+  const { data: packers } = useAdminUsers('packer');
+  const updateStatus = useUpdateOrderStatus();
+  const updateOrder = useUpdateOrder();
+
+  const handleStatusChange = async (id: string, status: Order['status']) => {
+    try {
+      await updateStatus.mutateAsync({ id, status });
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div>

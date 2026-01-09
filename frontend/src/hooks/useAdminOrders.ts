@@ -75,6 +75,21 @@ export function useUpdateOrderStatus() {
   });
 }
 
+export function useUpdateOrder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: string; packerId?: string | null; driverId?: string | null; status?: Order['status'] }) => {
+      const response = await api.patch(`/orders/${id}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
+    },
+  });
+}
+
 export function useGenerateBulkOrder() {
   return useMutation({
     mutationFn: async (weekStartDate: string) => {
@@ -83,6 +98,7 @@ export function useGenerateBulkOrder() {
     },
   });
 }
+
 export function useOrderWeeklyCollation() {
   return useMutation({
     mutationFn: async (filters: { startDate: string; endDate: string }) => {

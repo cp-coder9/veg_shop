@@ -48,6 +48,46 @@ async function main() {
   ]);
   console.log(`✓ Created ${customers.length} sample customers`);
 
+  // Create packer user
+  console.log('Creating packer user...');
+  const packerPassword = await bcrypt.hash('packer123', 10);
+  const packer = await prisma.user.upsert({
+    where: { email: 'packer@vegshop.com' },
+    update: {
+      password: packerPassword,
+    },
+    create: {
+      email: 'packer@vegshop.com',
+      phone: '+27822222222',
+      name: 'Packer User',
+      address: 'Packer Station 1',
+      role: 'packer',
+      password: packerPassword,
+      deliveryPreference: 'collection',
+    },
+  });
+  console.log(`✓ Packer user created: ${packer.email}`);
+
+  // Create driver user
+  console.log('Creating driver user...');
+  const driverPassword = await bcrypt.hash('driver123', 10);
+  const driver = await prisma.user.upsert({
+    where: { email: 'driver@vegshop.com' },
+    update: {
+      password: driverPassword,
+    },
+    create: {
+      email: 'driver@vegshop.com',
+      phone: '+27823333333',
+      name: 'Driver User',
+      address: 'Driver Depot',
+      role: 'driver',
+      password: driverPassword,
+      deliveryPreference: 'delivery',
+    },
+  });
+  console.log(`✓ Driver user created: ${driver.email}`);
+
   // Create product categories
   console.log('Creating product categories...');
   const categories = [

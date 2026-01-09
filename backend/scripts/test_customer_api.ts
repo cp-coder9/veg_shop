@@ -28,7 +28,7 @@ async function main() {
         console.log('Customers Found:', customerRes.data.length);
         console.log('First Customer:', JSON.stringify(customerRes.data[0], null, 2));
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error:', error.response ? error.response.data : error.message);
     }
 }
