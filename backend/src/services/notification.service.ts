@@ -1031,6 +1031,84 @@ export class NotificationService {
       }
     }
   }
+
+  /**
+   * Send notification for missing/short items in an order
+   */
+  async sendMissingItemsNotification(orderId: string, missingItems: { productName: string; quantity: number; unit: string }[]): Promise<void> {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { customer: true },
+    });
+
+    if (!order || !order.customer) {
+      console.error(`Order ${orderId} not found for missing items notification`);
+      return;
+    }
+
+    const customer = order.customer;
+    const message = this.generateMissingItemsWhatsApp(customer.name, order.id, missingItems);
+
+    if (customer.phone) {
+      const notification = await this.createNotification(
+        customer.id,
+        'other',
+        'whatsapp',
+        message
+      );
+
+      try {
+        await this.sendWhatsAppMessage(customer.phone, message);
+        await this.updateNotificationStatus(notification.id, 'sent', new Date());
+      } catch (error) {
+        console.error(`Failed to send missing items notification to ${customer.id}:`, error);
+        await this.updateNotificationStatus(notification.id, 'failed');
+      }
+    }
+  }
+
+  private generateMissingItemsWhatsApp(customerName: string, orderId: string, items: { productName: string; quantity: number; unit: string }[]): string {
+    let message = `Hi ${customerName},\n\n`;
+    message += `Regarding your order #${orderId.substring(0, 8)}:\n`;
+    message += `Unfortunately, the following items are short/out of stock and have been removed from your invoice:\n\n`;
+
+    items.forEach(item => {
+      message += `• ${item.productName} (${item.quantity} ${item.unit})\n`;
+    });
+
+    message += `\nYour account has been credited for these items. We apologize for the inconvenience!\n`;
+    return message;
+  }
+
+  /**
+   * Send reminder for incomplete/pending order
+   */
+  async sendOrderReminder(orderId: string): Promise<void> {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { customer: true },
+    });
+
+    if (!order || !order.customer) return;
+
+    const message = `Hi ${order.customer.name},\n\nWe noticed your order #${order.id.substring(0, 8)} is still pending. Is there anything we can help you with to complete it?\n\nPlease let us know if you need assistance!`;
+
+    if (order.customer.phone) {
+      const notification = await this.createNotification(
+        order.customerId,
+        'other',
+        'whatsapp',
+        message
+      );
+
+      try {
+        await this.sendWhatsAppMessage(order.customer.phone, message);
+        await this.updateNotificationStatus(notification.id, 'sent', new Date());
+      } catch (error) {
+        console.error(`Failed to send order reminder to ${order.customer.id}`, error);
+      }
+    }
+  }
 }
 
 export const notificationService = new NotificationService();

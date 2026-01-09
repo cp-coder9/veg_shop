@@ -3,6 +3,7 @@ import api from '../lib/api';
 
 export interface DashboardStats {
     creditBalance: number;
+    loyaltyPoints: number;
     outstandingAmount: number;
     outstandingInvoices: number;
     totalOrders: number;

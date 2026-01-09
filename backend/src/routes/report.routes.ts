@@ -161,4 +161,23 @@ router.get('/customers', authenticate, requireAdmin, asyncHandler(async (req: Re
   }
 }));
 
+/**
+ * GET /api/admin/reports/collation
+ * Generate weekly procurement list
+ */
+router.get('/collation', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+  const { startDate, endDate } = req.query;
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Start date and end date are required' } });
+  }
+
+  const report = await reportService.generateOrderCollationReport(
+    new Date(startDate as string),
+    new Date(endDate as string)
+  );
+
+  return res.json(report);
+}));
+
 export default router;

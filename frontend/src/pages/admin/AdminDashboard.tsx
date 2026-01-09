@@ -116,6 +116,27 @@ export default function AdminDashboard() {
       description: 'View customer information',
       color: 'hover:border-purple-500 hover:bg-purple-50',
     },
+    {
+      name: 'System Reports',
+      path: '/admin/reports',
+      icon: '📊',
+      description: 'Sales and analytics reports',
+      color: 'hover:border-indigo-500 hover:bg-indigo-50',
+    },
+    {
+      name: 'Packing Lists',
+      path: '/admin/packing-lists',
+      icon: '📦',
+      description: 'Generate warehouse lists',
+      color: 'hover:border-orange-500 hover:bg-orange-50',
+    },
+    {
+      name: 'Audit Logs',
+      path: '/admin/audit',
+      icon: '🔍',
+      description: 'Track system activity',
+      color: 'hover:border-rose-500 hover:bg-rose-50',
+    },
   ];
 
   return (

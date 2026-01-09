@@ -22,6 +22,17 @@ export default function CartPage() {
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [showCheckout, setShowCheckout] = useState(false);
 
+  // Auto-select delivery option based on address
+  useEffect(() => {
+    if (user?.address && !deliveryLocation) {
+      const address = user.address.toLowerCase();
+      if (address.includes('paarl')) setDeliveryLocation('delivery_paarl');
+      else if (address.includes('val de vie')) setDeliveryLocation('delivery_valdevie');
+      else if (address.includes('pearl valley')) setDeliveryLocation('delivery_pearlvalley');
+      else if (address.includes('wellington')) setDeliveryLocation('delivery_wellington');
+    }
+  }, [user?.address, deliveryLocation]);
+
   // Delivery Options & Fees
   const deliveryOptions = [
     { id: 'collection_uitgezocht', label: 'Collection: Uitgezocht Estate (>1pm)', fee: 0, type: 'collection' },
@@ -281,54 +292,70 @@ export default function CartPage() {
 
   // Cart View
   return (
-    <div>
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Shopping Cart</h1>
+    <div className="max-w-4xl mx-auto">
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">Review Your Order</h1>
+      <p className="text-gray-600 mb-8">Please check your items before finalizing delivery details.</p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-4">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+        <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="font-semibold text-gray-700">Your Checklist ({items.reduce((acc, i) => acc + i.quantity, 0)} items)</h2>
+          <Link to="/products" className="text-sm text-green-600 hover:text-green-700 font-medium">+ Add More Items</Link>
+        </div>
+
+        <div className="divide-y divide-gray-100">
           {cartProducts.map((item) => (
-            <CartItem
-              key={item.product.id}
-              product={item.product}
-              quantity={item.quantity}
-            />
+            <div key={item.product.id} className="p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors group">
+              {/* Checkbox visual cue */}
+              <div className="flex-shrink-0 text-green-500 opacity-20 group-hover:opacity-100 transition-opacity">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+
+              <div className="flex-grow">
+                <h3 className="font-medium text-gray-900">{item.product.name}</h3>
+                <p className="text-sm text-gray-500">{item.product.category} &bull; R{toNumber(item.product.price).toFixed(2)} / {item.product.unit}</p>
+              </div>
+
+              {/* Quantity Controls (reusing CartItem logic visually here or importing CartItem) */}
+              {/* For now, we reuse CartItem but wrapper makes it look like a list */}
+              <div className="flex-shrink-0">
+                <CartItem
+                  product={item.product}
+                  quantity={item.quantity}
+                  compact={true} // Assuming CartItem accepts compact props or we rely on parent styling
+                />
+              </div>
+
+              <div className="flex-shrink-0 w-24 text-right font-medium text-gray-900">
+                R{(toNumber(item.product.price) * item.quantity).toFixed(2)}
+              </div>
+            </div>
           ))}
         </div>
 
-        <div className="lg:col-span-1">
-          <div className="bg-white p-6 rounded-lg shadow sticky top-4">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Order Summary</h2>
-
-            <div className="space-y-2 mb-4">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Items ({items.length}):</span>
-                <span className="font-semibold">R{productTotal.toFixed(2)}</span>
-              </div>
-            </div>
-
-            <div className="border-t pt-4 mb-6">
-              <div className="flex justify-between text-lg font-bold">
-                <span>Total (Excl. Delivery):</span>
-                <span>R{productTotal.toFixed(2)}</span>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Delivery fees calculated at checkout</p>
-            </div>
-
-            <button
-              onClick={() => setShowCheckout(true)}
-              className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition"
-            >
-              Proceed to Checkout
-            </button>
-
-            <Link
-              to="/products"
-              className="block text-center text-green-600 hover:text-green-700 mt-4"
-            >
-              Continue Shopping
-            </Link>
+        <div className="p-6 bg-gray-50 border-t border-gray-200">
+          <div className="flex justify-between items-center text-xl font-bold text-gray-900">
+            <span>Total Estimated</span>
+            <span>R{productTotal.toFixed(2)}</span>
           </div>
+          <p className="text-right text-sm text-gray-500 mt-1">Excludes delivery fees</p>
         </div>
+      </div>
+
+      <div className="flex justify-end gap-4">
+        <Link
+          to="/products"
+          className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition"
+        >
+          Back to Shop
+        </Link>
+        <button
+          onClick={() => setShowCheckout(true)}
+          className="px-8 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 shadow-lg hover:shadow-xl transition transform hover:-translate-y-0.5"
+        >
+          Proceed to Checkout &rarr;
+        </button>
       </div>
     </div>
   );

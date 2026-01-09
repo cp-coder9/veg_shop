@@ -126,6 +126,7 @@ export class PaymentService {
       let newStatus: string;
       if (totalPaid >= invoiceTotal) {
         newStatus = 'paid';
+        const overpayment = totalPaid - invoiceTotal;
 
         if (overpayment > 0) {
           await tx.credit.create({

@@ -17,6 +17,15 @@ interface BulkOrder {
   generatedAt: string;
 }
 
+export interface CollationItem {
+  productId: string;
+  productName: string;
+  totalQuantity: number;
+  unit: string;
+  orderCount: number;
+  categoryId: string;
+}
+
 export function useAdminOrders(filters?: {
   deliveryDate?: string;
   startDate?: string;
@@ -71,6 +80,14 @@ export function useGenerateBulkOrder() {
     mutationFn: async (weekStartDate: string) => {
       const response = await api.post('/orders/bulk', { weekStartDate });
       return response.data as BulkOrder;
+    },
+  });
+}
+export function useOrderWeeklyCollation() {
+  return useMutation({
+    mutationFn: async (filters: { startDate: string; endDate: string }) => {
+      const response = await api.get('/orders/collation', { params: filters });
+      return response.data as CollationItem[];
     },
   });
 }

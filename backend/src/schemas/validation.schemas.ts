@@ -94,7 +94,7 @@ export const createOrderSchema = z.object({
   specialInstructions: z.string().max(1000, 'Special instructions too long').optional(),
   items: z.array(
     z.object({
-      productId: z.string().uuid('Invalid product ID'),
+      productId: z.string(),
       quantity: z.number().int('Quantity must be an integer').positive('Quantity must be positive').max(1000, 'Quantity too high'),
     })
   ).min(1, 'Order must contain at least one item'),
@@ -150,7 +150,7 @@ export const shortDeliverySchema = z.object({
   orderId: z.string().min(1, 'Order ID is required'), // Accept custom format (NAME-YYYYMMDD-XXXX)
   items: z.array(
     z.object({
-      productId: z.string().uuid('Invalid product ID'),
+      productId: z.string(),
       quantityShort: z.number().int('Quantity must be an integer').positive('Quantity must be positive'),
     })
   ).min(1, 'Must specify at least one short item'),

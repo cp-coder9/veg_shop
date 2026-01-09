@@ -392,6 +392,71 @@ export class ReportService {
       activeCustomers,
     };
   }
+
+  /**
+   * Generate weekly order collation (procurement list)
+   * Aggregates all pending/confirmed orders for the upcoming delivery cycle
+   */
+  async generateOrderCollationReport(startDate: Date, endDate: Date): Promise<Array<{
+    productId: string;
+    productName: string;
+    unit: string;
+    categoryId: string;
+    totalQuantity: number;
+    orderCount: number;
+  }>> {
+    const orderItems = await prisma.orderItem.findMany({
+      where: {
+        order: {
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+          status: {
+            in: ['pending', 'confirmed'],
+          },
+        },
+      },
+      include: {
+        product: true,
+      },
+    });
+
+    const productMap = new Map<string, {
+      productId: string;
+      productName: string;
+      unit: string;
+      categoryId: string;
+      totalQuantity: number;
+      orderCount: number;
+    }>();
+
+    orderItems.forEach(item => {
+      const existing = productMap.get(item.productId);
+
+      if (existing) {
+        existing.totalQuantity += item.quantity;
+        existing.orderCount += 1; // Increment count of orders containing this item
+      } else {
+        productMap.set(item.productId, {
+          productId: item.productId,
+          productName: item.product.name,
+          unit: item.product.unit,
+          categoryId: item.product.category,
+          totalQuantity: item.quantity,
+          orderCount: 1,
+        });
+      }
+    });
+
+    // Convert to array and sort by category then name
+    return Array.from(productMap.values()).sort((a, b) => {
+      if (a.categoryId !== b.categoryId) {
+        return a.categoryId.localeCompare(b.categoryId);
+      }
+      return a.productName.localeCompare(b.productName);
+    });
+  }
 }
 
 export const reportService = new ReportService();

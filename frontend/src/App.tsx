@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './stores/authStore';
 import Layout from './components/layout/Layout';
@@ -26,12 +27,12 @@ import PackingListsManagement from './pages/admin/PackingListsManagement';
 import NotificationsManagement from './pages/admin/NotificationsManagement';
 import ReportsManagement from './pages/admin/ReportsManagement';
 import CustomersManagement from './pages/admin/CustomersManagement';
-import CustomerDetail from './pages/admin/CustomerDetail';
-import AdminProfile from './pages/admin/AdminProfile';
+import AuditManagement from './pages/admin/AuditManagement';
 import CustomerDetail from './pages/admin/CustomerDetail';
 import AdminProfile from './pages/admin/AdminProfile';
 import SettingsPage from './pages/admin/SettingsPage';
 import DriverDashboard from './pages/driver/DriverDashboard';
+import LogbookPage from './pages/driver/LogbookPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <Toaster position="top-right" />
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<AuthPage />} />
@@ -132,6 +134,7 @@ function App() {
             <Route path="/admin/packing-lists" element={<PackingListsManagement />} />
             <Route path="/admin/notifications" element={<NotificationsManagement />} />
             <Route path="/admin/reports" element={<ReportsManagement />} />
+            <Route path="/admin/audit" element={<AuditManagement />} />
             <Route path="/admin/customers" element={<CustomersManagement />} />
             <Route path="/admin/customers/:customerId" element={<CustomerDetail />} />
             <Route path="/admin/settings" element={<SettingsPage />} />
@@ -147,7 +150,7 @@ function App() {
             }
           >
             <Route path="/driver" element={<DriverDashboard />} />
-            <Route path="/driver/logs" element={<div className="p-4">Logbook Page (Coming Soon)</div>} />
+            <Route path="/driver/logs" element={<LogbookPage />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

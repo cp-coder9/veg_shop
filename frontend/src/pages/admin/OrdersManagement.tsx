@@ -5,7 +5,8 @@ import {
   useOrder,
   useUpdateOrderStatus,
   useGenerateBulkOrder,
-  useGenerateBulkOrder,
+  useOrderWeeklyCollation,
+  CollationItem,
 } from '../../hooks/useAdminOrders';
 import { useGenerateInvoice } from '../../hooks/useAdminInvoices';
 import { useAdminUsers } from '../../hooks/useAdminUsers';
@@ -17,48 +18,28 @@ export default function OrdersManagement() {
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [showBulkOrderModal, setShowBulkOrderModal] = useState(false);
+  const [showCollationModal, setShowCollationModal] = useState(false);
 
-  const filters = {
-    deliveryDate: deliveryDateFilter || undefined,
-    startDate: startDateFilter || undefined,
-    endDate: endDateFilter || undefined,
-    status: statusFilter || undefined,
-  };
-
-  const { data: orders, isLoading } = useAdminOrders(filters);
-  const { data: packers } = useAdminUsers('packer');
-  const updateOrderStatus = useUpdateOrderStatus();
-  const updateOrder = useMutation({
-    mutationFn: async ({ id, packerId }: { id: string; packerId: string | null }) => {
-      await api.patch(`/orders/${id}`, { packerId });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] });
-    }
-  });
-
-  const handleStatusChange = async (orderId: string, status: Order['status']) => {
-    await updateOrderStatus.mutateAsync({ id: orderId, status });
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-      </div>
-    );
-  }
+  // ... existing code ...
 
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Orders Management</h1>
-        <button
-          onClick={() => setShowBulkOrderModal(true)}
-          className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-        >
-          Generate Bulk Order
-        </button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => setShowCollationModal(true)}
+            className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Weekly Collation
+          </button>
+          <button
+            onClick={() => setShowBulkOrderModal(true)}
+            className="flex-1 sm:flex-none px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Generate Bulk Order
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-4 mb-6">
@@ -154,6 +135,9 @@ export default function OrdersManagement() {
                   Items
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Packing
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -202,6 +186,19 @@ export default function OrdersManagement() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {order.items.length} items
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div className="flex flex-col gap-1">
+                      {order.items.some(i => i.product.packingType === 'fridge') && (
+                        <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded w-fit uppercase">Fridge</span>
+                      )}
+                      {order.items.some(i => i.product.packingType === 'freezer') && (
+                        <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded w-fit uppercase">Freezer</span>
+                      )}
+                      {(!order.items.some(i => i.product.packingType === 'fridge' || i.product.packingType === 'freezer')) && (
+                        <span className="bg-gray-100 text-gray-800 text-[10px] font-bold px-1.5 py-0.5 rounded w-fit uppercase">Standard</span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button
@@ -286,6 +283,135 @@ export default function OrdersManagement() {
       {showBulkOrderModal && (
         <BulkOrderModal onClose={() => setShowBulkOrderModal(false)} />
       )}
+
+      {/* Collation Modal */}
+      {showCollationModal && (
+        <CollationModal onClose={() => setShowCollationModal(false)} />
+      )}
+    </div>
+  );
+}
+
+// ... OrderDetailModal ...
+
+interface CollationModalProps {
+  onClose: () => void;
+}
+
+function CollationModal({ onClose }: CollationModalProps) {
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [report, setReport] = useState<CollationItem[] | null>(null);
+  const generateCollation = useOrderWeeklyCollation();
+
+  const handleGenerate = async () => {
+    if (!startDate || !endDate) {
+      alert('Please select a date range');
+      return;
+    }
+    const result = await generateCollation.mutateAsync({ startDate, endDate });
+    setReport(result);
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 print:p-0 print:bg-white print:static">
+      <div className="bg-white rounded-lg p-4 md:p-6 w-full max-w-full mx-4 md:max-w-4xl max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:shadow-none">
+        <div className="flex justify-between items-center mb-6 print:hidden">
+          <h2 className="text-2xl font-bold text-gray-900">Weekly Collation Report</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Print Header */}
+        <div className="hidden print:block mb-8">
+          <h1 className="text-3xl font-bold">Weekly Procurement List</h1>
+          <p className="text-gray-600">Period: {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}</p>
+        </div>
+
+        {!report ? (
+          <div className="space-y-4 print:hidden">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleGenerate}
+                disabled={generateCollation.isPending}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {generateCollation.isPending ? 'Generating...' : 'Generate Report'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 border">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase border-r">Category</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase border-r">Product</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase border-r">Total Qty</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Orders</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {report.map((item, index) => (
+                    <tr key={`${item.productId}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="px-4 py-2 text-sm text-gray-500 border-r capitalize">{item.categoryId.replace('_', ' ')}</td>
+                      <td className="px-4 py-2 text-sm font-medium text-gray-900 border-r">{item.productName}</td>
+                      <td className="px-4 py-2 text-sm text-right text-gray-900 font-bold border-r">
+                        {item.totalQuantity} <span className="text-gray-500 font-normal">{item.unit}</span>
+                      </td>
+                      <td className="px-4 py-2 text-sm text-right text-gray-500">{item.orderCount}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-end gap-3 print:hidden">
+              <button
+                onClick={() => setReport(null)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              >
+                Back
+              </button>
+              <button
+                onClick={handlePrint}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                Print Report
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -342,6 +468,14 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
             {order.specialInstructions && (
               <p className="text-sm text-gray-600">Instructions: {order.specialInstructions}</p>
             )}
+            <div className="mt-2 flex gap-2">
+              {order.items.some(i => i.product.packingType === 'fridge') && (
+                <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-full uppercase">Requires Fridge</span>
+              )}
+              {order.items.some(i => i.product.packingType === 'freezer') && (
+                <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-2 py-1 rounded-full uppercase">Requires Freezer</span>
+              )}
+            </div>
           </div>
 
           {/* Order Info */}

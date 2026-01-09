@@ -55,6 +55,43 @@ export class SchedulerService {
             })();
         });
 
+        // 3. Incomplete Order Reminders (Daily at 10:00)
+        // 0 10 * * *
+        cron.schedule('0 10 * * *', (): void => {
+            void (async (): Promise<void> => {
+                console.log('📅 Running Incomplete Order Reminders...');
+                try {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+
+                    const dayBeforeYesterday = new Date();
+                    dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 2);
+
+                    // Find pending orders created between 24h and 48h ago
+                    const pendingOrders = await prisma.order.findMany({
+                        where: {
+                            status: 'pending',
+                            createdAt: {
+                                lt: yesterday,
+                                gt: dayBeforeYesterday,
+                            },
+                        },
+                    });
+
+                    for (const order of pendingOrders) {
+                        try {
+                            await notificationService.sendOrderReminder(order.id);
+                        } catch (error) {
+                            console.error(`❌ Failed to send reminder for order ${order.id}:`, error);
+                        }
+                    }
+                    console.log(`✅ Sent reminders for ${pendingOrders.length} incomplete orders`);
+                } catch (error) {
+                    console.error('❌ Failed to process incomplete order reminders:', error);
+                }
+            })();
+        });
+
         console.log('✅ Scheduler Service initialized');
     }
 }

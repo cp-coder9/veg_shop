@@ -14,7 +14,7 @@ const createOrderSchema = z.object({
   specialInstructions: z.string().optional(),
   deliveryFees: z.number().optional().default(0),
   items: z.array(z.object({
-    productId: z.string().uuid(),
+    productId: z.string(),
     quantity: z.number().int().positive(),
   })).min(1, 'At least one item is required'),
 });
@@ -282,6 +282,8 @@ router.patch('/:id', authenticate, requireAdmin, asyncHandler(async (req: Reques
     const { id } = req.params;
     const schema = z.object({
       packerId: z.string().nullable().optional(),
+      driverId: z.string().nullable().optional(),
+      status: z.enum(['pending', 'confirmed', 'packed', 'delivered', 'out_for_delivery', 'cancelled']).optional(),
     });
 
     const data = schema.parse(req.body);
@@ -376,6 +378,72 @@ router.get('/', authenticate, requireAdmin, asyncHandler(async (req: Request, re
       error: {
         code: 'INTERNAL_ERROR',
         message: 'Failed to fetch orders',
+      },
+    });
+  }
+}));
+
+/**
+ * GET /api/orders/delivery/:date/packing-list
+ * Get packing list grouped by area (admin only)
+ */
+router.get('/delivery/:date/packing-list', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { date } = req.params;
+    const deliveryDate = new Date(date);
+
+    if (isNaN(deliveryDate.getTime())) {
+      return res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid date format',
+        },
+      });
+    }
+
+    const packingList = await orderService.getPackingList(deliveryDate);
+
+    return res.json(packingList);
+  } catch (error) {
+    console.error('Get packing list error:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to fetch packing list',
+      },
+    });
+  }
+}));
+
+/**
+ * GET /api/orders/collation
+ * Get collation report for procurement (admin only)
+ */
+router.get('/collation', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Start date and end date are required',
+        },
+      });
+    }
+
+    const report = await orderService.getCollationReport(
+      new Date(startDate as string),
+      new Date(endDate as string)
+    );
+
+    return res.json(report);
+  } catch (error) {
+    console.error('Get collation report error:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to fetch collation report',
       },
     });
   }

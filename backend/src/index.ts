@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import { env, logConfig } from './config/env.js';
 import { apiLimiter } from './middleware/rate-limit.middleware.js';
+
+// Route Imports
 import authRoutes from './routes/auth.routes.js';
 import categoryRoutes from './routes/category.routes.js';
 import productRoutes from './routes/product.routes.js';
@@ -9,11 +11,6 @@ import orderRoutes from './routes/order.routes.js';
 import invoiceRoutes from './routes/invoice.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import creditRoutes from './routes/credits.routes.js';
-
-// ... (existing imports)
-
-// ... (later in file)
-// Imports fixed
 import packingListRoutes from './routes/packing-list.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import reportRoutes from './routes/report.routes.js';
@@ -71,7 +68,7 @@ app.use('/api/audit-logs', auditRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/driver', driverRoutes);
 
-// Start server with increased header size
+// Start server
 const server = app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`📝 Environment: ${env.NODE_ENV}`);
@@ -84,3 +81,5 @@ const server = app.listen(PORT, () => {
 // Increase header size limit
 server.maxHeadersCount = 0;
 server.headersTimeout = 60000;
+
+export default app;

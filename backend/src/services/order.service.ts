@@ -18,6 +18,13 @@ export interface CreateOrderDto {
   }[];
 }
 
+const DELIVERY_FEES = [
+  { keyword: 'paarl', fee: 35 },
+  { keyword: 'val de vie', fee: 35 },
+  { keyword: 'wellington', fee: 50 },
+  { keyword: 'pearl valley', fee: 50 },
+];
+
 export interface OrderWithItems extends Order {
   items: OrderItem[];
 }
@@ -35,6 +42,15 @@ export interface BulkOrder {
   weekStartDate: Date;
   items: BulkOrderItem[];
   generatedAt: Date;
+}
+
+export interface CollationItem {
+  productId: string;
+  productName: string;
+  totalQuantity: number;
+  unit: string;
+  orderCount: number;
+  categoryId: string;
 }
 
 export class OrderService {
@@ -86,6 +102,16 @@ export class OrderService {
 
     // Create the order and items in a transaction
     const order = await prisma.$transaction(async (tx) => {
+      // Calculate delivery fee if not provided or to override
+      let deliveryFees = data.deliveryFees ?? 0;
+      if (data.deliveryMethod === 'delivery' && data.deliveryAddress) {
+        const address = data.deliveryAddress.toLowerCase();
+        const matchedOption = DELIVERY_FEES.find(opt => address.includes(opt.keyword));
+        if (matchedOption) {
+          deliveryFees = matchedOption.fee;
+        }
+      }
+
       const newOrder = await tx.order.create({
         data: {
           id: customId,
@@ -94,7 +120,7 @@ export class OrderService {
           deliveryMethod: data.deliveryMethod,
           deliveryAddress: data.deliveryAddress,
           specialInstructions: data.specialInstructions,
-          deliveryFees: data.deliveryFees || 0,
+          deliveryFees: deliveryFees,
           status: 'pending',
           items: {
             create: data.items.map(item => {
@@ -185,6 +211,43 @@ export class OrderService {
     });
 
     return orders as OrderWithItems[];
+  }
+
+  /**
+   * Get packing list grouped by delivery area
+   */
+  async getPackingList(date: Date): Promise<Record<string, OrderWithItems[]>> {
+    const orders = await this.getOrdersByDeliveryDate(date);
+
+    // Group by area (assuming format "Street, Suburb, City" -> take Suburb)
+    // Heuristic: Take the part before the last comma, or the whole string if no comma
+    const grouped: Record<string, OrderWithItems[]> = {};
+
+    orders.forEach(order => {
+      const address = order.deliveryAddress || 'Unknown Area';
+      const parts = address.split(',').map(p => p.trim());
+
+      // Try to get suburb (2nd to last item) or just use the last item if only 1 exists
+      // Adjust heuristic based on actual data usage. Defaulting to 'General' if empty.
+      let area = 'General';
+      if (parts.length > 1) {
+        area = parts[parts.length - 2] || parts[parts.length - 1];
+      } else if (parts.length === 1 && parts[0]) {
+        area = parts[0];
+      }
+
+      if (!grouped[area]) {
+        grouped[area] = [];
+      }
+      grouped[area].push(order);
+    });
+
+    // Sort orders within each area by address
+    Object.keys(grouped).forEach(area => {
+      grouped[area].sort((a, b) => (a.deliveryAddress || '').localeCompare(b.deliveryAddress || ''));
+    });
+
+    return grouped;
   }
 
   /**
@@ -418,6 +481,55 @@ export class OrderService {
         totalAmount,
       };
     });
+  }
+
+  /**
+   * Get collation report for procurement
+   */
+  async getCollationReport(startDate: Date, endDate: Date): Promise<CollationItem[]> {
+    const orders = await prisma.order.findMany({
+      where: {
+        deliveryDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+        status: {
+          not: 'cancelled',
+        },
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    const collationMap = new Map<string, CollationItem>();
+
+    orders.forEach(order => {
+      order.items.forEach(item => {
+        const existing = collationMap.get(item.productId);
+        if (existing) {
+          existing.totalQuantity += item.quantity;
+          existing.orderCount += 1;
+        } else {
+          collationMap.set(item.productId, {
+            productId: item.productId,
+            productName: item.product.name,
+            totalQuantity: item.quantity,
+            unit: item.product.unit,
+            orderCount: 1,
+            categoryId: item.product.categoryId,
+          });
+        }
+      });
+    });
+
+    return Array.from(collationMap.values()).sort((a, b) =>
+      a.categoryId.localeCompare(b.categoryId) || a.productName.localeCompare(b.productName)
+    );
   }
 }
 

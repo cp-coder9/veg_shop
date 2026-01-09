@@ -12,7 +12,7 @@ const shortDeliverySchema = z.object({
     orderId: z.string().min(1), // Accept custom format (NAME-YYYYMMDD-XXXX)
     customerId: z.string().uuid(),
     items: z.array(z.object({
-        productId: z.string().uuid(),
+        productId: z.string(),
         quantityShort: z.number().int().positive(),
     })).min(1),
 });

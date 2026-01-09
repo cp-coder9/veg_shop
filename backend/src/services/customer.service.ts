@@ -248,6 +248,7 @@ export class CustomerService {
       },
       stats: {
         creditBalance,
+        loyaltyPoints: customer.loyaltyPoints,
         outstandingAmount,
         outstandingInvoices: invoices.length,
         totalOrders: totalOrdersCount,

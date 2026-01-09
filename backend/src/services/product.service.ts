@@ -140,6 +140,10 @@ export class ProductService {
     return prisma.product.findMany({
       where: {
         isAvailable: true,
+        OR: [
+          { supplierId: null },
+          { supplier: { isAvailable: true } }
+        ]
       },
       orderBy: [
         { category: 'asc' },

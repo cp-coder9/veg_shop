@@ -53,7 +53,7 @@ model ProductCategory {
 
 model Product {
   id          String    @id @default(cuid())
-  name        String
+  name        String    @unique
   price       Decimal 
   category    String
   unit        String
@@ -77,7 +77,7 @@ model Product {
 
 model Supplier {
   id          String    @id @default(cuid())
-  name        String
+  name        String    @unique
   contactInfo String?
   isAvailable Boolean   @default(true)
   products    Product[]

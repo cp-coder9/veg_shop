@@ -5,9 +5,10 @@ import { toNumber } from '../lib/utils';
 interface CartItemProps {
   product: Product;
   quantity: number;
+  compact?: boolean;
 }
 
-export default function CartItem({ product, quantity }: CartItemProps) {
+export default function CartItem({ product, quantity, compact = false }: CartItemProps) {
   const { updateQuantity, removeItem } = useCartStore();
 
   const handleQuantityChange = (newQuantity: number) => {
@@ -20,8 +21,43 @@ export default function CartItem({ product, quantity }: CartItemProps) {
 
   const subtotal = toNumber(product.price) * quantity;
 
+  if (compact) {
+    return (
+      <div className="flex items-center gap-3">
+        {/* Compact View: Just Controls */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleQuantityChange(quantity - 1)}
+            className="w-7 h-7 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center font-bold"
+          >
+            -
+          </button>
+          <span className="w-8 text-center font-medium text-gray-900">{quantity}</span>
+          <button
+            onClick={() => handleQuantityChange(quantity + 1)}
+            className="w-7 h-7 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center font-bold"
+          >
+            +
+          </button>
+        </div>
+
+        <button
+          onClick={() => removeItem(product.id)}
+          className="text-gray-400 hover:text-red-600 p-1"
+          title="Remove item"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    );
+  }
+
+  // Full View
   return (
     <div className="flex items-center gap-4 bg-white p-4 rounded-lg shadow">
+      {/* Existing Full Layout */}
       <div className="w-20 h-20 bg-gray-200 rounded flex-shrink-0">
         {product.imageUrl ? (
           <img
