@@ -32,8 +32,11 @@ import AuditManagement from './pages/admin/AuditManagement';
 import CustomerDetail from './pages/admin/CustomerDetail';
 import AdminProfile from './pages/admin/AdminProfile';
 import SettingsPage from './pages/admin/SettingsPage';
+import StaffManagement from './pages/admin/StaffManagement';
 import DriverDashboard from './pages/driver/DriverDashboard';
 import LogbookPage from './pages/driver/LogbookPage';
+import PackerDashboard from './pages/packer/PackerDashboard';
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -139,6 +142,7 @@ function App() {
             <Route path="/admin/audit" element={<AuditManagement />} />
             <Route path="/admin/customers" element={<CustomersManagement />} />
             <Route path="/admin/customers/:customerId" element={<CustomerDetail />} />
+            <Route path="/admin/staff" element={<StaffManagement />} />
             <Route path="/admin/settings" element={<SettingsPage />} />
             <Route path="/admin/profile" element={<AdminProfile />} />
           </Route>
@@ -153,6 +157,18 @@ function App() {
           >
             <Route path="/driver" element={<DriverDashboard />} />
             <Route path="/driver/logs" element={<LogbookPage />} />
+          </Route>
+
+          {/* Packer Routes */}
+          <Route
+            element={
+              <ProtectedAdminRoute>
+                <DriverLayout />
+                {/* Reusing DriverLayout for simple mobile wrapper, or just use Outlet */}
+              </ProtectedAdminRoute>
+            }
+          >
+            <Route path="/packer" element={<PackerDashboard />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

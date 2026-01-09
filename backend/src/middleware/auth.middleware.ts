@@ -74,6 +74,34 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction): v
 };
 
 /**
+ * Middleware to check if user has staff role (admin, packer, or driver)
+ */
+export const requireStaff = (req: Request, res: Response, next: NextFunction): void => {
+  if (!req.user) {
+    res.status(401).json({
+      error: {
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required',
+      },
+    });
+    return;
+  }
+
+  const staffRoles = ['admin', 'packer', 'driver'];
+  if (!staffRoles.includes(req.user.role)) {
+    res.status(403).json({
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Staff access required',
+      },
+    });
+    return;
+  }
+
+  next();
+};
+
+/**
  * Middleware to check if user is accessing their own resources
  */
 export const requireOwnerOrAdmin = (req: Request, res: Response, next: NextFunction): void => {

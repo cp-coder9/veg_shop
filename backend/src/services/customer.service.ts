@@ -308,6 +308,67 @@ export class CustomerService {
       } : null,
     }));
   }
+  /**
+   * Create a new staff member (admin only)
+   */
+  async createStaff(data: { name: string; email: string; phone?: string; role: 'packer' | 'driver'; password?: string }): Promise<User> {
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: data.email },
+          data.phone ? { phone: data.phone } : {}
+        ].filter(Boolean) as any
+      }
+    });
+
+    if (existingUser) {
+      throw new Error('User with this email or phone already exists');
+    }
+
+    // Default password if not provided
+    const password = data.password || 'vegshop123';
+    // Dynamic import for bcrypt to avoid top-level issues if not needed elsewhere immediately, 
+    // though typically standard import is fine. Sticking to pattern.
+    const bcrypt = await import('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    return prisma.user.create({
+      data: {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        role: data.role,
+        password: hashedPassword,
+        deliveryPreference: 'collection', // Default for staff
+      }
+    });
+  }
+
+  /**
+   * Update staff member
+   */
+  async updateStaff(id: string, data: { name?: string; email?: string; phone?: string; role?: 'packer' | 'driver'; password?: string }): Promise<User> {
+    const updateData: any = { ...data };
+
+    if (data.password) {
+      const bcrypt = await import('bcryptjs');
+      updateData.password = await bcrypt.hash(data.password, 10);
+    }
+
+    return prisma.user.update({
+      where: { id },
+      data: updateData
+    });
+  }
+
+  /**
+   * Delete staff member
+   */
+  async deleteStaff(id: string): Promise<User> {
+    return prisma.user.delete({
+      where: { id }
+    });
+  }
 }
 
 export const customerService = new CustomerService();

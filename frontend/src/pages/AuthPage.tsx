@@ -41,15 +41,28 @@ export default function AuthPage() {
         }
     };
 
+    const handleNavigationByRole = (role: string) => {
+        switch (role) {
+            case 'admin':
+                navigate('/admin');
+                break;
+            case 'driver':
+                navigate('/driver');
+                break;
+            case 'packer':
+                navigate('/packer');
+                break;
+            default:
+                navigate('/dashboard');
+                break;
+        }
+    };
+
     const handleEmailLoginSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             const data = await verifyLogin.mutateAsync({ email: loginEmail, password: loginPassword });
-            if (data.user.role === 'admin') {
-                navigate('/admin');
-            } else {
-                navigate('/dashboard');
-            }
+            handleNavigationByRole(data.user.role);
         } catch (error) {
             console.error('Login failed:', error);
         }
@@ -65,12 +78,7 @@ export default function AuthPage() {
                 phone: regPhone || undefined,
                 address: regAddress || undefined,
             });
-            // Registration successful, redirect
-            if (data.user.role === 'admin') {
-                navigate('/admin');
-            } else {
-                navigate('/dashboard');
-            }
+            handleNavigationByRole(data.user.role);
         } catch (error) {
             console.error('Registration failed:', error);
         }
@@ -78,8 +86,8 @@ export default function AuthPage() {
 
     const handleDevLogin = async (email: string) => {
         try {
-            await devLogin.mutateAsync({ email });
-            navigate('/dashboard'); // Default to dashboard, maybe need check
+            const data = await devLogin.mutateAsync({ email });
+            handleNavigationByRole(data.user.role);
         } catch (error) {
             console.error('Failed to dev login:', error);
         }

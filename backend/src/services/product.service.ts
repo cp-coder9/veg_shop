@@ -10,6 +10,7 @@ export interface CreateProductDto {
   imageUrl?: string;
   isAvailable: boolean;
   isSeasonal: boolean;
+  supplierId?: string | null;
 }
 
 export interface UpdateProductDto {
@@ -21,6 +22,7 @@ export interface UpdateProductDto {
   imageUrl?: string;
   isAvailable?: boolean;
   isSeasonal?: boolean;
+  supplierId?: string | null;
 }
 
 export interface ProductFilters {
@@ -44,6 +46,7 @@ export class ProductService {
         imageUrl: data.imageUrl,
         isAvailable: data.isAvailable,
         isSeasonal: data.isSeasonal,
+        supplierId: data.supplierId,
       },
     });
 

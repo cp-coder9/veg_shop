@@ -12,25 +12,34 @@ import { useCategories, useCreateCategory } from '../../hooks/useCategories';
 import { useUploadImage } from '../../hooks/useUpload';
 import { useSuppliers } from '../../hooks/useSuppliers';
 import { toNumber } from '../../lib/utils';
+import SupplierModal from '../../components/admin/SupplierModal';
+import api from '../../lib/api';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function ProductsManagement() {
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [availabilityFilter, setAvailabilityFilter] = useState<string>('');
   const [showProductModal, setShowProductModal] = useState(false);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [showWhatsAppList, setShowWhatsAppList] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingSupplier, setEditingSupplier] = useState<{ id: string; name: string; contactInfo: string | null; isAvailable: boolean } | null>(null);
+  const [targetSupplierId, setTargetSupplierId] = useState<string | null>(null); // For pre-filling supplier in Add Product
 
   const filters = {
     category: categoryFilter || undefined,
     isAvailable: availabilityFilter ? availabilityFilter === 'true' : undefined,
   };
 
-  const { data: products, isLoading } = useAdminProducts(filters);
+  const { data: products, isLoading: productsLoading } = useAdminProducts(filters);
   const { data: categories } = useCategories();
+  const { data: suppliers, isLoading: suppliersLoading } = useSuppliers();
+
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
   const { data: whatsappList, refetch: fetchWhatsAppList } = useWhatsAppProductList();
+  const queryClient = useQueryClient();
 
   // Merge default and API categories
   const allCategories = useMemo(() => {
@@ -41,17 +50,47 @@ export default function ProductsManagement() {
     return merged;
   }, [categories]);
 
-  const handleOpenModal = (product?: Product) => {
+  // Group products by supplier
+  const groupedProducts = useMemo(() => {
+    if (!products) return {};
+    const groups: Record<string, Product[]> = {};
+
+    // Initialize groups for all available suppliers
+    suppliers?.forEach(supplier => {
+      groups[supplier.id] = [];
+    });
+    // Add "In-house / No Supplier" group
+    groups['null'] = [];
+
+    products.forEach(product => {
+      const supplierId = product.supplierId || 'null';
+      if (!groups[supplierId]) {
+        groups[supplierId] = []; // Should be initialized, but just in case
+      }
+      groups[supplierId].push(product);
+    });
+
+    return groups;
+  }, [products, suppliers]);
+
+  const handleOpenProductModal = (product?: Product, supplierId?: string) => {
     setEditingProduct(product || null);
+    if (supplierId && !product) {
+      // Pre-fill supplier if adding new to a group
+      setTargetSupplierId(supplierId);
+    } else {
+      setTargetSupplierId(null);
+    }
     setShowProductModal(true);
   };
 
-  const handleCloseModal = () => {
+  const handleCloseProductModal = () => {
     setShowProductModal(false);
     setEditingProduct(null);
+    setTargetSupplierId(null);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteProduct = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       await deleteProduct.mutateAsync(id);
     }
@@ -62,7 +101,39 @@ export default function ProductsManagement() {
     setShowWhatsAppList(true);
   };
 
-  if (isLoading) {
+  // Supplier Modal Handlers
+  const handleEditSupplier = (supplier: any) => {
+    setEditingSupplier(supplier);
+    setShowSupplierModal(true);
+  };
+
+  const handleAddSupplier = () => {
+    setEditingSupplier(null);
+    setShowSupplierModal(true);
+  };
+
+  const createSupplierMutation = useMutation({
+    mutationFn: async (data: { name: string; contactInfo: string }) => {
+      await api.post('/admin/suppliers', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] });
+      setShowSupplierModal(false);
+    },
+  });
+
+  const updateSupplierMutation = useMutation({
+    mutationFn: async (data: { id: string; name: string; contactInfo: string }) => {
+      await api.put(`/admin/suppliers/${data.id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] });
+      setShowSupplierModal(false);
+      setEditingSupplier(null);
+    },
+  });
+
+  if (productsLoading || suppliersLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
@@ -82,10 +153,16 @@ export default function ProductsManagement() {
             Generate WhatsApp List
           </button>
           <button
-            onClick={() => handleOpenModal()}
+            onClick={handleAddSupplier}
+            className="w-full sm:w-auto px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+          >
+            Add Supplier
+          </button>
+          <button
+            onClick={() => handleOpenProductModal()}
             className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
           >
-            Add Product
+            Add Product (General)
           </button>
         </div>
       </div>
@@ -127,142 +204,32 @@ export default function ProductsManagement() {
         </div>
       </div>
 
-      {/* Products Table - Desktop */}
-      <div className="hidden md:block bg-white rounded-lg shadow-md overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Category
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Price
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Unit
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Packing
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {products?.map((product) => (
-              <tr key={product.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {product.name}
-                      </div>
-                      {product.isSeasonal && (
-                        <span className="text-xs text-orange-600">Seasonal</span>
-                      )}
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {allCategories[product.category] || product.category}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  R {toNumber(product.price).toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {product.unit}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
-                  {product.packingType || 'box'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.isAvailable
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                      }`}
-                  >
-                    {product.isAvailable ? 'Available' : 'Unavailable'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => handleOpenModal(product)}
-                    className="text-blue-600 hover:text-blue-900 mr-4"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(product.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <div className="space-y-8">
+        {/* Render In-house products first */}
+        <SupplierSection
+          title="In-house / No Supplier"
+          products={groupedProducts['null'] || []}
+          allCategories={allCategories}
+          onEditProduct={handleOpenProductModal}
+          onDeleteProduct={handleDeleteProduct}
+          onAddProduct={() => handleOpenProductModal(undefined, undefined)}
+          isAvailable={true}
+        />
 
-      {/* Products Cards - Mobile */}
-      <div className="md:hidden space-y-4">
-        {products?.map((product) => (
-          <div key={product.id} className="bg-white p-4 rounded-lg shadow space-y-3">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-bold text-gray-900">{product.name}</p>
-                {product.isSeasonal && (
-                  <span className="text-xs text-orange-600 font-medium">Seasonal</span>
-                )}
-              </div>
-              <span
-                className={`px-2 py-1 text-xs font-semibold rounded-full ${product.isAvailable
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800'
-                  }`}
-              >
-                {product.isAvailable ? 'Available' : 'Unavailable'}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="text-gray-500">Category:</span>
-                <span className="ml-1 text-gray-900">
-                  {allCategories[product.category] || product.category}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-500">Price:</span>
-                <span className="ml-1 text-gray-900">
-                  R {toNumber(product.price).toFixed(2)} / {product.unit}
-                </span>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-gray-100 flex justify-end gap-3">
-              <button
-                onClick={() => handleOpenModal(product)}
-                className="px-3 py-1 bg-blue-50 text-blue-600 rounded text-sm font-medium hover:bg-blue-100"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => handleDelete(product.id)}
-                className="px-3 py-1 bg-red-50 text-red-600 rounded text-sm font-medium hover:bg-red-100"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
+        {/* Render Supplier Groups */}
+        {suppliers?.map(supplier => (
+          <SupplierSection
+            key={supplier.id}
+            title={supplier.name}
+            supplier={supplier}
+            products={groupedProducts[supplier.id] || []}
+            allCategories={allCategories}
+            onEditProduct={handleOpenProductModal}
+            onDeleteProduct={handleDeleteProduct}
+            onAddProduct={() => handleOpenProductModal(undefined, supplier.id)}
+            isAvailable={supplier.isAvailable}
+            onEditSupplier={() => handleEditSupplier(supplier)}
+          />
         ))}
       </div>
 
@@ -270,7 +237,8 @@ export default function ProductsManagement() {
       {showProductModal && (
         <ProductModal
           product={editingProduct}
-          onClose={handleCloseModal}
+          initialSupplierId={targetSupplierId} // Use separate prop for default
+          onClose={handleCloseProductModal}
           onSave={async (data) => {
             if (editingProduct) {
               const updateData = {
@@ -289,10 +257,26 @@ export default function ProductsManagement() {
                 isAvailable: data.isAvailable!,
                 isSeasonal: data.isSeasonal!,
                 packingType: data.packingType!,
+                supplierId: data.supplierId, // Should be passed from form
               };
               await createProduct.mutateAsync(createData);
             }
-            handleCloseModal();
+            handleCloseProductModal();
+          }}
+        />
+      )}
+
+      {/* Supplier Modal */}
+      {showSupplierModal && (
+        <SupplierModal
+          supplier={editingSupplier}
+          onClose={() => setShowSupplierModal(false)}
+          onSave={async (data) => {
+            if (editingSupplier) {
+              await updateSupplierMutation.mutateAsync({ ...data, id: editingSupplier.id });
+            } else {
+              await createSupplierMutation.mutateAsync(data);
+            }
           }}
         />
       )}
@@ -308,13 +292,139 @@ export default function ProductsManagement() {
   );
 }
 
+// Sub-component for rendering a supplier section
+function SupplierSection({
+  title,
+  supplier,
+  products,
+  allCategories,
+  onEditProduct,
+  onDeleteProduct,
+  onAddProduct,
+  isAvailable,
+  onEditSupplier
+}: {
+  title: string,
+  supplier?: any,
+  products: Product[],
+  allCategories: Record<string, string>,
+  onEditProduct: (p: Product) => void,
+  onDeleteProduct: (id: string) => void,
+  onAddProduct: () => void,
+  isAvailable: boolean
+  onEditSupplier?: () => void
+}) {
+  return (
+    <div className={`bg-white rounded-lg shadow-md overflow-hidden border-t-4 ${isAvailable ? 'border-t-green-500' : 'border-t-red-500'}`}>
+      <div className="bg-gray-50 px-6 py-4 flex flex-col sm:flex-row justify-between items-center border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+          {!isAvailable && <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">Inactive Supplier</span>}
+          {supplier && (
+            <button onClick={onEditSupplier} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+              Edit Supplier
+            </button>
+          )}
+        </div>
+        <button
+          onClick={onAddProduct}
+          className="mt-2 sm:mt-0 px-3 py-1.5 bg-green-100 text-green-700 rounded-md hover:bg-green-200 text-sm font-medium flex items-center gap-1"
+        >
+          + Add Product here
+        </button>
+      </div>
+
+      {/* Desktop Table */}
+      <div className="hidden md:block">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Packing</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {products.map((product) => (
+              <tr key={product.id}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                      {product.isSeasonal && <span className="text-xs text-orange-600">Seasonal</span>}
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {allCategories[product.category] || product.category}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  R {toNumber(product.price).toFixed(2)} / {product.unit}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
+                  {product.packingType || 'box'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {product.isAvailable ? 'Available' : 'Unavailable'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button onClick={() => onEditProduct(product)} className="text-blue-600 hover:text-blue-900 mr-4">Edit</button>
+                  <button onClick={() => onDeleteProduct(product.id)} className="text-red-600 hover:text-red-900">Delete</button>
+                </td>
+              </tr>
+            ))}
+            {products.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-6 py-8 text-center text-gray-500 italic">
+                  No products listed for this supplier using current filters.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden p-4 space-y-4">
+        {products.map((product) => (
+          <div key={product.id} className="bg-gray-50 p-4 rounded-lg border border-gray-100 space-y-3">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-bold text-gray-900">{product.name}</p>
+                {product.isSeasonal && <span className="text-xs text-orange-600 font-medium">Seasonal</span>}
+              </div>
+              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${product.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                {product.isAvailable ? 'Available' : 'Unavailable'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div><span className="text-gray-500">Price:</span> R {toNumber(product.price).toFixed(2)} / {product.unit}</div>
+              <div><span className="text-gray-500">Category:</span> {allCategories[product.category] || product.category}</div>
+            </div>
+            <div className="pt-2 border-t border-gray-200 flex justify-end gap-3">
+              <button onClick={() => onEditProduct(product)} className="text-blue-600 font-medium text-sm">Edit</button>
+              <button onClick={() => onDeleteProduct(product.id)} className="text-red-600 font-medium text-sm">Delete</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 interface ProductModalProps {
   product: Product | null;
+  initialSupplierId?: string | null;
   onClose: () => void;
   onSave: (data: UpdateProductDto) => Promise<void>;
 }
 
-function ProductModal({ product, onClose, onSave }: ProductModalProps) {
+function ProductModal({ product, initialSupplierId, onClose, onSave }: ProductModalProps) {
   const [formData, setFormData] = useState({
     name: product?.name || '',
     price: product?.price ? toNumber(product.price) : 0,
@@ -325,7 +435,7 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
     isAvailable: product?.isAvailable ?? true,
     isSeasonal: product?.isSeasonal ?? false,
     packingType: product?.packingType || 'box',
-    supplierId: product?.supplierId || null,
+    supplierId: product?.supplierId || initialSupplierId || null,
   });
 
   const [showAddCategory, setShowAddCategory] = useState(false);

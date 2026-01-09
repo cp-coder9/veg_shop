@@ -151,4 +151,54 @@ router.patch('/suppliers/:id/availability', authenticate, requireAdmin, asyncHan
     }
 }));
 
+/**
+ * POST /api/admin/users
+ * Create a new staff member
+ */
+router.post('/users', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+    try {
+        const staff = await customerService.createStaff(req.body);
+        return res.status(201).json(staff);
+    } catch (error) {
+        if (error instanceof Error && error.message.includes('exists')) {
+            return res.status(409).json({ error: { code: 'CONFLICT', message: error.message } });
+        }
+        console.error('Create staff error:', error);
+        return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to create staff' } });
+    }
+}));
+
+/**
+ * PATCH /api/admin/users/:id
+ * Update a staff member
+ */
+router.patch('/users/:id', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const staff = await customerService.updateStaff(id, req.body);
+        return res.json(staff);
+    } catch (error) {
+        console.error('Update staff error:', error);
+        return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to update staff' } });
+    }
+}));
+
+/**
+ * DELETE /api/admin/users/:id
+ * Delete a staff member
+ */
+router.delete('/users/:id', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        await customerService.deleteStaff(id);
+        return res.status(204).send();
+    } catch (error) {
+        if (error instanceof Error && error.message.includes('Foreign key constraint')) {
+            return res.status(400).json({ error: { code: 'CONSTRAINT_ERROR', message: 'Cannot delete staff with associated records' } });
+        }
+        console.error('Delete staff error:', error);
+        return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to delete staff' } });
+    }
+}));
+
 export default router;

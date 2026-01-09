@@ -253,16 +253,34 @@ export class OrderService {
   /**
    * Update order status
    */
-  async updateOrderStatus(id: string, status: string): Promise<Order> {
-    const validStatuses = ['pending', 'confirmed', 'packed', 'delivered', 'cancelled'];
+  async updateOrderStatus(id: string, status: string, userId?: string, role?: string): Promise<Order> {
+    const validStatuses = ['pending', 'confirmed', 'packed', 'delivered', 'cancelled', 'out_for_delivery'];
     if (!validStatuses.includes(status)) {
       throw new Error(`Invalid status: ${status}. Must be one of ${validStatuses.join(', ')}`);
     }
 
-    return prisma.order.update({
+    const updateData: any = { status };
+
+    // Auto-assign packer if packing
+    if (role === 'packer' && status === 'packed' && userId) {
+      updateData.packerId = userId;
+    }
+
+    const order = await prisma.order.update({
       where: { id },
-      data: { status },
+      data: updateData,
     });
+
+    // Send notification
+    try {
+      if (['packed', 'delivered', 'out_for_delivery', 'cancelled'].includes(status)) {
+        await notificationService.sendOrderStatusUpdate(id, status);
+      }
+    } catch (error) {
+      console.error(`Failed to send status notification for order ${id}:`, error);
+    }
+
+    return order;
   }
 
   /**
@@ -521,7 +539,7 @@ export class OrderService {
             totalQuantity: item.quantity,
             unit: item.product.unit,
             orderCount: 1,
-            categoryId: item.product.categoryId,
+            categoryId: item.product.category,
           });
         }
       });

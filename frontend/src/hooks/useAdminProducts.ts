@@ -11,6 +11,8 @@ interface CreateProductDto {
   imageUrl?: string;
   isAvailable: boolean;
   isSeasonal: boolean;
+  packingType: string;
+  supplierId?: string | null;
 }
 
 export interface UpdateProductDto {
@@ -22,6 +24,8 @@ export interface UpdateProductDto {
   imageUrl?: string;
   isAvailable?: boolean;
   isSeasonal?: boolean;
+  packingType?: string;
+  supplierId?: string | null;
 }
 
 export function useAdminProducts(filters?: {
@@ -34,7 +38,7 @@ export function useAdminProducts(filters?: {
       const params = new URLSearchParams();
       if (filters?.category) params.append('category', filters.category);
       if (filters?.isAvailable !== undefined) params.append('isAvailable', String(filters.isAvailable));
-      
+
       const response = await api.get(`/products?${params.toString()}`);
       return response.data;
     },
@@ -43,7 +47,7 @@ export function useAdminProducts(filters?: {
 
 export function useCreateProduct() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (data: CreateProductDto) => {
       const response = await api.post('/products', data);
@@ -58,7 +62,7 @@ export function useCreateProduct() {
 
 export function useUpdateProduct() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateProductDto }) => {
       const response = await api.put(`/products/${id}`, data);
@@ -73,7 +77,7 @@ export function useUpdateProduct() {
 
 export function useDeleteProduct() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (id: string) => {
       await api.delete(`/products/${id}`);

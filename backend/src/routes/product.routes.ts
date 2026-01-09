@@ -19,6 +19,7 @@ const createProductSchema = z.object({
   isAvailable: z.boolean().optional(),
   isSeasonal: z.boolean().optional(),
   packingType: z.enum(['box', 'bag', 'fridge', 'freezer']).optional(),
+  supplierId: z.string().nullable().optional(),
 });
 
 const updateProductSchema = z.object({
@@ -31,6 +32,7 @@ const updateProductSchema = z.object({
   isAvailable: z.boolean().optional(),
   isSeasonal: z.boolean().optional(),
   packingType: z.enum(['box', 'bag', 'fridge', 'freezer']).optional(),
+  supplierId: z.string().nullable().optional(),
 });
 
 /**
@@ -131,7 +133,11 @@ router.post('/', authenticate, requireAdmin, auditLog('CREATE', 'product'), asyn
   try {
     const data = createProductSchema.parse(req.body);
 
-    const product = await productService.createProduct(data);
+    const product = await productService.createProduct({
+      ...data,
+      isAvailable: data.isAvailable ?? true,
+      isSeasonal: data.isSeasonal ?? false,
+    });
 
     return res.status(201).json(product);
   } catch (error) {

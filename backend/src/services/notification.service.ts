@@ -74,7 +74,7 @@ export class NotificationService {
    */
   async createNotification(
     customerId: string,
-    type: 'order_confirmation' | 'payment_reminder' | 'product_list',
+    type: 'order_confirmation' | 'payment_reminder' | 'product_list' | 'order_status',
     method: 'whatsapp' | 'email',
     content: string
   ): Promise<Notification> {
@@ -660,6 +660,52 @@ export class NotificationService {
   }
 
   /**
+   * Send order status update to customer
+   */
+  async sendOrderStatusUpdate(orderId: string, status: string): Promise<void> {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        customer: true,
+      },
+    });
+
+    if (!order) return;
+
+    const customer = order.customer;
+    const statusMessage = this.getStatusMessage(status, order.id, order.deliveryMethod);
+
+    if (customer.phone) {
+      await this.sendWhatsAppMessage(customer.phone, statusMessage);
+      // Optional: Log notification to DB
+      await this.createNotification(customer.id, 'order_status', 'whatsapp', statusMessage);
+    }
+
+    if (customer.email) {
+      const subject = `Order Update: ${status.charAt(0).toUpperCase() + status.slice(1)}`;
+      await this.sendEmailMessage(customer.email, subject, `<p>${statusMessage.replace(/\n/g, '<br>')}</p>`);
+      // Optional: Log notification to DB
+      await this.createNotification(customer.id, 'order_status', 'email', statusMessage);
+    }
+  }
+
+  private getStatusMessage(status: string, orderId: string, deliveryMethod: string): string {
+    const method = deliveryMethod === 'delivery' ? 'delivery' : 'collection';
+    switch (status) {
+      case 'packed':
+        return `📦 Order #${orderId.substring(0, 8)} has been packed and is ready for ${method}!`;
+      case 'out_for_delivery':
+        return `🚚 Order #${orderId.substring(0, 8)} is out for delivery! See you soon.`;
+      case 'delivered':
+        return `✅ Order #${orderId.substring(0, 8)} has been delivered. Enjoy your fresh produce!`;
+      case 'cancelled':
+        return `❌ Order #${orderId.substring(0, 8)} has been cancelled. Please contact us if this is a mistake.`;
+      default:
+        return `ℹ️ Order #${orderId.substring(0, 8)} status updated to: ${status}`;
+    }
+  }
+
+  /**
    * Generate WhatsApp order confirmation message
    */
   private generateOrderConfirmationWhatsApp(
@@ -1052,7 +1098,7 @@ export class NotificationService {
     if (customer.phone) {
       const notification = await this.createNotification(
         customer.id,
-        'other',
+        'other' as any,
         'whatsapp',
         message
       );
@@ -1096,7 +1142,7 @@ export class NotificationService {
     if (order.customer.phone) {
       const notification = await this.createNotification(
         order.customerId,
-        'other',
+        'other' as any,
         'whatsapp',
         message
       );

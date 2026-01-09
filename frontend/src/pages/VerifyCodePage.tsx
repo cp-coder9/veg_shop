@@ -18,10 +18,24 @@ export default function VerifyCodePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      await verifyCode.mutateAsync({ contact, code });
-      navigate('/products');
+      const data = await verifyCode.mutateAsync({ contact, code });
+
+      switch (data.user.role) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'driver':
+          navigate('/driver');
+          break;
+        case 'packer':
+          navigate('/packer');
+          break;
+        default:
+          navigate('/dashboard');
+          break;
+      }
     } catch (error) {
       console.error('Failed to verify code:', error);
     }

@@ -23,7 +23,7 @@ export default function ProtectedAdminRoute({ children }: ProtectedAdminRoutePro
     return <Navigate to="/login" replace />;
   }
 
-  if (user.role !== 'admin') {
+  if (user.role !== 'admin' && user.role !== 'packer') {
     return <Navigate to="/" replace />;
   }
 

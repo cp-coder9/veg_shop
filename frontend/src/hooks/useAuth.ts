@@ -34,7 +34,7 @@ interface AuthResponse {
     email: string | null;
     phone: string | null;
     address: string | null;
-    role: 'customer' | 'admin';
+    role: 'customer' | 'admin' | 'driver' | 'packer';
   };
 }
 

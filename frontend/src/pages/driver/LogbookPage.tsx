@@ -77,7 +77,7 @@ export default function LogbookPage() {
                                 required
                                 value={vehicleReg}
                                 onChange={(e) => setVehicleReg(e.target.value)}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2 border"
+                                className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-3 border text-base"
                                 placeholder="e.g. CA 123456"
                             />
                         </div>
@@ -88,14 +88,14 @@ export default function LogbookPage() {
                                 required
                                 value={startKm}
                                 onChange={(e) => setStartKm(e.target.value)}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2 border"
+                                className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-3 border text-base"
                                 placeholder="0"
                             />
                         </div>
                         <button
                             type="submit"
                             disabled={createLog.isPending}
-                            className="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 disabled:opacity-50"
+                            className="w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 disabled:opacity-50 text-lg shadow-md"
                         >
                             {createLog.isPending ? 'Saving...' : 'Start Trip'}
                         </button>
@@ -125,7 +125,7 @@ export default function LogbookPage() {
                                     min={todayLog.startKm}
                                     value={endKm}
                                     onChange={(e) => setEndKm(e.target.value)}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2 border"
+                                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-3 border text-base"
                                     placeholder={todayLog.startKm.toString()}
                                 />
                             </div>
@@ -134,7 +134,7 @@ export default function LogbookPage() {
                                 <textarea
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2 border"
+                                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-4 border text-base"
                                     rows={3}
                                     placeholder="Any issues or observations?"
                                 />
@@ -142,7 +142,7 @@ export default function LogbookPage() {
                             <button
                                 type="submit"
                                 disabled={updateLog.isPending}
-                                className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                                className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 disabled:opacity-50 text-lg shadow-md"
                             >
                                 {updateLog.isPending ? 'Saving...' : 'End Trip & Record KMs'}
                             </button>

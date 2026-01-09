@@ -1,13 +1,19 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useClientDashboard } from '../hooks/useClientDashboard';
+import { useProducts } from '../hooks/useProducts';
 import { useCartStore } from '../stores/cartStore';
 import api from '../lib/api';
 import { toast } from 'react-hot-toast';
+import { formatPrice } from '../lib/utils';
 
 export default function DashboardPage() {
     const navigate = useNavigate();
     const { data: dashboard, isLoading, isError } = useClientDashboard();
+    const { data: productsData, isLoading: productsLoading } = useProducts();
+    const { addItem, getItemQuantity, updateQuantity } = useCartStore();
     const setCartItems = useCartStore(state => state.setItems);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const handleQuickReorder = async (orderId: string) => {
         try {
@@ -168,6 +174,83 @@ export default function DashboardPage() {
                 </div>
             </section>
 
+            {/* Quick Order - Simple Product List */}
+            <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-warm-gray-900 dark:text-warm-gray-100">Quick Order</h2>
+                    <Link to="/products" className="text-sm font-bold text-organic-green-600 dark:text-organic-green-400 hover:text-organic-green-700 transition-colors">
+                        View Full Catalog →
+                    </Link>
+                </div>
+
+                {/* Search Input */}
+                <div className="relative">
+                    <input
+                        type="text"
+                        placeholder="Search products..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full px-4 py-3 pl-10 rounded-xl border border-warm-gray-200 dark:border-warm-gray-700 bg-white dark:bg-warm-gray-800 text-warm-gray-900 dark:text-warm-gray-100 focus:ring-2 focus:ring-organic-green-500 focus:border-transparent text-base"
+                    />
+                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+
+                {/* Product List */}
+                <div className="card overflow-hidden max-h-96 overflow-y-auto">
+                    {productsLoading ? (
+                        <div className="p-8 text-center text-warm-gray-500">Loading products...</div>
+                    ) : (
+                        <div className="divide-y divide-warm-gray-100 dark:divide-warm-gray-800">
+                            {(productsData || [])
+                                ?.filter((p: any) => p.isAvailable)
+                                ?.filter((p: any) => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                                ?.slice(0, 50)
+                                ?.map((product: any) => {
+                                    const qty = getItemQuantity(product.id);
+                                    return (
+                                        <div key={product.id} className="flex items-center justify-between p-3 hover:bg-warm-gray-50 dark:hover:bg-warm-gray-800/50 transition-colors">
+                                            <div className="flex-1 min-w-0 mr-4">
+                                                <p className="font-medium text-warm-gray-900 dark:text-warm-gray-100 truncate">{product.name}</p>
+                                                <p className="text-sm text-organic-green-600 dark:text-organic-green-400 font-bold">
+                                                    R{formatPrice(product.price)} <span className="text-warm-gray-400 font-normal">/ {product.unit}</span>
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {qty > 0 ? (
+                                                    <>
+                                                        <button
+                                                            onClick={() => updateQuantity(product.id, qty - 1)}
+                                                            className="w-8 h-8 flex items-center justify-center rounded-full bg-warm-gray-200 dark:bg-warm-gray-700 text-warm-gray-700 dark:text-warm-gray-300 hover:bg-warm-gray-300 dark:hover:bg-warm-gray-600 transition-colors"
+                                                        >
+                                                            −
+                                                        </button>
+                                                        <span className="w-8 text-center font-bold text-organic-green-600 dark:text-organic-green-400">{qty}</span>
+                                                        <button
+                                                            onClick={() => addItem(product.id, 1)}
+                                                            className="w-8 h-8 flex items-center justify-center rounded-full bg-organic-green-600 text-white hover:bg-organic-green-700 transition-colors"
+                                                        >
+                                                            +
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => addItem(product.id, 1)}
+                                                        className="px-4 py-2 rounded-lg bg-organic-green-600 text-white text-sm font-semibold hover:bg-organic-green-700 transition-colors"
+                                                    >
+                                                        Add
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                        </div>
+                    )}
+                </div>
+            </section>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Next Delivery Preview */}
                 <section className="lg:col-span-1 space-y-4">
@@ -229,8 +312,8 @@ export default function DashboardPage() {
                                             <div className="text-right">
                                                 <p className="font-bold text-warm-gray-900 dark:text-warm-gray-100">R {order.total.toFixed(2)}</p>
                                                 <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tighter ${order.status === 'delivered' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                                        order.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                                                            'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                                    order.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                                                        'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                                                     }`}>
                                                     {order.status}
                                                 </span>

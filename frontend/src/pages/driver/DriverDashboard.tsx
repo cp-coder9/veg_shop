@@ -102,27 +102,27 @@ export default function DriverDashboard() {
                     )}
 
                     <div className="space-y-4">
-                        <h3 className="font-semibold text-gray-900">Complete Delivery</h3>
-                        <div className="grid grid-cols-1 gap-3">
+                        <h3 className="font-semibold text-gray-900 text-lg">Complete Delivery</h3>
+                        <div className="grid grid-cols-1 gap-4">
                             <button
                                 onClick={() => handleDelivery('handed_to_client')}
                                 disabled={updateStatus.isPending}
-                                className="w-full bg-green-600 text-white py-4 rounded-xl text-lg font-bold shadow-md hover:bg-green-700 disabled:opacity-50"
+                                className="w-full bg-green-600 text-white py-5 px-6 rounded-xl text-xl font-bold shadow-lg hover:bg-green-700 active:bg-green-800 disabled:opacity-50 transition-all transform active:scale-95 flex items-center justify-center gap-3"
                             >
-                                🤝 Handed to Client
+                                <span className="text-2xl">🤝</span> Handed to Client
                             </button>
                             <button
                                 onClick={() => handleDelivery('left_at_door')}
                                 disabled={updateStatus.isPending}
-                                className="w-full bg-orange-500 text-white py-4 rounded-xl text-lg font-bold shadow-md hover:bg-orange-600 disabled:opacity-50"
+                                className="w-full bg-orange-500 text-white py-5 px-6 rounded-xl text-xl font-bold shadow-lg hover:bg-orange-600 active:bg-orange-700 disabled:opacity-50 transition-all transform active:scale-95 flex items-center justify-center gap-3"
                             >
-                                🚪 Left at Door
+                                <span className="text-2xl">🚪</span> Left at Door
                             </button>
                         </div>
 
                         <textarea
                             placeholder="Driver notes (optional)..."
-                            className="w-full p-3 border rounded-lg mt-4"
+                            className="w-full p-4 border rounded-xl mt-4 text-base shadow-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             rows={3}
                             onChange={(e) => setSelectedOrder(prev => prev ? { ...prev, driverNotes: e.target.value } : null)}
                         />
@@ -135,11 +135,15 @@ export default function DriverDashboard() {
     // Main List View
     return (
         <div className="space-y-4">
-            <h1 className="text-xl font-bold text-gray-800 mb-4">Today's Deliveries ({orders?.length || 0})</h1>
+            {/* Sticky Header */}
+            <div className="sticky top-0 bg-white -mx-4 px-4 py-3 -mt-4 shadow-sm z-10 border-b">
+                <h1 className="text-xl font-bold text-gray-900">Today's Deliveries</h1>
+                <p className="text-base text-gray-600">{orders?.length || 0} stops remaining</p>
+            </div>
 
             {orders?.length === 0 && (
-                <div className="bg-white p-8 rounded-lg shadow text-center text-gray-500">
-                    No deliveries found for today.
+                <div className="bg-white p-8 rounded-lg shadow text-center text-gray-500 text-lg">
+                    🎉 No deliveries remaining for today!
                 </div>
             )}
 
@@ -147,17 +151,20 @@ export default function DriverDashboard() {
                 <div
                     key={order.id}
                     onClick={() => setSelectedOrder(order)}
-                    className="bg-white p-4 rounded-lg shadow active:scale-98 transition-transform cursor-pointer border-l-4 border-gray-300 hover:border-green-500"
+                    className="bg-white p-5 rounded-xl shadow active:scale-[0.98] transition-transform cursor-pointer border-l-4 border-gray-300 hover:border-green-500"
                 >
-                    <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-bold text-lg">{order.customer.name}</h3>
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                order.status === 'out_for_delivery' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100'
+                    <div className="flex justify-between items-start mb-3">
+                        <h3 className="font-bold text-lg text-gray-900">{order.customer.name}</h3>
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            order.status === 'out_for_delivery' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'
                             }`}>
                             {order.status.replace('_', ' ').toUpperCase()}
                         </span>
                     </div>
-                    <p className="text-gray-600 text-sm line-clamp-2">{order.customer.address || order.deliveryAddress}</p>
+                    <p className="text-gray-700 text-base leading-snug">{order.customer.address || order.deliveryAddress}</p>
+                    {order.specialInstructions && (
+                        <p className="text-amber-600 text-sm mt-2 font-medium">⚠️ {order.specialInstructions}</p>
+                    )}
                 </div>
             ))}
         </div>

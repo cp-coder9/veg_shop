@@ -17,6 +17,8 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const [showSuccess, setShowSuccess] = useState(false);
+  const { setItems } = useCartStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
@@ -24,6 +26,22 @@ export default function OrdersPage() {
       setTimeout(() => setShowSuccess(false), 5000);
     }
   }, [searchParams]);
+
+  const handleReorder = (items: { product?: { id: string }, productId?: string, quantity: number }[]) => {
+    // Map order items to cart items, filtering out items without product data
+    const cartItems = items
+      .filter(item => item.product?.id || item.productId)
+      .map(item => ({
+        productId: item.product?.id || item.productId!,
+        quantity: item.quantity
+      }));
+
+    // Replace current cart with these items
+    setItems(cartItems);
+
+    // Navigate to cart
+    navigate('/cart');
+  };
 
   if (isLoading) {
     return (
@@ -45,23 +63,6 @@ export default function OrdersPage() {
   }
 
   const selectedOrderData = orders?.find((o) => o.id === selectedOrder);
-
-  const { setItems } = useCartStore();
-  const navigate = useNavigate();
-
-  const handleReorder = (items: { product: { id: string }, quantity: number }[]) => {
-    // Map order items to cart items
-    const cartItems = items.map(item => ({
-      productId: item.product.id,
-      quantity: item.quantity
-    }));
-
-    // Replace current cart with these items
-    setItems(cartItems);
-
-    // Navigate to cart
-    navigate('/cart');
-  };
 
   return (
     <div>
@@ -128,7 +129,7 @@ export default function OrdersPage() {
                       {order.items.map((item) => (
                         <div key={item.id} className="flex justify-between text-sm">
                           <span className="text-gray-600">
-                            {item.product.name} x {item.quantity}
+                            {item.product?.name || 'Unknown Product'} x {item.quantity}
                           </span>
                           <span className="font-semibold">
                             R{(toNumber(item.priceAtOrder) * item.quantity).toFixed(2)}

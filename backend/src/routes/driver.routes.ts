@@ -4,6 +4,8 @@ import { authenticate } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
 import { z } from 'zod';
 
+import { notificationService } from '../services/notification.service.js';
+
 const router = Router();
 
 // Validation schemas
@@ -91,6 +93,13 @@ router.patch('/orders/:id/status', authenticate, asyncHandler(async (req: Reques
             driverNotes: validatedData.driverNotes,
         }
     });
+
+    // Send notification
+    try {
+        await notificationService.sendOrderStatusUpdate(id, validatedData.status);
+    } catch (error) {
+        console.error(`Failed to send driver notification for order ${id}:`, error);
+    }
 
     return res.json(updatedOrder);
 }));

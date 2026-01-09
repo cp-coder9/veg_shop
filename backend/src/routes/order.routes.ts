@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { orderService } from '../services/order.service.js';
-import { authenticate, requireAdmin } from '../middleware/auth.middleware.js';
+import { authenticate, requireAdmin, requireStaff } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
 
 const router = Router();
@@ -102,8 +102,9 @@ router.get('/:id', authenticate, asyncHandler(async (req: Request, res: Response
       });
     }
 
-    // Customers can only view their own orders, admins can view all
-    if (req.user!.role !== 'admin' && order.customerId !== req.user!.userId) {
+    // Admins and Staff can view all, Customers only their own
+    const isStaff = ['admin', 'packer', 'driver'].includes(req.user!.role);
+    if (!isStaff && order.customerId !== req.user!.userId) {
       return res.status(403).json({
         error: {
           code: 'FORBIDDEN',
@@ -313,14 +314,14 @@ router.patch('/:id', authenticate, requireAdmin, asyncHandler(async (req: Reques
 
 /**
  * PATCH /api/orders/:id/status
- * Update order status (admin only)
+ * Update order status (staff only - packers need this)
  */
-router.patch('/:id/status', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.patch('/:id/status', authenticate, requireStaff, asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = updateOrderStatusSchema.parse(req.body);
 
-    const order = await orderService.updateOrderStatus(id, data.status);
+    const order = await orderService.updateOrderStatus(id, data.status, req.user!.userId, req.user!.role);
 
     return res.json(order);
   } catch (error) {
@@ -355,9 +356,9 @@ router.patch('/:id/status', authenticate, requireAdmin, asyncHandler(async (req:
 
 /**
  * GET /api/orders
- * Get all orders with optional filtering (admin only)
+ * Get all orders with optional filtering (staff only - packers need this)
  */
-router.get('/', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.get('/', authenticate, requireStaff, asyncHandler(async (req: Request, res: Response) => {
   try {
     const { status, deliveryDate, startDate, endDate, customerId } = req.query;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;

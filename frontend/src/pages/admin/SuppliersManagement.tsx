@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../lib/api';
-import { Plus, Edit2, Archive, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Edit2, CheckCircle, XCircle } from 'lucide-react';
+import SupplierModal from '../../components/admin/SupplierModal';
 
 interface Supplier {
     id: string;
@@ -111,8 +112,8 @@ export default function SuppliersManagement() {
                                     <button
                                         onClick={() => toggleAvailabilityMutation.mutate({ id: supplier.id, isAvailable: !supplier.isAvailable })}
                                         className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${supplier.isAvailable
-                                                ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                                : 'bg-red-100 text-red-800 hover:bg-red-200'
+                                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                            : 'bg-red-100 text-red-800 hover:bg-red-200'
                                             }`}
                                     >
                                         {supplier.isAvailable ? (
@@ -156,84 +157,6 @@ export default function SuppliersManagement() {
                     }}
                 />
             )}
-        </div>
-    );
-}
-
-function SupplierModal({
-    supplier,
-    onClose,
-    onSave
-}: {
-    supplier: Supplier | null;
-    onClose: () => void;
-    onSave: (data: { name: string; contactInfo: string }) => Promise<void>;
-}) {
-    const [name, setName] = useState(supplier?.name || '');
-    const [contactInfo, setContactInfo] = useState(supplier?.contactInfo || '');
-    const [isSaving, setIsSaving] = useState(false);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsSaving(true);
-        try {
-            await onSave({ name, contactInfo });
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                <h2 className="text-xl font-bold mb-4">
-                    {supplier ? 'Edit Supplier' : 'Add Supplier'}
-                </h2>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Name
-                        </label>
-                        <input
-                            type="text"
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Contact Info (Optional)
-                        </label>
-                        <textarea
-                            value={contactInfo}
-                            onChange={(e) => setContactInfo(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            rows={3}
-                        />
-                    </div>
-
-                    <div className="flex justify-end gap-3 pt-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isSaving}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                        >
-                            {isSaving ? 'Saving...' : 'Save'}
-                        </button>
-                    </div>
-                </form>
-            </div>
         </div>
     );
 }

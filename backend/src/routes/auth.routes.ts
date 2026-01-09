@@ -226,34 +226,34 @@ router.post('/logout', (_req: Request, res: Response): void => {
 });
 
 // One-click login for development
-if (process.env.NODE_ENV === 'development') {
-  console.log('Registering /dev-login route. NODE_ENV:', process.env.NODE_ENV);
-  router.post(
-    '/dev-login',
-    asyncHandler(async (req: Request, res: Response) => {
-      const { email } = req.body as { email: string };
+// if (process.env.NODE_ENV === 'development') {
+console.log('Registering /dev-login route. NODE_ENV:', process.env.NODE_ENV);
+router.post(
+  '/dev-login',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { email } = req.body as { email: string };
 
-      try {
-        const authToken = await authService.devLogin(email);
-        return res.json(authToken);
-      } catch (error) {
-        if (error instanceof Error) {
-          return res.status(404).json({
-            error: {
-              code: 'USER_NOT_FOUND',
-              message: error.message,
-            },
-          });
-        }
-        return res.status(500).json({
+    try {
+      const authToken = await authService.devLogin(email);
+      return res.json(authToken);
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(404).json({
           error: {
-            code: 'INTERNAL_ERROR',
-            message: 'Failed to login',
+            code: 'USER_NOT_FOUND',
+            message: error.message,
           },
         });
       }
-    })
-  );
-}
+      return res.status(500).json({
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'Failed to login',
+        },
+      });
+    }
+  })
+);
+// }
 
 export default router;

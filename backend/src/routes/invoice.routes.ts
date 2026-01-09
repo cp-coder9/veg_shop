@@ -247,6 +247,26 @@ router.get('/', authenticate, requireAdmin, asyncHandler(async (req: Request, re
 }));
 
 /**
+ * GET /api/invoices/customer/me
+ * Get all invoices for the currently authenticated customer
+ * IMPORTANT: This route must come BEFORE /customer/:customerId
+ */
+router.get('/customer/me', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const invoices = await invoiceService.getCustomerInvoices(req.user!.userId);
+    return res.json(invoices);
+  } catch (error) {
+    console.error('Get my invoices error:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to fetch your invoices',
+      },
+    });
+  }
+}));
+
+/**
  * GET /api/invoices/customer/:customerId
  * Get all invoices for a customer
  */
@@ -273,25 +293,6 @@ router.get('/customer/:customerId', authenticate, asyncHandler(async (req: Reque
       error: {
         code: 'INTERNAL_ERROR',
         message: 'Failed to fetch customer invoices',
-      },
-    });
-  }
-}));
-
-/**
- * GET /api/invoices/customer/me
- * Get all invoices for the currently authenticated customer
- */
-router.get('/customer/me', authenticate, asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const invoices = await invoiceService.getCustomerInvoices(req.user!.userId);
-    return res.json(invoices);
-  } catch (error) {
-    console.error('Get my invoices error:', error);
-    return res.status(500).json({
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Failed to fetch your invoices',
       },
     });
   }

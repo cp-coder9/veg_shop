@@ -271,6 +271,14 @@ export default function OrdersManagement() {
                 <span className="text-gray-500">Items:</span>
                 <span className="ml-1 text-gray-900">{order.items.length}</span>
               </div>
+              <div className="flex gap-1">
+                {order.items.some(i => i.product?.packingType === 'fridge') && (
+                  <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded">❄️ Fridge</span>
+                )}
+                {order.items.some(i => i.product?.packingType === 'freezer') && (
+                  <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded">🧊 Freezer</span>
+                )}
+              </div>
             </div>
 
             <div className="pt-2 border-t border-gray-100 flex justify-between items-center gap-2">
@@ -519,7 +527,8 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
           {/* Items */}
           <div>
             <h3 className="font-semibold text-gray-900 mb-2">Order Items</h3>
-            <div className="overflow-x-auto">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -542,6 +551,10 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
                     <tr key={item.id}>
                       <td className="px-4 py-2 text-sm text-gray-900">
                         {item.product.name}
+                        <div className="flex gap-1 mt-1">
+                          {item.product.packingType === 'fridge' && <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Fridge</span>}
+                          {item.product.packingType === 'freezer' && <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Freezer</span>}
+                        </div>
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-500">
                         {item.quantity} {item.product.unit}
@@ -564,6 +577,31 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
                   </tr>
                 </tfoot>
               </table>
+            </div>
+
+            {/* Mobile List View */}
+            <div className="md:hidden space-y-3">
+              {order.items.map((item) => (
+                <div key={item.id} className="bg-white border rounded-lg p-3 shadow-sm flex justify-between items-center">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-bold text-gray-900 text-lg">{item.quantity} {item.product.unit}</span>
+                      {item.product.packingType === 'fridge' && <span className="bg-blue-100 text-blue-800 text-xs font-bold px-1.5 py-0.5 rounded">❄️ Fridge</span>}
+                      {item.product.packingType === 'freezer' && <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-1.5 py-0.5 rounded">🧊 Freezer</span>}
+                    </div>
+                    <p className="text-gray-800 font-medium leading-tight">{item.product.name}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-gray-400 text-xs text-nowrap">
+                      R {Number(item.priceAtOrder).toFixed(0)}/{item.product.unit}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="border-t pt-3 flex justify-between items-center font-bold text-lg">
+                <span>Total</span>
+                <span>R {total.toFixed(2)}</span>
+              </div>
             </div>
           </div>
         </div>
