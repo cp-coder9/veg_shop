@@ -18,6 +18,7 @@ interface RegisterRequest {
   password: string;
   phone?: string;
   address?: string;
+  birthday: string;
 }
 
 interface LoginRequest {
@@ -38,6 +39,26 @@ interface AuthResponse {
   };
 }
 
+// Helper to handle potentially nested 'data' property in backend responses
+const unwrapResponse = (response: any): AuthResponse => {
+  console.log('Auth API Response:', response);
+
+  // If the response is wrapped in a "data" property (common in some backend frameworks)
+  if (response && response.data && (response.data.accessToken || response.data.user)) {
+    console.log('Unwrapped nested response data');
+    return response.data;
+  }
+
+  // If response is the structure itself
+  if (response && (response.accessToken || response.user)) {
+    return response as AuthResponse;
+  }
+
+  // Fallback/Error case - log it clearly
+  console.error('Unexpected auth response structure:', response);
+  throw new Error('Invalid authentication response from server');
+};
+
 export function useSendCode() {
   return useMutation({
     mutationFn: async (data: SendCodeRequest) => {
@@ -53,7 +74,7 @@ export function useVerifyCode() {
   return useMutation({
     mutationFn: async (data: VerifyCodeRequest) => {
       const response = await api.post<AuthResponse>('/auth/verify-code', data);
-      return response.data;
+      return unwrapResponse(response.data);
     },
     onSuccess: (data) => {
       setTokens(data.accessToken, data.refreshToken);
@@ -68,7 +89,7 @@ export function useRegister() {
   return useMutation({
     mutationFn: async (data: RegisterRequest) => {
       const response = await api.post<AuthResponse>('/auth/register', data);
-      return response.data;
+      return unwrapResponse(response.data);
     },
     onSuccess: (data) => {
       setTokens(data.accessToken, data.refreshToken);
@@ -83,7 +104,7 @@ export function useLogin() {
   return useMutation({
     mutationFn: async (data: LoginRequest) => {
       const response = await api.post<AuthResponse>('/auth/login', data);
-      return response.data;
+      return unwrapResponse(response.data);
     },
     onSuccess: (data) => {
       setTokens(data.accessToken, data.refreshToken);
@@ -112,7 +133,7 @@ export function useDevLogin() {
   return useMutation({
     mutationFn: async (data: { email: string }) => {
       const response = await api.post<AuthResponse>('/auth/dev-login', data);
-      return response.data;
+      return unwrapResponse(response.data);
     },
     onSuccess: (data) => {
       setTokens(data.accessToken, data.refreshToken);

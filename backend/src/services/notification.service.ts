@@ -1,6 +1,13 @@
 import axios from 'axios';
 import { prisma } from '../lib/prisma.js';
 import { Decimal } from '@prisma/client/runtime/library';
+import { env } from '../config/env.js';
+import { notificationRepository } from '../repositories/notification.repository.js';
+import { userRepository } from '../repositories/user.repository.js';
+import { invoiceRepository } from '../repositories/invoice.repository.js';
+import { orderRepository } from '../repositories/order.repository.js';
+import { orderItemRepository } from '../repositories/order-item.repository.js';
+import { productRepository } from '../repositories/product.repository.js';
 
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || '';
 const WHATSAPP_API_TOKEN = process.env.WHATSAPP_API_TOKEN || '';
@@ -57,16 +64,6 @@ interface ProductInfo {
   isSeasonal: boolean;
 }
 
-interface Notification {
-  id: string;
-  customerId: string;
-  type: string;
-  method: string;
-  content: string;
-  status: string;
-  sentAt: Date | null;
-  createdAt: Date;
-}
 
 export class NotificationService {
   /**
@@ -74,19 +71,31 @@ export class NotificationService {
    */
   async createNotification(
     customerId: string,
-    type: 'order_confirmation' | 'payment_reminder' | 'product_list' | 'order_status',
+    type: 'order_confirmation' | 'payment_reminder' | 'product_list' | 'order_status' | 'other',
     method: 'whatsapp' | 'email',
     content: string
-  ): Promise<Notification> {
-    return await prisma.notification.create({
-      data: {
+  ): Promise<any> {
+    if (env.USE_FIREBASE) {
+      return await notificationRepository.create({
         customerId,
         type,
         method,
         content,
         status: 'pending',
-      },
-    });
+        sentAt: null,
+        createdAt: new Date(),
+      } as any);
+    } else {
+      return await prisma.notification.create({
+        data: {
+          customerId,
+          type,
+          method,
+          content,
+          status: 'pending',
+        },
+      });
+    }
   }
 
   /**
@@ -97,27 +106,54 @@ export class NotificationService {
     status: 'pending' | 'sent' | 'failed',
     sentAt?: Date
   ): Promise<void> {
-    await prisma.notification.update({
-      where: { id: notificationId },
-      data: {
+    if (env.USE_FIREBASE) {
+      await notificationRepository.update(notificationId, {
         status,
         sentAt: sentAt || (status === 'sent' ? new Date() : null),
-      },
-    });
+      } as any);
+    } else {
+      await prisma.notification.update({
+        where: { id: notificationId },
+        data: {
+          status,
+          sentAt: sentAt || (status === 'sent' ? new Date() : null),
+        },
+      });
+    }
+  }
+
+  /**
+   * Get all notifications (admin history)
+   */
+  async getAllNotifications(): Promise<any[]> {
+    if (env.USE_FIREBASE) {
+      return await notificationRepository.list([], { field: 'createdAt', direction: 'desc' });
+    } else {
+      return await prisma.notification.findMany({
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 100, // Limit to last 100 to prevent overload
+      });
+    }
   }
 
   /**
    * Get pending notifications for processing
    */
-  async getPendingNotifications(): Promise<Notification[]> {
-    return await prisma.notification.findMany({
-      where: {
-        status: 'pending',
-      },
-      orderBy: {
-        createdAt: 'asc',
-      },
-    });
+  async getPendingNotifications(): Promise<any[]> {
+    if (env.USE_FIREBASE) {
+      return await notificationRepository.findPending();
+    } else {
+      return await prisma.notification.findMany({
+        where: {
+          status: 'pending',
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+    }
   }
 
   /**
@@ -128,9 +164,14 @@ export class NotificationService {
 
     for (const notification of pendingNotifications) {
       try {
-        const customer = await prisma.user.findUnique({
-          where: { id: notification.customerId },
-        });
+        let customer: any;
+        if (env.USE_FIREBASE) {
+          customer = await userRepository.findById(notification.customerId);
+        } else {
+          customer = await prisma.user.findUnique({
+            where: { id: notification.customerId },
+          });
+        }
 
         if (!customer) {
           await this.updateNotificationStatus(notification.id, 'failed');
@@ -381,71 +422,106 @@ export class NotificationService {
   /**
    * Identify invoices with outstanding balances past due date
    */
-  async getOverdueInvoices(): Promise<OverdueInvoice[]> {
-    const today = new Date();
+  async getOverdueInvoices(): Promise<any[]> {
+    if (env.USE_FIREBASE) {
+      const today = new Date();
+      const overdue = await invoiceRepository.list([
+        { field: 'status', operator: 'in', value: ['unpaid', 'partial'] },
+        { field: 'dueDate', operator: '<', value: today }
+      ]);
 
-    const invoices = await prisma.invoice.findMany({
-      where: {
-        status: {
-          in: ['unpaid', 'partial'],
+      return Promise.all(overdue.map(async invoice => {
+        const customer = await userRepository.findById(invoice.customerId);
+        const order = await orderRepository.findById(invoice.orderId);
+        const orderItems = await orderItemRepository.findByOrder(invoice.orderId);
+        const itemsWithProducts = await Promise.all(orderItems.map(async item => {
+          const product = await productRepository.findById(item.productId);
+          return { ...item, product };
+        }));
+
+        return {
+          ...invoice,
+          customer,
+          order: { ...order, items: itemsWithProducts }
+        };
+      }));
+    } else {
+      const today = new Date();
+
+      const invoices = await prisma.invoice.findMany({
+        where: {
+          status: {
+            in: ['unpaid', 'partial'],
+          },
+          dueDate: {
+            lt: today,
+          },
         },
-        dueDate: {
-          lt: today,
-        },
-      },
-      include: {
-        customer: true,
-        order: {
-          include: {
-            items: {
-              include: {
-                product: true,
+        include: {
+          customer: true,
+          order: {
+            include: {
+              items: {
+                include: {
+                  product: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      });
 
-    return invoices as OverdueInvoice[];
+      return invoices;
+    }
   }
 
   /**
    * Send payment reminder to a specific customer
    */
   async sendPaymentReminder(customerId: string): Promise<void> {
-    const customer = await prisma.user.findUnique({
-      where: { id: customerId },
-    });
+    let customer: any;
+    let overdueInvoices: any[];
 
-    if (!customer) {
-      throw new Error('Customer not found');
-    }
+    if (env.USE_FIREBASE) {
+      customer = await userRepository.findById(customerId);
+      if (!customer) throw new Error('Customer not found');
 
-    // Get all overdue invoices for this customer
-    const overdueInvoices = (await prisma.invoice.findMany({
-      where: {
-        customerId,
-        status: {
-          in: ['unpaid', 'partial'],
+      const allOverdue = await this.getOverdueInvoices();
+      overdueInvoices = allOverdue.filter(inv => inv.customerId === customerId);
+    } else {
+      customer = await prisma.user.findUnique({
+        where: { id: customerId },
+      });
+
+      if (!customer) {
+        throw new Error('Customer not found');
+      }
+
+      // Get all overdue invoices for this customer
+      overdueInvoices = (await prisma.invoice.findMany({
+        where: {
+          customerId,
+          status: {
+            in: ['unpaid', 'partial'],
+          },
+          dueDate: {
+            lt: new Date(),
+          },
         },
-        dueDate: {
-          lt: new Date(),
-        },
-      },
-      include: {
-        order: {
-          include: {
-            items: {
-              include: {
-                product: true,
+        include: {
+          order: {
+            include: {
+              items: {
+                include: {
+                  product: true,
+                },
               },
             },
           },
+          customer: true,
         },
-        customer: true,
-      },
-    })) as OverdueInvoice[];
+      })) as OverdueInvoice[];
+    }
 
     if (overdueInvoices.length === 0) {
       return; // No overdue invoices
@@ -585,17 +661,30 @@ export class NotificationService {
    * Send order confirmation to customer
    */
   async sendOrderConfirmation(orderId: string): Promise<void> {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        customer: true,
-        items: {
-          include: {
-            product: true,
+    let order: any;
+    if (env.USE_FIREBASE) {
+      const fbOrder = await orderRepository.findById(orderId);
+      if (!fbOrder) throw new Error('Order not found');
+      const customer = await userRepository.findById(fbOrder.customerId);
+      const items = await orderItemRepository.findByOrder(orderId);
+      const itemsWithProducts = await Promise.all(items.map(async item => {
+        const product = await productRepository.findById(item.productId);
+        return { ...item, product };
+      }));
+      order = { ...fbOrder, customer, items: itemsWithProducts };
+    } else {
+      order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          customer: true,
+          items: {
+            include: {
+              product: true,
+            },
           },
         },
-      },
-    }) as OrderWithDetails | null;
+      }) as OrderWithDetails | null;
+    }
 
     if (!order) {
       throw new Error('Order not found');
@@ -603,7 +692,7 @@ export class NotificationService {
 
     const deliveryDate = new Date(order.deliveryDate).toLocaleDateString();
     const totalAmount = order.items.reduce(
-      (sum, item) => sum + Number(item.priceAtOrder) * item.quantity,
+      (sum: number, item: any) => sum + Number(item.priceAtOrder) * item.quantity,
       0
     );
 
@@ -663,12 +752,21 @@ export class NotificationService {
    * Send order status update to customer
    */
   async sendOrderStatusUpdate(orderId: string, status: string): Promise<void> {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        customer: true,
-      },
-    });
+    let order: any;
+    if (env.USE_FIREBASE) {
+      const fbOrder = await orderRepository.findById(orderId);
+      if (fbOrder) {
+        const customer = await userRepository.findById(fbOrder.customerId);
+        order = { ...fbOrder, customer };
+      }
+    } else {
+      order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          customer: true,
+        },
+      });
+    }
 
     if (!order) return;
 
@@ -1098,7 +1196,7 @@ export class NotificationService {
     if (customer.phone) {
       const notification = await this.createNotification(
         customer.id,
-        'other' as any,
+        'other',
         'whatsapp',
         message
       );
@@ -1142,7 +1240,7 @@ export class NotificationService {
     if (order.customer.phone) {
       const notification = await this.createNotification(
         order.customerId,
-        'other' as any,
+        'other',
         'whatsapp',
         message
       );

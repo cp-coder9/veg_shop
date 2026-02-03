@@ -17,10 +17,13 @@ const createOrderSchema = z.object({
     productId: z.string(),
     quantity: z.number().int().positive(),
   })).min(1, 'At least one item is required'),
+  coolerBagOption: z.boolean().optional(),
 });
 
 const updateOrderStatusSchema = z.object({
-  status: z.enum(['pending', 'confirmed', 'packed', 'delivered', 'cancelled']),
+  status: z.enum(['pending', 'confirmed', 'packed', 'delivered', 'out_for_delivery', 'cancelled']),
+  packedItems: z.record(z.number().int()).optional(),
+  notes: z.string().optional(),
 });
 
 const generateBulkOrderSchema = z.object({
@@ -44,7 +47,18 @@ router.post('/', authenticate, asyncHandler(async (req: Request, res: Response) 
     const data = createOrderSchema.parse(req.body);
     const customerId = req.user!.userId;
 
-    const order = await orderService.createOrder(customerId, data);
+    const order = await orderService.createOrder(customerId, {
+      deliveryDate: data.deliveryDate,
+      deliveryMethod: data.deliveryMethod,
+      deliveryAddress: data.deliveryAddress,
+      specialInstructions: data.specialInstructions,
+      deliveryFees: data.deliveryFees,
+      items: data.items.map(item => ({
+        productId: item.productId!,
+        quantity: item.quantity!
+      })),
+      coolerBagOption: data.coolerBagOption
+    });
 
     return res.status(201).json(order);
   } catch (error) {
@@ -289,7 +303,7 @@ router.patch('/:id', authenticate, requireAdmin, asyncHandler(async (req: Reques
 
     const data = schema.parse(req.body);
 
-    const order = await orderService.updateOrder(id, data as any);
+    const order = await orderService.updateOrder(id, data);
 
     return res.json(order);
   } catch (error) {
@@ -321,7 +335,14 @@ router.patch('/:id/status', authenticate, requireStaff, asyncHandler(async (req:
     const { id } = req.params;
     const data = updateOrderStatusSchema.parse(req.body);
 
-    const order = await orderService.updateOrderStatus(id, data.status, req.user!.userId, req.user!.role);
+    const order = await orderService.updateOrderStatus(
+      id,
+      data.status,
+      req.user!.userId,
+      req.user!.role,
+      data.packedItems,
+      data.notes
+    );
 
     return res.json(order);
   } catch (error) {
@@ -360,7 +381,7 @@ router.patch('/:id/status', authenticate, requireStaff, asyncHandler(async (req:
  */
 router.get('/', authenticate, requireStaff, asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { status, deliveryDate, startDate, endDate, customerId } = req.query;
+    const { status, deliveryDate, startDate, endDate, customerId, packerId, driverId } = req.query;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
 
     const orders = await orderService.getOrders({
@@ -369,6 +390,8 @@ router.get('/', authenticate, requireStaff, asyncHandler(async (req: Request, re
       startDate: startDate as string,
       endDate: endDate as string,
       customerId: customerId as string,
+      packerId: packerId as string,
+      driverId: driverId as string,
       limit,
     });
 

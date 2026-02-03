@@ -23,6 +23,25 @@ const sendProductListSchema = z.object({
 });
 
 /**
+ * GET /api/notifications
+ * Get all notifications (admin only)
+ */
+router.get('/', authenticate, requireAdmin, asyncHandler(async (_req: Request, res: Response) => {
+  try {
+    const notifications = await notificationService.getAllNotifications();
+    res.json(notifications);
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    res.status(500).json({
+      error: {
+        code: 'FETCH_FAILED',
+        message: 'Failed to fetch notifications',
+      },
+    });
+  }
+}));
+
+/**
  * POST /api/notifications/whatsapp
  * Send WhatsApp message (admin only)
  */

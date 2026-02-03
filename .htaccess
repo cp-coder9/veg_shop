@@ -1,0 +1,21 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. API PROXY
+  # If your shared host allows subfolder mapping for Node.js, 
+  # this tells Apache to let the /api requests through to the app.
+  RewriteCond %{REQUEST_URI} ^/api [NC]
+  RewriteRule ^api/(.*)$ - [L]
+
+  # 2. FRONTEND SPA ROUTING
+  # This ensures React Router works (keeps users on index.html)
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Optional: Force HTTPS
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

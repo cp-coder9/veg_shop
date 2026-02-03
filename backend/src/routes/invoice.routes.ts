@@ -11,6 +11,50 @@ const generateBulkInvoicesSchema = z.object({
   orderIds: z.array(z.string().uuid()).min(1, 'At least one order ID is required'),
 });
 
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
+
+/**
+ * GET /api/invoices/public/:token
+ * Get invoice details via public token
+ */
+router.get('/public/:token', asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+
+    // Verify token
+    const decoded = jwt.verify(token, JWT_SECRET) as { invoiceId: string, type: string };
+
+    if (decoded.type !== 'payment_link' || !decoded.invoiceId) {
+      return res.status(401).json({ error: { code: 'INVALID_TOKEN', message: 'Invalid payment link' } });
+    }
+
+    const { invoiceId } = decoded;
+    const invoice = await invoiceService.getInvoice(invoiceId);
+
+    if (!invoice) {
+      return res.status(404).json({
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Invoice not found',
+        },
+      });
+    }
+
+    // Return invoice - strict subset could be returned here for security, 
+    // but the full invoice is likely needed for the UI.
+    return res.json(invoice);
+  } catch (error) {
+    return res.status(401).json({
+      error: {
+        code: 'INVALID_TOKEN',
+        message: 'Invalid or expired payment link',
+      },
+    });
+  }
+}));
+
 /**
  * POST /api/invoices/generate/:orderId
  * Generate invoice from order (admin only)

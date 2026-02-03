@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -16,6 +16,8 @@ model User {
   address            String?
   deliveryPreference String    @default("delivery")
   role               String    @default("customer")
+  status             String    @default("active")
+  birthday           DateTime?
   loyaltyPoints      Int       @default(0)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -96,6 +98,10 @@ model Order {
   specialInstructions String?
   deliveryFees        Decimal   @default(0)
   status              String    @default("pending")
+  coolerBagOption     Boolean   @default(false)
+  coolerBagStatus     String    @default("none") // "none", "taken", "returned"
+  packerSignature     String?
+  deliveryNotes       String?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -112,6 +118,7 @@ model Order {
   // Packer fields
   packerId      String?
   packer        User?   @relation("PackerOrders", fields: [packerId], references: [id])
+  packerNotes   String?
 
   @@index([customerId])
   @@index([deliveryDate])

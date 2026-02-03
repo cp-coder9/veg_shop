@@ -7,9 +7,9 @@ export default function AuditManagement() {
         offset: 0,
     });
 
-    const { data, isLoading, isError } = useAdminAudit(filters);
+    const { data, isLoading } = useAdminAudit(filters);
 
-    const handleFilterChange = (key: keyof AuditFilters, value: any) => {
+    const handleFilterChange = (key: keyof AuditFilters, value: string) => {
         setFilters((prev) => ({ ...prev, [key]: value, offset: 0 }));
     };
 
@@ -92,10 +92,10 @@ export default function AuditManagement() {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${log.action.includes('error') ? 'bg-red-100 text-red-800' :
-                                                log.action.includes('create') ? 'bg-green-100 text-green-800' :
-                                                    log.action.includes('update') ? 'bg-blue-100 text-blue-800' :
-                                                        log.action.includes('delete') ? 'bg-orange-100 text-orange-800' :
-                                                            'bg-gray-100 text-gray-800'
+                                            log.action.includes('create') ? 'bg-green-100 text-green-800' :
+                                                log.action.includes('update') ? 'bg-blue-100 text-blue-800' :
+                                                    log.action.includes('delete') ? 'bg-orange-100 text-orange-800' :
+                                                        'bg-gray-100 text-gray-800'
                                             }`}>
                                             {log.action}
                                         </span>

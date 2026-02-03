@@ -32,6 +32,8 @@ export function useAdminOrders(filters?: {
   endDate?: string;
   status?: string;
   customerId?: string;
+  packerId?: string;
+  driverId?: string;
 }) {
   return useQuery<Order[]>({
     queryKey: ['admin-orders', filters],
@@ -42,10 +44,14 @@ export function useAdminOrders(filters?: {
       if (filters?.endDate) params.append('endDate', filters.endDate);
       if (filters?.status) params.append('status', filters.status);
       if (filters?.customerId) params.append('customerId', filters.customerId);
+      if (filters?.packerId) params.append('packerId', filters.packerId);
+      if (filters?.driverId) params.append('driverId', filters.driverId);
 
       const response = await api.get(`/orders?${params.toString()}`);
       return response.data;
     },
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -64,8 +70,14 @@ export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: Order['status'] }) => {
-      const response = await api.patch(`/orders/${id}/status`, { status });
+    mutationFn: async ({ id, status, packedItems, notes, signature }: {
+      id: string;
+      status: Order['status'];
+      packedItems?: Record<string, number>;
+      notes?: string;
+      signature?: string;
+    }) => {
+      const response = await api.patch(`/orders/${id}/status`, { status, packedItems, notes, signature });
       return response.data;
     },
     onSuccess: () => {

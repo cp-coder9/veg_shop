@@ -59,30 +59,44 @@ vi.mock('../../hooks/useAdminOrders', () => ({
   useAdminOrders: vi.fn(),
   useOrder: vi.fn(),
   useUpdateOrderStatus: vi.fn(),
+  useUpdateOrder: vi.fn(),
   useGenerateBulkOrder: vi.fn(),
+  useOrderWeeklyCollation: vi.fn(),
 }));
 
 import {
   useAdminOrders,
   useOrder,
   useUpdateOrderStatus,
+  useUpdateOrder,
+  useOrderWeeklyCollation,
   useGenerateBulkOrder,
 } from '../../hooks/useAdminOrders';
 
 describe('OrdersManagement', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     vi.mocked(useUpdateOrderStatus).mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
     } as any);
-    
+
     vi.mocked(useGenerateBulkOrder).mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
     } as any);
-    
+
+    vi.mocked(useUpdateOrder).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as any);
+
+    vi.mocked(useOrderWeeklyCollation).mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false,
+    } as any);
+
     vi.mocked(useOrder).mockReturnValue({
       data: undefined,
       isLoading: false,
@@ -107,9 +121,9 @@ describe('OrdersManagement', () => {
     } as any);
 
     render(<OrdersManagement />);
-    
+
     expect(screen.getByText('Orders Management')).toBeInTheDocument();
-    expect(screen.getByText(/order-1/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/order-1/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/order-2/i)).toBeInTheDocument();
     expect(screen.getByText('delivery')).toBeInTheDocument();
     expect(screen.getByText('collection')).toBeInTheDocument();
@@ -122,10 +136,10 @@ describe('OrdersManagement', () => {
     } as any);
 
     render(<OrdersManagement />);
-    
+
     const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
     fireEvent.change(dateInput, { target: { value: '2025-10-29' } });
-    
+
     expect(useAdminOrders).toHaveBeenCalledWith(
       expect.objectContaining({ deliveryDate: '2025-10-29' })
     );
@@ -138,10 +152,10 @@ describe('OrdersManagement', () => {
     } as any);
 
     render(<OrdersManagement />);
-    
+
     const statusSelect = screen.getAllByRole('combobox')[0];
     fireEvent.change(statusSelect, { target: { value: 'pending' } });
-    
+
     expect(useAdminOrders).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'pending' })
     );
@@ -153,18 +167,18 @@ describe('OrdersManagement', () => {
       mutateAsync: mockUpdate,
       isPending: false,
     } as any);
-    
+
     vi.mocked(useAdminOrders).mockReturnValue({
       data: mockOrders,
       isLoading: false,
     } as any);
 
     render(<OrdersManagement />);
-    
+
     const statusSelects = screen.getAllByRole('combobox');
     // Skip the filter select (index 0), get the first order status select (index 1)
     fireEvent.change(statusSelects[1], { target: { value: 'confirmed' } });
-    
+
     await waitFor(() => {
       expect(mockUpdate).toHaveBeenCalledWith({
         id: 'order-1',
@@ -180,10 +194,10 @@ describe('OrdersManagement', () => {
     } as any);
 
     render(<OrdersManagement />);
-    
+
     const viewButtons = screen.getAllByText('View Details');
     fireEvent.click(viewButtons[0]);
-    
+
     expect(useOrder).toHaveBeenCalledWith('order-1');
   });
 
@@ -194,10 +208,10 @@ describe('OrdersManagement', () => {
     } as any);
 
     render(<OrdersManagement />);
-    
+
     const bulkButton = screen.getByText('Generate Bulk Order');
     fireEvent.click(bulkButton);
-    
+
     expect(screen.getByText('Generate Bulk Order', { selector: 'h2' })).toBeInTheDocument();
   });
 
@@ -213,29 +227,29 @@ describe('OrdersManagement', () => {
         },
       ],
     });
-    
+
     vi.mocked(useGenerateBulkOrder).mockReturnValue({
       mutateAsync: mockGenerate,
       isPending: false,
     } as any);
-    
+
     vi.mocked(useAdminOrders).mockReturnValue({
       data: mockOrders,
       isLoading: false,
     } as any);
 
     render(<OrdersManagement />);
-    
+
     const bulkButton = screen.getByText('Generate Bulk Order');
     fireEvent.click(bulkButton);
-    
+
     const dateInputs = document.querySelectorAll('input[type="date"]');
     const weekDateInput = dateInputs[dateInputs.length - 1];
     fireEvent.change(weekDateInput, { target: { value: '2025-10-27' } });
-    
+
     const generateButton = screen.getByText('Generate');
     fireEvent.click(generateButton);
-    
+
     await waitFor(() => {
       expect(mockGenerate).toHaveBeenCalledWith('2025-10-27');
     });

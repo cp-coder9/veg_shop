@@ -93,8 +93,8 @@ export function useWhatsAppProductList() {
   return useQuery<string>({
     queryKey: ['whatsapp-product-list'],
     queryFn: async () => {
-      const response = await api.get('/products/list/whatsapp');
-      return response.data;
+      const response = await api.get<{ message: string }>('/products/list/whatsapp');
+      return response.data.message;
     },
     enabled: false,
   });

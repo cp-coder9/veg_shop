@@ -17,6 +17,7 @@ import OrdersPage from './pages/OrdersPage';
 import ProfilePage from './pages/ProfilePage';
 import DashboardPage from './pages/DashboardPage';
 import PaymentHistoryPage from './pages/PaymentHistoryPage';
+import PaymentPage from './pages/PaymentPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ProductsManagement from './pages/admin/ProductsManagement';
 import SuppliersManagement from './pages/admin/SuppliersManagement';
@@ -61,6 +62,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<AuthPage />} />
           <Route path="/verify" element={<VerifyCodePage />} />
+          <Route path="/payment/:invoiceId" element={<PaymentPage />} />
 
           {/* Customer Routes */}
           <Route element={<Layout />}>

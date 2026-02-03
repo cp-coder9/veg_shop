@@ -15,10 +15,15 @@ export default function DashboardPage() {
     const setCartItems = useCartStore(state => state.setItems);
     const [searchTerm, setSearchTerm] = useState('');
 
+    interface OrderItem {
+        productId: string;
+        quantity: number;
+    }
+
     const handleQuickReorder = async (orderId: string) => {
         try {
             const { data: order } = await api.get(`/orders/${orderId}`);
-            const items = order.items.map((item: any) => ({
+            const items = order.items.map((item: OrderItem) => ({
                 productId: item.productId,
                 quantity: item.quantity
             }));
@@ -204,10 +209,10 @@ export default function DashboardPage() {
                     ) : (
                         <div className="divide-y divide-warm-gray-100 dark:divide-warm-gray-800">
                             {(productsData || [])
-                                ?.filter((p: any) => p.isAvailable)
-                                ?.filter((p: any) => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                                ?.filter((p: { id: string; name: string; isAvailable: boolean }) => p.isAvailable)
+                                ?.filter((p: { id: string; name: string; isAvailable: boolean }) => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
                                 ?.slice(0, 50)
-                                ?.map((product: any) => {
+                                ?.map((product: { id: string; name: string; price: number | string; unit: string; isAvailable: boolean }) => {
                                     const qty = getItemQuantity(product.id);
                                     return (
                                         <div key={product.id} className="flex items-center justify-between p-3 hover:bg-warm-gray-50 dark:hover:bg-warm-gray-800/50 transition-colors">

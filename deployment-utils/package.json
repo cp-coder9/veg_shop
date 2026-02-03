@@ -1,0 +1,17 @@
+{
+  "name": "deployment-utils",
+  "version": "1.0.0",
+  "description": "",
+  "main": "inspect.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "basic-ftp": "^5.1.0",
+    "dotenv": "^17.2.3"
+  }
+}

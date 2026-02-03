@@ -20,6 +20,8 @@ export function useAdminInvoices(filters?: {
       const response = await api.get(`/invoices?${params.toString()}`);
       return response.data;
     },
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   });
 }
 

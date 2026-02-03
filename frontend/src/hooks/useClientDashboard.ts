@@ -66,6 +66,8 @@ export function useClientDashboard() {
             const { data } = await api.get('/customers/me/dashboard');
             return data;
         },
+        refetchInterval: 30000,
+        refetchOnWindowFocus: true,
     });
 }
 
@@ -76,5 +78,7 @@ export function useClientPayments() {
             const { data } = await api.get('/customers/me/payments');
             return data;
         },
+        refetchInterval: 30000,
+        refetchOnWindowFocus: true,
     });
 }

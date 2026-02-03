@@ -28,12 +28,14 @@ export function useCustomerPayments(customerId: string) {
       return response.data;
     },
     enabled: !!customerId,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   });
 }
 
 export function useRecordPayment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (data: RecordPaymentDto) => {
       const response = await api.post('/payments', data);

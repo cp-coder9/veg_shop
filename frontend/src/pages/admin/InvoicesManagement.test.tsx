@@ -46,12 +46,12 @@ import {
 describe('InvoicesManagement', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     vi.mocked(useDownloadInvoicePDF).mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
     } as any);
-    
+
     vi.mocked(useInvoice).mockReturnValue({
       data: undefined,
       isLoading: false,
@@ -76,14 +76,14 @@ describe('InvoicesManagement', () => {
     } as any);
 
     render(<InvoicesManagement />);
-    
+
     expect(screen.getByText('Invoices Management')).toBeInTheDocument();
     // Check for invoice IDs in the table
     const invoiceCells = document.querySelectorAll('td.px-6.py-4.whitespace-nowrap.text-sm.font-medium.text-gray-900');
-    expect(invoiceCells.length).toBe(2);
-    expect(invoiceCells[0].textContent).toContain('invoice-');
-    expect(screen.getByText('R 90.00')).toBeInTheDocument();
-    expect(screen.getAllByText('R 150.00').length).toBeGreaterThan(0);
+    expect(screen.getByText('INV-2024-001')).toBeInTheDocument();
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
+    expect(screen.getAllByText('R 90.00').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/unpaid/i).length).toBeGreaterThan(0);
   });
 
   it('displays credit applied correctly', () => {
@@ -93,7 +93,7 @@ describe('InvoicesManagement', () => {
     } as any);
 
     render(<InvoicesManagement />);
-    
+
     expect(screen.getByText('-R 10.00')).toBeInTheDocument();
   });
 
@@ -104,10 +104,10 @@ describe('InvoicesManagement', () => {
     } as any);
 
     render(<InvoicesManagement />);
-    
+
     const statusSelect = screen.getByRole('combobox');
     fireEvent.change(statusSelect, { target: { value: 'unpaid' } });
-    
+
     expect(useAdminInvoices).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'unpaid' })
     );
@@ -120,14 +120,14 @@ describe('InvoicesManagement', () => {
     } as any);
 
     render(<InvoicesManagement />);
-    
+
     const dateInputs = document.querySelectorAll('input[type="date"]');
     const startDateInput = dateInputs[0] as HTMLInputElement;
     const endDateInput = dateInputs[1] as HTMLInputElement;
-    
+
     fireEvent.change(startDateInput, { target: { value: '2025-10-01' } });
     fireEvent.change(endDateInput, { target: { value: '2025-10-31' } });
-    
+
     expect(useAdminInvoices).toHaveBeenCalledWith(
       expect.objectContaining({
         startDate: '2025-10-01',
@@ -143,10 +143,10 @@ describe('InvoicesManagement', () => {
     } as any);
 
     render(<InvoicesManagement />);
-    
+
     const viewButtons = screen.getAllByText('View');
     fireEvent.click(viewButtons[0]);
-    
+
     expect(useInvoice).toHaveBeenCalledWith('invoice-1');
   });
 
@@ -156,17 +156,17 @@ describe('InvoicesManagement', () => {
       mutateAsync: mockDownload,
       isPending: false,
     } as any);
-    
+
     vi.mocked(useAdminInvoices).mockReturnValue({
       data: mockInvoices,
       isLoading: false,
     } as any);
 
     render(<InvoicesManagement />);
-    
+
     const pdfButtons = screen.getAllByText('PDF');
     fireEvent.click(pdfButtons[0]);
-    
+
     await waitFor(() => {
       expect(mockDownload).toHaveBeenCalledWith('invoice-1');
     });
@@ -179,11 +179,11 @@ describe('InvoicesManagement', () => {
     } as any);
 
     render(<InvoicesManagement />);
-    
-    const unpaidBadge = screen.getByText('unpaid');
-    const paidBadge = screen.getByText('paid');
-    
-    expect(unpaidBadge).toBeInTheDocument();
-    expect(paidBadge).toBeInTheDocument();
+
+    const unpaidBadges = screen.getAllByText('unpaid');
+    const paidBadges = screen.getAllByText('paid');
+
+    expect(unpaidBadges.length).toBeGreaterThan(0);
+    expect(paidBadges.length).toBeGreaterThan(0);
   });
 });

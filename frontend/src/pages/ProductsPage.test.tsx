@@ -63,7 +63,7 @@ describe('ProductsPage', () => {
     } as any);
 
     render(<ProductsPage />);
-    expect(screen.getByText(/loading products/i)).toBeInTheDocument();
+    expect(screen.getByText(/loading.*products/i)).toBeInTheDocument();
   });
 
   it('shows error state', () => {
@@ -85,9 +85,9 @@ describe('ProductsPage', () => {
     } as any);
 
     render(<ProductsPage />);
-    
-    expect(screen.getByText('Vegetables')).toBeInTheDocument();
-    expect(screen.getByText('Fruits')).toBeInTheDocument();
+
+    expect(screen.getByText(/Vegetables/i)).toBeInTheDocument();
+    expect(screen.getByText(/Fruits/i)).toBeInTheDocument();
     expect(screen.getByText('Tomatoes')).toBeInTheDocument();
     expect(screen.getByText('Apples')).toBeInTheDocument();
   });
@@ -100,6 +100,6 @@ describe('ProductsPage', () => {
     } as any);
 
     render(<ProductsPage />);
-    expect(screen.getByText(/no products available/i)).toBeInTheDocument();
+    expect(screen.getByText(/No Products Found/i)).toBeInTheDocument();
   });
 });

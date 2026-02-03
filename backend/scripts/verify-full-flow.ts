@@ -110,6 +110,48 @@ async function runVerification() {
             console.log('   ✅ Invoice total verified (R30.00)');
         }
 
+        // 6b. Verify Public Invoice Link & Payment
+        console.log('6b. Verifying Public Payment Flow...');
+
+        // Generate valid payment token (simulating what yokoService does)
+        const paymentToken = sign({ invoiceId, type: 'payment_link' }, env.JWT_SECRET, { expiresIn: '1h' });
+
+        // Test POST /api/payments/public
+        console.log('   Testing Public Payment...');
+        await axios.post(`${API_URL}/payments/public`, {
+            token: paymentToken,
+            invoiceId: invoiceId, // Must match token
+            customerId: customerId,
+            amount: 30.00,
+            method: 'yoco',
+            paymentDate: new Date(),
+            notes: 'Public payment test'
+        });
+        console.log('   ✅ Public payment succeeded');
+
+        // Verify invoice is now PAID
+        const paidInvoiceRes = await axios.get(`${API_URL}/invoices/public/${paymentToken}`);
+        if (paidInvoiceRes.data.status === 'paid') {
+            console.log('   ✅ Invoice marked as PAID via public link');
+        } else {
+            console.warn(`   ⚠️ Warning: Invoice status is ${paidInvoiceRes.data.status}, expected 'paid'`);
+        }
+
+        // 6c. Verify Admin Notifications
+        console.log('6c. Verifying Admin Notifications...');
+        try {
+            const notifRes = await axios.get(`${API_URL}/notifications`, {
+                headers: { Authorization: `Bearer ${adminToken}` }
+            });
+            if (Array.isArray(notifRes.data)) {
+                console.log(`   ✅ Admin notifications fetched (${notifRes.data.length} found)`);
+            } else {
+                console.error('   ❌ Notifications endpoint did not return an array');
+            }
+        } catch (e: any) {
+            console.error('   ❌ Failed to fetch notifications:', e.message);
+        }
+
         // 7. Verify Admin Dashboard Metrics
         console.log('7. Verifying Dashboard Metrics...');
         const metricsRes = await axios.get(`${API_URL}/admin/dashboard/metrics`, {

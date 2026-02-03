@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '../test/utils';
+import { render, screen, fireEvent } from '../test/utils';
 import userEvent from '@testing-library/user-event';
 import CartPage from './CartPage';
 
@@ -58,7 +58,7 @@ import { useCartStore } from '../stores/cartStore';
 describe('CartPage', () => {
   it('shows empty cart message when cart is empty', () => {
     render(<CartPage />);
-    
+
     expect(screen.getByText(/your cart is empty/i)).toBeInTheDocument();
     expect(screen.getByText(/browse products/i)).toBeInTheDocument();
   });
@@ -73,9 +73,9 @@ describe('CartPage', () => {
     });
 
     render(<CartPage />);
-    
-    expect(screen.getByText('Shopping Cart')).toBeInTheDocument();
-    expect(screen.getByText('Order Summary')).toBeInTheDocument();
+
+    expect(screen.getByText('Review Your Order')).toBeInTheDocument();
+    expect(screen.getByText(/Your Checklist/i)).toBeInTheDocument();
   });
 
   it('shows checkout form when proceed to checkout is clicked', async () => {
@@ -89,12 +89,11 @@ describe('CartPage', () => {
     });
 
     render(<CartPage />);
-    
-    const checkoutButton = screen.getByRole('button', { name: /proceed to checkout/i });
+
+    const checkoutButton = screen.getByText(/Proceed to Checkout/i);
     await user.click(checkoutButton);
-    
+
     expect(screen.getByText('Checkout')).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /delivery/i })).toBeInTheDocument();
   });
 
   it('shows delivery address field when delivery method is selected', async () => {
@@ -108,11 +107,15 @@ describe('CartPage', () => {
     });
 
     render(<CartPage />);
-    
-    const checkoutButton = screen.getByRole('button', { name: /proceed to checkout/i });
+
+    const checkoutButton = screen.getByText(/Proceed to Checkout/i);
     await user.click(checkoutButton);
-    
-    expect(screen.getByLabelText(/delivery address/i)).toBeInTheDocument();
+
+    // Select a delivery option
+    const deliverySelect = screen.getByLabelText(/Delivery \/ Collection Point/i);
+    fireEvent.change(deliverySelect, { target: { value: 'delivery_paarl' } });
+
+    expect(screen.getByLabelText(/Street Address/i)).toBeInTheDocument();
   });
 
   it('hides delivery address field when collection method is selected', async () => {
@@ -126,13 +129,14 @@ describe('CartPage', () => {
     });
 
     render(<CartPage />);
-    
-    const checkoutButton = screen.getByRole('button', { name: /proceed to checkout/i });
+
+    const checkoutButton = screen.getByText(/Proceed to Checkout/i);
     await user.click(checkoutButton);
-    
-    const collectionRadio = screen.getByLabelText(/collection/i);
-    await user.click(collectionRadio);
-    
-    expect(screen.queryByLabelText(/delivery address/i)).not.toBeInTheDocument();
+
+    // Select a collection option
+    const deliverySelect = screen.getByLabelText(/Delivery \/ Collection Point/i);
+    fireEvent.change(deliverySelect, { target: { value: 'collection_uitgezocht' } });
+
+    expect(screen.queryByLabelText(/Street Address/i)).not.toBeInTheDocument();
   });
 });

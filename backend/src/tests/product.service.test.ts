@@ -46,6 +46,8 @@ describe('ProductService', () => {
         id: 'product-1',
         ...productData,
         price: new Decimal(productData.price),
+        packingType: 'box',
+        supplierId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -175,6 +177,8 @@ describe('ProductService', () => {
         imageUrl: 'https://example.com/tomatoes.jpg',
         isAvailable: true,
         isSeasonal: false,
+        packingType: 'box',
+        supplierId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -199,6 +203,8 @@ describe('ProductService', () => {
         imageUrl: 'https://example.com/tomatoes.jpg',
         isAvailable: true,
         isSeasonal: false,
+        packingType: 'box',
+        supplierId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -232,6 +238,8 @@ describe('ProductService', () => {
           imageUrl: 'https://example.com/tomatoes.jpg',
           isAvailable: true,
           isSeasonal: false,
+          packingType: 'box',
+          supplierId: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -281,7 +289,7 @@ describe('ProductService', () => {
   });
 
   describe('getAvailableProducts', () => {
-    it('should return only available products', async () => {
+it('should return only available products', async () => {
       const mockProducts = [
         {
           id: 'product-1',
@@ -293,6 +301,8 @@ describe('ProductService', () => {
           imageUrl: 'https://example.com/tomatoes.jpg',
           isAvailable: true,
           isSeasonal: false,
+          packingType: 'box',
+          supplierId: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -304,7 +314,13 @@ describe('ProductService', () => {
 
       expect(result).toEqual(mockProducts);
       expect(prisma.product.findMany).toHaveBeenCalledWith({
-        where: { isAvailable: true },
+        where: {
+          isAvailable: true,
+          OR: [
+            { supplierId: null },
+            { supplier: { isAvailable: true } }
+          ]
+        },
         orderBy: [
           { category: 'asc' },
           { name: 'asc' },
@@ -348,7 +364,7 @@ describe('ProductService', () => {
   });
 
   describe('generateProductList', () => {
-    it('should generate WhatsApp-formatted product list', async () => {
+it('should generate WhatsApp-formatted product list', async () => {
       const mockProducts = [
         {
           id: 'product-1',
@@ -373,6 +389,8 @@ describe('ProductService', () => {
           imageUrl: 'https://example.com/strawberries.jpg',
           isAvailable: true,
           isSeasonal: true,
+          packingType: 'box',
+          supplierId: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -382,12 +400,13 @@ describe('ProductService', () => {
 
       const result = await productService.generateProductList();
 
-      expect(result).toContain('🌱 Weekly Product List 🌱');
-      expect(result).toContain('🥬 Vegetables');
-      expect(result).toContain('Tomatoes - R25.50/kg');
-      expect(result).toContain('🍎 Fruits');
-      expect(result).toContain('Strawberries - R45.00/pack 🌟');
+      expect(result).toContain('*🌱 Weekly Product List 🌱*');
+      expect(result).toContain('*🥬 Vegetables*');
+      expect(result).toContain('• Tomatoes - R25.50/kg');
+      expect(result).toContain('*🍎 Fruits*');
+      expect(result).toContain('• Strawberries - R45.00/pack 🌟');
       expect(result).toContain('🌟 = Seasonal item');
+      expect(result).toContain('_Place your order by Friday for next week\'s delivery!_');
     });
   });
 });

@@ -4,6 +4,8 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { auditService } from './audit.service.js';
 import { env } from '../config/env.js';
+import { userRepository } from '../repositories/user.repository.js';
+import { verificationCodeRepository } from '../repositories/verification-code.repository.js';
 
 export interface AuthToken {
   accessToken: string;
@@ -29,35 +31,53 @@ export class AuthService {
   async storeVerificationCode(contact: string, code: string): Promise<void> {
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Delete any existing codes for this contact
-    await prisma.verificationCode.deleteMany({
-      where: { contact },
-    });
-
-    // Create new verification code
-    await prisma.verificationCode.create({
-      data: {
+    if (env.USE_FIREBASE) {
+      // Delete existing
+      await verificationCodeRepository.deleteByContact(contact);
+      // Create new
+      await verificationCodeRepository.create({
         contact,
         code,
         expiresAt,
-      },
-    });
+        createdAt: new Date(),
+      });
+    } else {
+      // Delete any existing codes for this contact
+      await prisma.verificationCode.deleteMany({
+        where: { contact },
+      });
+
+      // Create new verification code
+      await prisma.verificationCode.create({
+        data: {
+          contact,
+          code,
+          expiresAt,
+        },
+      });
+    }
   }
 
   /**
    * Verify the code and return user if valid
    */
   async verifyCode(contact: string, code: string): Promise<AuthToken> {
-    // Find the verification code
-    const verificationCode = await prisma.verificationCode.findFirst({
-      where: {
-        contact,
-        code,
-        expiresAt: {
-          gt: new Date(),
+    let verificationCode;
+
+    if (env.USE_FIREBASE) {
+      verificationCode = await verificationCodeRepository.findValidCode(contact, code);
+    } else {
+      // Find the verification code
+      verificationCode = await prisma.verificationCode.findFirst({
+        where: {
+          contact,
+          code,
+          expiresAt: {
+            gt: new Date(),
+          },
         },
-      },
-    });
+      });
+    }
 
     if (!verificationCode) {
       // Log failed authentication attempt
@@ -70,31 +90,54 @@ export class AuthService {
     }
 
     // Delete the used verification code
-    await prisma.verificationCode.delete({
-      where: { id: verificationCode.id },
-    });
+    if (env.USE_FIREBASE) {
+      await verificationCodeRepository.delete(verificationCode.id);
+    } else {
+      await prisma.verificationCode.delete({
+        where: { id: verificationCode.id },
+      });
+    }
 
     // Find or create user
-    let user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { phone: contact },
-          { email: contact },
-        ],
-      },
-    });
+    let user;
+    if (env.USE_FIREBASE) {
+      user = await userRepository.findByEmailOrPhone(contact);
+    } else {
+      user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { phone: contact },
+            { email: contact },
+          ],
+        },
+      });
+    }
 
     if (!user) {
       // If logging in via phone/email code and user doesn't exist, create a customer account
       // Note: This is "implicit registration" via OTP
-      user = await prisma.user.create({
-        data: {
+      if (env.USE_FIREBASE) {
+        user = await userRepository.create({
           phone: contact.includes('@') ? null : contact,
           email: contact.includes('@') ? contact : null,
-          name: contact, // Temporary name
+          name: contact,
           role: 'customer',
-        },
-      });
+          deliveryPreference: 'weekly',
+          status: 'active',
+          loyaltyPoints: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      } else {
+        user = await prisma.user.create({
+          data: {
+            phone: contact.includes('@') ? null : contact,
+            email: contact.includes('@') ? contact : null,
+            name: contact, // Temporary name
+            role: 'customer',
+          },
+        });
+      }
     }
 
     // Log successful authentication
@@ -135,16 +178,33 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
     // Create user
-    const user = await prisma.user.create({
-      data: {
+    let user;
+    if (env.USE_FIREBASE) {
+      user = await userRepository.create({
         name: data.name,
         email: data.email,
         password: hashedPassword,
         phone: data.phone || null,
         address: data.address || null,
-        role: 'customer', // Default role
-      },
-    });
+        role: 'customer',
+        deliveryPreference: 'weekly',
+        status: 'active',
+        loyaltyPoints: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    } else {
+      user = await prisma.user.create({
+        data: {
+          name: data.name,
+          email: data.email,
+          password: hashedPassword,
+          phone: data.phone || null,
+          address: data.address || null,
+          role: 'customer', // Default role
+        },
+      });
+    }
 
     // Log successful registration
     await auditService.log({
@@ -162,9 +222,14 @@ export class AuthService {
    */
   async login(data: { email: string; password: string }): Promise<AuthToken> {
     // Find user
-    const user = await prisma.user.findUnique({
-      where: { email: data.email },
-    });
+    let user;
+    if (env.USE_FIREBASE) {
+      user = await userRepository.findByEmail(data.email);
+    } else {
+      user = await prisma.user.findUnique({
+        where: { email: data.email },
+      });
+    }
 
     if (!user || !user.password) {
       // Log failed attempt
@@ -254,9 +319,14 @@ export class AuthService {
   async refreshToken(refreshToken: string): Promise<AuthToken> {
     const decoded = this.validateToken(refreshToken);
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-    });
+    let user;
+    if (env.USE_FIREBASE) {
+      user = await userRepository.findById(decoded.userId);
+    } else {
+      user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+      });
+    }
 
     if (!user) {
       throw new Error('User not found');

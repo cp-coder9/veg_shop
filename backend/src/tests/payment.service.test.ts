@@ -102,9 +102,9 @@ describe('PaymentService', () => {
         });
       });
 
-      const result = await paymentService.recordPayment(paymentData);
+const result = await paymentService.recordPayment(paymentData);
 
-      expect(result.amount).toBe(100.00);
+      expect(result.amount).toEqual(new Decimal(100.00));
       expect(result.method).toBe('cash');
     });
 
@@ -367,9 +367,9 @@ describe('PaymentService', () => {
 
       vi.mocked(prisma.credit.findMany).mockResolvedValue(mockCredits);
 
-      const result = await paymentService.getCreditBalance(customerId);
+const result = await paymentService.getCreditBalance(customerId);
 
-      expect(result).toBe(60.00); // 50 + 30 - 20
+      expect(result).toEqual(60.00); // 50 + 30 - 20
     });
 
     it('should return 0 for negative balance', async () => {
@@ -388,9 +388,9 @@ describe('PaymentService', () => {
 
       vi.mocked(prisma.credit.findMany).mockResolvedValue(mockCredits);
 
-      const result = await paymentService.getCreditBalance(customerId);
+const result = await paymentService.getCreditBalance(customerId);
 
-      expect(result).toBe(0); // Never return negative
+      expect(result).toEqual(0); // Never return negative
     });
   });
 
@@ -715,11 +715,11 @@ describe('PaymentService', () => {
 
       vi.mocked(prisma.payment.findUnique).mockResolvedValue(mockPayment);
 
-      const result = await paymentService.getPayment(paymentId);
+const result = await paymentService.getPayment(paymentId);
 
       expect(result).toBeDefined();
       expect(result?.id).toBe(mockPayment.id);
-      expect(result?.amount).toBe(100.00);
+      expect(result?.amount).toEqual(100.00);
       expect(result?.method).toBe(mockPayment.method);
     });
 
@@ -774,11 +774,11 @@ describe('PaymentService', () => {
 
       vi.mocked(prisma.payment.findMany).mockResolvedValue(mockPayments);
 
-      const result = await paymentService.getCustomerPayments(customerId);
+const result = await paymentService.getCustomerPayments(customerId);
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('payment-1');
-      expect(result[0].amount).toBe(100.00);
+      expect(result[0].amount).toEqual(100.00);
       expect(result[0].customerId).toBe(customerId);
     });
   });

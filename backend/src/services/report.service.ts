@@ -1,4 +1,11 @@
 import { prisma } from '../lib/prisma.js';
+import { env } from '../config/env.js';
+import { orderRepository } from '../repositories/order.repository.js';
+import { orderItemRepository } from '../repositories/order-item.repository.js';
+import { invoiceRepository } from '../repositories/invoice.repository.js';
+import { userRepository } from '../repositories/user.repository.js';
+import { productRepository } from '../repositories/product.repository.js';
+import { paymentRepository } from '../repositories/payment.repository.js';
 
 export interface SalesReport {
   startDate: Date;
@@ -55,29 +62,50 @@ export class ReportService {
    */
   async generateSalesReport(startDate: Date, endDate: Date): Promise<SalesReport> {
     console.log('Generating Sales Report:', { startDate, endDate });
-    // Get all orders within date range (excluding cancelled)
-    const orders = await prisma.order.findMany({
-      where: {
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-        status: {
-          not: 'cancelled',
-        },
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
+
+    let orders: any[];
+    if (env.USE_FIREBASE) {
+      // Get all orders within date range (excluding cancelled)
+      const allOrders = await orderRepository.list([
+        { field: 'createdAt', operator: '>=', value: startDate },
+        { field: 'createdAt', operator: '<=', value: endDate },
+        { field: 'status', operator: '!=', value: 'cancelled' }
+      ]);
+
+      orders = await Promise.all(allOrders.map(async order => {
+        const items = await orderItemRepository.findByOrder(order.id);
+        const itemsWithProducts = await Promise.all(items.map(async item => {
+          const product = await productRepository.findById(item.productId);
+          return { ...item, product };
+        }));
+        const invoice = await invoiceRepository.findByOrder(order.id);
+        return { ...order, items: itemsWithProducts, invoice };
+      }));
+    } else {
+      // Get all orders within date range (excluding cancelled)
+      orders = await prisma.order.findMany({
+        where: {
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+          status: {
+            not: 'cancelled',
           },
         },
-        invoice: true,
-      },
-    });
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          invoice: true,
+        },
+      });
+    }
 
     // Calculate total revenue from invoices
-    const totalRevenue = orders.reduce((sum, order) => {
+    const totalRevenue = orders.reduce((sum: number, order: any) => {
       if (order.invoice) {
         return sum + Number(order.invoice.total);
       }
@@ -92,8 +120,8 @@ export class ReportService {
       revenue: number;
     }>();
 
-    orders.forEach(order => {
-      order.items.forEach(item => {
+    orders.forEach((order: any) => {
+      order.items.forEach((item: any) => {
         const existing = productMap.get(item.productId);
         const itemRevenue = Number(item.priceAtOrder) * item.quantity;
 
@@ -128,22 +156,35 @@ export class ReportService {
    * Requirement 12.2: Generate payment status reports showing outstanding balances by customer
    */
   async generatePaymentStatusReport(): Promise<PaymentStatusReport> {
-    // Get all unpaid and partially paid invoices
-    const invoices = await prisma.invoice.findMany({
-      where: {
-        status: {
-          in: ['unpaid', 'partial'],
-        },
-      },
-      include: {
-        customer: true,
-        payments: {
-          orderBy: {
-            paymentDate: 'desc',
+    let invoices: any[];
+    if (env.USE_FIREBASE) {
+      const unpaidInvoices = await invoiceRepository.list([
+        { field: 'status', operator: 'in', value: ['unpaid', 'partial'] }
+      ]);
+      invoices = await Promise.all(unpaidInvoices.map(async inv => {
+        const customer = await userRepository.findById(inv.customerId);
+        const payments = await paymentRepository.list([{ field: 'invoiceId', operator: '==', value: inv.id }]);
+        const sortedPayments = payments.sort((a, b) => (b.paymentDate as Date).getTime() - (a.paymentDate as Date).getTime());
+        return { ...inv, customer, payments: sortedPayments };
+      }));
+    } else {
+      // Get all unpaid and partially paid invoices
+      invoices = await prisma.invoice.findMany({
+        where: {
+          status: {
+            in: ['unpaid', 'partial'],
           },
         },
-      },
-    });
+        include: {
+          customer: true,
+          payments: {
+            orderBy: {
+              paymentDate: 'desc',
+            },
+          },
+        },
+      });
+    }
 
     // Group by customer and calculate outstanding balance
     const customerMap = new Map<string, {
@@ -153,8 +194,8 @@ export class ReportService {
       lastPaymentDate: Date | null;
     }>();
 
-    invoices.forEach(invoice => {
-      const totalPaid = invoice.payments.reduce((sum, payment) => {
+    invoices.forEach((invoice: any) => {
+      const totalPaid = invoice.payments.reduce((sum: number, payment: any) => {
         return sum + Number(payment.amount);
       }, 0);
 
@@ -202,24 +243,42 @@ export class ReportService {
     startDate: Date,
     endDate: Date
   ): Promise<ProductPopularityReport> {
-    // Get all order items within date range (excluding cancelled orders)
-    const orderItems = await prisma.orderItem.findMany({
-      where: {
-        order: {
-          createdAt: {
-            gte: startDate,
-            lte: endDate,
-          },
-          status: {
-            not: 'cancelled',
+    let orderItems: any[];
+    if (env.USE_FIREBASE) {
+      const allOrders = await orderRepository.list([
+        { field: 'createdAt', operator: '>=', value: startDate },
+        { field: 'createdAt', operator: '<=', value: endDate },
+        { field: 'status', operator: '!=', value: 'cancelled' }
+      ]);
+
+      const itemsPerOrder = await Promise.all(allOrders.map(async order => {
+        const items = await orderItemRepository.findByOrder(order.id);
+        return Promise.all(items.map(async item => {
+          const product = await productRepository.findById(item.productId);
+          return { ...item, product, order };
+        }));
+      }));
+      orderItems = itemsPerOrder.flat();
+    } else {
+      // Get all order items within date range (excluding cancelled orders)
+      orderItems = await prisma.orderItem.findMany({
+        where: {
+          order: {
+            createdAt: {
+              gte: startDate,
+              lte: endDate,
+            },
+            status: {
+              not: 'cancelled',
+            },
           },
         },
-      },
-      include: {
-        product: true,
-        order: true,
-      },
-    });
+        include: {
+          product: true,
+          order: true,
+        },
+      });
+    }
 
     // Aggregate by product
     const productMap = new Map<string, {
@@ -233,7 +292,7 @@ export class ReportService {
     // Track unique orders per product
     const productOrdersMap = new Map<string, Set<string>>();
 
-    orderItems.forEach(item => {
+    orderItems.forEach((item: any) => {
       const existing = productMap.get(item.productId);
       const itemRevenue = Number(item.priceAtOrder) * item.quantity;
 
@@ -258,7 +317,7 @@ export class ReportService {
     });
 
     // Update order counts with unique order counts
-    productMap.forEach((product, productId) => {
+    productMap.forEach((product: any, productId: string) => {
       product.orderCount = productOrdersMap.get(productId)?.size || 0;
     });
 
@@ -282,25 +341,40 @@ export class ReportService {
     startDate: Date,
     endDate: Date
   ): Promise<CustomerActivityReport> {
-    // Get all orders within date range (excluding cancelled)
-    const orders = await prisma.order.findMany({
-      where: {
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
+    let orders: any[];
+    if (env.USE_FIREBASE) {
+      const allOrders = await orderRepository.list([
+        { field: 'createdAt', operator: '>=', value: startDate },
+        { field: 'createdAt', operator: '<=', value: endDate },
+        { field: 'status', operator: '!=', value: 'cancelled' }
+      ], { field: 'createdAt', direction: 'desc' });
+
+      orders = await Promise.all(allOrders.map(async order => {
+        const customer = await userRepository.findById(order.customerId);
+        const invoice = await invoiceRepository.findByOrder(order.id);
+        return { ...order, customer, invoice };
+      }));
+    } else {
+      // Get all orders within date range (excluding cancelled)
+      orders = await prisma.order.findMany({
+        where: {
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+          status: {
+            not: 'cancelled',
+          },
         },
-        status: {
-          not: 'cancelled',
+        include: {
+          customer: true,
+          invoice: true,
         },
-      },
-      include: {
-        customer: true,
-        invoice: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+    }
 
     // Group by customer
     const customerMap = new Map<string, {
@@ -312,7 +386,7 @@ export class ReportService {
       lastOrderDate: Date | null;
     }>();
 
-    orders.forEach(order => {
+    orders.forEach((order: any) => {
       const orderTotal = order.invoice ? Number(order.invoice.total) : 0;
       const existing = customerMap.get(order.customerId);
 
@@ -336,7 +410,7 @@ export class ReportService {
     });
 
     // Calculate average order values
-    customerMap.forEach(customer => {
+    customerMap.forEach((customer: any) => {
       customer.averageOrderValue = customer.orderCount > 0
         ? customer.totalSpent / customer.orderCount
         : 0;
@@ -364,33 +438,58 @@ export class ReportService {
     unpaidInvoices: number;
     activeCustomers: number;
   }> {
-    const [
-      totalOrders,
-      pendingOrders,
-      activeCustomers,
-      allInvoices,
-    ] = await Promise.all([
-      prisma.order.count({ where: { status: { not: 'cancelled' } } }),
-      prisma.order.count({ where: { status: 'pending' } }),
-      prisma.user.count({ where: { role: 'customer' } }),
-      prisma.invoice.findMany({
-        select: {
-          total: true,
-          status: true,
-        },
-      }),
-    ]);
+    if (env.USE_FIREBASE) {
+      const [
+        allOrders,
+        pendingOrdersList,
+        customers,
+        allInvoices,
+      ] = await Promise.all([
+        orderRepository.list([{ field: 'status', operator: '!=', value: 'cancelled' }]),
+        orderRepository.list([{ field: 'status', operator: '==', value: 'pending' }]),
+        userRepository.list([{ field: 'role', operator: '==', value: 'customer' }]),
+        invoiceRepository.list([]),
+      ]);
 
-    const totalRevenue = allInvoices.reduce((sum, inv) => sum + Number(inv.total), 0);
-    const unpaidInvoices = allInvoices.filter(inv => inv.status === 'unpaid' || inv.status === 'partial').length;
+      const totalRevenue = allInvoices.reduce((sum: number, inv: any) => sum + Number(inv.total || 0), 0);
+      const unpaidInvoices = allInvoices.filter((inv: any) => inv.status === 'unpaid' || inv.status === 'partial').length;
 
-    return {
-      totalOrders,
-      pendingOrders,
-      totalRevenue,
-      unpaidInvoices,
-      activeCustomers,
-    };
+      return {
+        totalOrders: allOrders.length,
+        pendingOrders: pendingOrdersList.length,
+        totalRevenue,
+        unpaidInvoices,
+        activeCustomers: customers.length,
+      };
+    } else {
+      const [
+        totalOrders,
+        pendingOrders,
+        activeCustomers,
+        allInvoices,
+      ] = await Promise.all([
+        prisma.order.count({ where: { status: { not: 'cancelled' } } }),
+        prisma.order.count({ where: { status: 'pending' } }),
+        prisma.user.count({ where: { role: 'customer' } }),
+        prisma.invoice.findMany({
+          select: {
+            total: true,
+            status: true,
+          },
+        }),
+      ]);
+
+      const totalRevenue = allInvoices.reduce((sum: number, inv: any) => sum + Number(inv.total), 0);
+      const unpaidInvoices = allInvoices.filter((inv: any) => inv.status === 'unpaid' || inv.status === 'partial').length;
+
+      return {
+        totalOrders,
+        pendingOrders,
+        totalRevenue,
+        unpaidInvoices,
+        activeCustomers,
+      };
+    }
   }
 
   /**
@@ -405,22 +504,39 @@ export class ReportService {
     totalQuantity: number;
     orderCount: number;
   }>> {
-    const orderItems = await prisma.orderItem.findMany({
-      where: {
-        order: {
-          createdAt: {
-            gte: startDate,
-            lte: endDate,
-          },
-          status: {
-            in: ['pending', 'confirmed'],
+    let orderItems: any[];
+    if (env.USE_FIREBASE) {
+      const allOrders = await orderRepository.list([
+        { field: 'createdAt', operator: '>=', value: startDate },
+        { field: 'createdAt', operator: '<=', value: endDate },
+        { field: 'status', operator: 'in', value: ['pending', 'confirmed'] }
+      ]);
+      const itemsPerOrder = await Promise.all(allOrders.map(async order => {
+        const items = await orderItemRepository.findByOrder(order.id);
+        return Promise.all(items.map(async item => {
+          const product = await productRepository.findById(item.productId);
+          return { ...item, product };
+        }));
+      }));
+      orderItems = itemsPerOrder.flat();
+    } else {
+      orderItems = await prisma.orderItem.findMany({
+        where: {
+          order: {
+            createdAt: {
+              gte: startDate,
+              lte: endDate,
+            },
+            status: {
+              in: ['pending', 'confirmed'],
+            },
           },
         },
-      },
-      include: {
-        product: true,
-      },
-    });
+        include: {
+          product: true,
+        },
+      });
+    }
 
     const productMap = new Map<string, {
       productId: string;
@@ -431,7 +547,7 @@ export class ReportService {
       orderCount: number;
     }>();
 
-    orderItems.forEach(item => {
+    orderItems.forEach((item: any) => {
       const existing = productMap.get(item.productId);
 
       if (existing) {

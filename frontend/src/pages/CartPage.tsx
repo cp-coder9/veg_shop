@@ -20,6 +20,7 @@ export default function CartPage() {
   const [deliveryDate, setDeliveryDate] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState(user?.address || '');
   const [specialInstructions, setSpecialInstructions] = useState('');
+  const [coolerBagOption, setCoolerBagOption] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
 
   // Auto-select delivery option based on address
@@ -98,6 +99,7 @@ export default function CartPage() {
         deliveryFees: deliveryFee,
         deliveryAddress: isDelivery ? deliveryAddress : selectedDeliveryOption?.label,
         specialInstructions: specialInstructions || undefined,
+        coolerBagOption,
         items: items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -254,6 +256,21 @@ export default function CartPage() {
               placeholder="Gate code, specific packaging requests, etc."
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
+          </div>
+
+          {/* Cooler Bag Option */}
+          <div className="flex items-center gap-3 bg-green-50 p-4 rounded-lg border border-green-100">
+            <input
+              id="coolerBagOption"
+              type="checkbox"
+              checked={coolerBagOption}
+              onChange={(e) => setCoolerBagOption(e.target.checked)}
+              className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+            />
+            <label htmlFor="coolerBagOption" className="text-sm text-green-800 font-medium">
+              I'll put the *Returnable Cooler Bag* out for collection (Free Service)
+              <span className="block text-xs text-green-600 font-normal mt-0.5">Recommended for fresh/frozen items if you're not home.</span>
+            </label>
           </div>
 
           {/* Order Totals */}

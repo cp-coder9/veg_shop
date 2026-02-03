@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 
 // Use environment variable for API URL in production, fallback to /api for dev proxy
+// Use environment variable for API URL in production, fallback to /api for dev proxy
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
@@ -30,7 +31,10 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Skip refresh logic for auth routes (login/register) to see real errors
+    const isAuthRoute = originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/register');
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
       originalRequest._retry = true;
 
       try {

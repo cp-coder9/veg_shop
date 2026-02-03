@@ -136,7 +136,7 @@ export default function AdminLayout() {
                 </div>
                 <div>
                   <h1 className="text-xl font-display font-bold text-organic-green-900 dark:text-organic-green-400">Admin Panel</h1>
-                  <p className="text-sm text-warm-gray-600 dark:text-warm-gray-400">Organic Veg Shop</p>
+                  <p className="text-sm text-warm-gray-600 dark:text-warm-gray-400">Our Harvest Tote</p>
                 </div>
               </div>
             </div>
@@ -228,7 +228,7 @@ export default function AdminLayout() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <span className="font-bold text-lg text-organic-green-900 dark:text-organic-green-400">Organic Veg Admin</span>
+            <span className="font-bold text-lg text-organic-green-900 dark:text-organic-green-400">Our Harvest Tote Admin</span>
           </div>
           <ThemeToggle />
         </div>

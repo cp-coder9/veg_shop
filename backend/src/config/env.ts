@@ -35,6 +35,12 @@ const envSchema = z.object({
   RATE_LIMIT_VERIFICATION_CODES: z.string().default('3').transform(Number),
   RATE_LIMIT_API_REQUESTS: z.string().default('100').transform(Number),
   RATE_LIMIT_LOGIN_ATTEMPTS: z.string().default('5').transform(Number),
+
+  // Firebase (Required for Firestore migration)
+  FIREBASE_PROJECT_ID: z.string().optional(),
+  FIREBASE_CLIENT_EMAIL: z.string().optional(),
+  FIREBASE_PRIVATE_KEY: z.string().optional(),
+  USE_FIREBASE: z.string().default('false').transform((val) => val === 'true'),
 });
 
 // Validate environment variables

@@ -1,0 +1,545 @@
+﻿
+[1m[46m RUN [49m[22m [36mv4.0.4 [39m[90mD:/veg_shop/frontend[39m
+
+node.exe : [90mstderr[2m | 
+src/pages/admin/InvoicesManagement.test.tsx[2m > 
+[22m[2mInvoicesManagement[2m > [22m[2mshows loading state
+At C:\Program Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([90mstderr[2m... 
+   s loading state:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[22m[39mΓÜá∩╕Å React Router Future Flag Warning: React Router 
+will begin wrapping state updates in `React.startTransition` in 
+v7. You can use the `v7_startTransition` future flag to opt-in 
+early. For more information, see 
+https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+ΓÜá∩╕Å React Router Future Flag Warning: Relative route 
+resolution within Splat routes is changing in v7. You can use 
+the `v7_relativeSplatPath` future flag to opt-in early. For 
+more information, see https://reactrouter.com/v6/upgrading/futur
+e#v7_relativesplatpath.
+
+ [31mΓ¥»[39m src/pages/admin/InvoicesManagement.test.tsx [2m([22m[2m8 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 466[2mms[22m[39m
+     [32mΓ£ô[39m shows loading state[32m 38[2mms[22m[39m
+[31m     [31m├ù[31m renders invoices table with data[39m[32m 101[2mms[22m[39m
+     [32mΓ£ô[39m displays credit applied correctly[32m 19[2mms[22m[39m
+     [32mΓ£ô[39m filters invoices by status[32m 181[2mms[22m[39m
+     [32mΓ£ô[39m filters invoices by date range[32m 25[2mms[22m[39m
+     [32mΓ£ô[39m opens invoice detail modal[32m 41[2mms[22m[39m
+     [32mΓ£ô[39m downloads invoice PDF[32m 29[2mms[22m[39m
+     [32mΓ£ô[39m shows invoice status badges correctly[32m 29[2mms[22m[39m
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m[1m[41m Failed Tests 1 
+[49m[22m[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m
+
+[41m[1m FAIL [22m[49m 
+src/pages/admin/InvoicesManagement.test.tsx[2m > 
+[22mInvoicesManagement[2m > [22mrenders invoices table with 
+data
+[31m[1mTestingLibraryElementError[22m[39m: Unable to find 
+an element with the text: INV-2024-001. This could be because 
+the text is broken up by multiple elements. In this case, you 
+can provide a function for your text matcher to make your 
+matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div>[39m
+      [36m<h1[39m
+        [33mclass[39m=[32m"text-3xl font-bold text-gray-900 
+mb-6"[39m
+      [36m>[39m
+        [0mInvoices Management[0m
+      [36m</h1>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"bg-white rounded-lg shadow-md p-4 
+mb-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-1 md:grid-cols-3 
+gap-4"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"block text-sm font-medium 
+text-gray-700 mb-2"[39m
+            [36m>[39m
+              [0mStatus[0m
+            [36m</label>[39m
+            [36m<select[39m
+              [33mclass[39m=[32m"w-full px-3 py-2 border 
+border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 
+focus:border-transparent"[39m
+            [36m>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m""[39m
+              [36m>[39m
+                [0mAll Statuses[0m
+              [36m</option>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m"unpaid"[39m
+              [36m>[39m
+                [0mUnpaid[0m
+              [36m</option>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m"partial"[39m
+              [36m>[39m
+                [0mPartial[0m
+              [36m</option>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m"paid"[39m
+              [36m>[39m
+                [0mPaid[0m
+              [36m</option>[39m
+            [36m</select>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"block text-sm font-medium 
+text-gray-700 mb-2"[39m
+            [36m>[39m
+              [0mStart Date[0m
+            [36m</label>[39m
+            [36m<input[39m
+              [33mclass[39m=[32m"w-full px-3 py-2 border 
+border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 
+focus:border-transparent"[39m
+              [33mtype[39m=[32m"date"[39m
+              [33mvalue[39m=[32m""[39m
+            [36m/>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"block text-sm font-medium 
+text-gray-700 mb-2"[39m
+            [36m>[39m
+              [0mEnd Date[0m
+            [36m</label>[39m
+            [36m<input[39m
+              [33mclass[39m=[32m"w-full px-3 py-2 border 
+border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 
+focus:border-transparent"[39m
+              [33mtype[39m=[32m"date"[39m
+              [33mvalue[39m=[32m""[39m
+            [36m/>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"hidden md:block bg-white 
+rounded-lg shadow-md overflow-hidden"[39m
+      [36m>[39m
+        [36m<table[39m
+          [33mclass[39m=[32m"min-w-full divide-y 
+divide-gray-200"[39m
+        [36m>[39m
+          [36m<thead[39m
+            [33mclass[39m=[32m"bg-gray-50"[39m
+          [36m>[39m
+            [36m<tr>[39m
+              [36m<th[39m
+                [33mclass[39m=[32m"px-6 py-3 text-left 
+text-xs font-medium text-gray-500 uppercase tracking-wider"[39m
+              [36m>[39m
+                [0mInvoice ID[0m
+              [36m</th>[39m
+              [36m<th[39m
+                [33mclass[39m=[32m"px-6 py-3 text-left 
+text-xs font-medium text-gray-500 uppercase tracking-wider"[39m
+              [36m>[39m
+                [0mCustomer[0m
+              [36m</th>[39m
+              [36m<th[39m
+                [33mclass[39m=[32m"px-6 py-3 text-left 
+text-xs font-medium text-gray-500 uppercase tracking-wider"[39m
+              [36m>[39m
+                [0mSubtotal[0m
+              [36m</th>[39m
+              [36m<th[39m
+                [33mclass[39m=[32m"px-6 py-3 text-left 
+text-xs font-medium text-gray-500 uppercase tracking-wider"[39m
+              [36m>[39m
+                [0mCredit Applied[0m
+              [36m</th>[39m
+              [36m<th[39m
+                [33mclass[39m=[32m"px-6 py-3 text-left 
+text-xs font-medium text-gray-500 uppercase tracking-wider"[39m
+              [36m>[39m
+                [0mTotal[0m
+              [36m</th>[39m
+              [36m<th[39m
+                [33mclass[39m=[32m"px-6 py-3 text-left 
+text-xs font-medium text-gray-500 uppercase tracking-wider"[39m
+              [36m>[39m
+                [0mStatus[0m
+              [36m</th>[39m
+              [36m<th[39m
+                [33mclass[39m=[32m"px-6 py-3 text-left 
+text-xs font-medium text-gray-500 uppercase tracking-wider"[39m
+              [36m>[39m
+                [0mDue Date[0m
+              [36m</th>[39m
+              [36m<th[39m
+                [33mclass[39m=[32m"px-6 py-3 text-left 
+text-xs font-medium text-gray-500 uppercase tracking-wider"[39m
+              [36m>[39m
+                [0mActions[0m
+              [36m</th>[39m
+            [36m</tr>[39m
+          [36m</thead>[39m
+          [36m<tbody[39m
+            [33mclass[39m=[32m"bg-white divide-y 
+divide-gray-200"[39m
+          [36m>[39m
+            [36m<tr>[39m
+              [36m<td[39m
+                [33mclass[39m=[32m"px-6 py-4 
+whitespace-nowrap text-sm font-medium text-gray-900"[39m
+              [36m>[39m
+                [0minvoice-[0m
+                [0m...[0m
+              [36m</td>[39m
+              [36m<td[39m
+                [33mclass[39m=[32m"px-6 py-4 
+whitespace-nowrap text-sm text-gray-500"[39m
+              [36m>[39m
+                [0mcustomer[0m
+              [36m</td>[39m
+              [36m<td[39m
+                [33mclass[39m=[32m"px-6 py-4 
+whitespace-nowrap text-sm text-gray-900"[39m
+              [36m>[39m
+                [0mR [0m
+                [0m100.00[0m
+              [36m</td>[39m
+              [36m<td[39m
+                [33mclass[39m=[32m"px-6 py-4 
+whitespace-nowrap text-sm text-green-600"[39m
+              [36m>[39m
+                [0m-R 10.00[0m
+              [36m</td>[39m
+              [36m<td[39m
+                [33mclass[39m=[32m"px-6 py-4 
+whitespace-nowrap text-sm font-semibold text-gray-900"[39m
+              [36m>[39m
+                [0mR [0m
+                [0m90.00[0m
+              [36m</td>[39m
+              [36m<td[39m
+                [33mclass[39m=[32m"px-6 py-4 
+whitespace-nowrap"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"px-2 inline-flex 
+text-xs leading-5 font-semibold rounded-full bg-red-100 
+text-red-800"[39m
+                [36m>[39m
+                  [0munpaid[0m
+                [36m</span>[39m
+              [36m</td>[39m
+              [36m<td[39m
+                [33mclass[39m=[32m"px-6 py-4 
+whitespace-nowrap text-sm text-gray-500"[39m
+              [36m>[39m
+                [0m2025/11/04[0m
+              [36m</td>[39m
+              [36m<td[39m
+                [33mclass[39m=[32m"px-6 py-4 
+whitespace-nowrap text-sm font-medium space-x-2"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33mclass[39m=[32m"text-blue-600 
+hover:text-blue-900"[39m
+                [36m>[39m
+                  [0mView[0m
+                [36m</button>[39m
+                [36m<button[39m
+                  [33mclass[39m=[32m"text-green-600 
+hover:text-green-900"[39m
+                [36m>[39m
+                  [0mPDF[0m
+                [36m</button>[39m
+                [36m<button[39m
+                  [33mclass[39m=[32m"text-indigo-600 
+hover:text-indigo-900"[39m
+                [36m>[39m
+                  [0mLink[0m
+                [36m</button>[39m
+              [36m</td>[39m
+            [36m</tr>[39m
+            [36m<tr>[39m
+              [36m<td[39m
+                [33mclass[39m=[32m"px-6 py-4 
+whitespace-nowrap text-sm font-medium text-gray-900"[39m
+              [36m>[39m
+                [0minvoice-[0m
+                [0m...[0m
+              [36m</td>[39m
+              [36m<td[39m
+                [33mclass[39m=[32m"px-6 py-4 
+whitespace-nowrap text-sm text-gray-500"[39m
+              [36m>[39m
+                [0mcustomer[0m
+              [36m</td>[39m
+              [36m<td[39m
+                [33mclass[39m=[32m"px-6 py-4 
+whitespace-nowrap text-sm text-gray-900"[39m
+              [36m>[39m
+                [0mR [0m
+                [0m150.00[0m
+              [36m</td>[39m
+              [36m<td[39m
+                [33mclass[39m=[32m"px-6 py-4 
+whitespace-nowrap text-sm text-green-600"[39m
+              [36m>[39m
+                [0m-[0m
+              [36m</td>[39m
+              [36m<td[39m
+                [33mclass[39m=[32m"px-6 py-4 
+whitespace-nowrap text-sm font-semibold text-gray-900"[39m
+              [36m>[39m
+                [0mR [0m
+                [0m150.00[0m
+              [36m</td>[39m
+              [36m<td[39m
+                [33mclass[39m=[32m"px-6 py-4 
+whitespace-nowrap"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"px-2 inline-flex 
+text-xs leading-5 font-semibold rounded-full bg-green-100 
+text-green-800"[39m
+                [36m>[39m
+                  [0mpaid[0m
+                [36m</span>[39m
+              [36m</td>[39m
+              [36m<td[39m
+                [33mclass[39m=[32m"px-6 py-4 
+whitespace-nowrap text-sm text-gray-500"[39m
+              [36m>[39m
+                [0m2025/11/03[0m
+              [36m</td>[39m
+              [36m<td[39m
+                [33mclass[39m=[32m"px-6 py-4 
+whitespace-nowrap text-sm font-medium space-x-2"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33mclass[39m=[32m"text-blue-600 
+hover:text-blue-900"[39m
+                [36m>[39m
+                  [0mView[0m
+                [36m</button>[39m
+              [36m</td>[39m
+            [36m</tr>[39m
+          [36m</tbody>[39m
+        [36m</table>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"md:hidden space-y-4"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"bg-white p-4 rounded-lg shadow 
+space-y-3"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex justify-between 
+items-start"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<h3[39m
+                [33mclass[39m=[32m"text-sm font-bold 
+text-gray-900"[39m
+              [36m>[39m
+                [0m#[0m
+                [0minvoice-[0m
+                [0m...[0m
+              [36m</h3>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"text-sm 
+text-gray-600"[39m
+              [36m>[39m
+                [0mcustomer[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"px-2 py-1 text-xs 
+font-semibold rounded-full bg-red-100 text-red-800"[39m
+            [36m>[39m
+              [0munpaid[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-2 gap-2 
+text-sm"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-gray-500"[39m
+              [36m>[39m
+                [0mTotal:[0m
+              [36m</span>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ml-1 font-semibold 
+text-gray-900"[39m
+              [36m>[39m
+                [0mR [0m
+                [0m90.00[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-gray-500"[39m
+              [36m>[39m
+                [0mDue:[0m
+              [36m</span>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ml-1 text-gray-900"[39m
+              [36m>[39m
+                [0m2025/11/04[0m
+              [36m</span>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"pt-2 border-t border-gray-100 
+flex justify-end gap-3"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"w-full sm:w-auto px-3 py-1 
+bg-blue-50 text-blue-600 rounded text-sm font-medium 
+hover:bg-blue-100"[39m
+            [36m>[39m
+              [0mView Details[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"w-full sm:w-auto px-3 py-1 
+bg-green-50 text-green-600 rounded text-sm font-medium 
+hover:bg-green-100"[39m
+            [36m>[39m
+              [0mPDF[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"w-full sm:w-auto px-3 py-1 
+bg-indigo-50 text-indigo-600 rounded text-sm font-medium 
+hover:bg-indigo-100"[39m
+            [36m>[39m
+              [0mPay Link[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"bg-white p-4 rounded-lg shadow 
+space-y-3"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex justify-between 
+items-start"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<h3[39m
+                [33mclass[39m=[32m"text-sm font-bold 
+text-gray-900"[39m
+              [36m>[39m
+                [0m#[0m
+                [0minvoice-[0m
+                [0m...[0m
+              [36m</h3>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"text-sm 
+text-gray-600"[39m
+              [36m>[39m
+                [0mcustomer[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"px-2 py-1 text-xs 
+font-semibold rounded-full bg-green-100 text-green-800"[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m7 passed[39m[22m[90m (8)[39m
+[2m   Start at [22m 15:48:09
+[2m   Duration [22m 12.33s[2m (transform 677ms, setup 2.01s, collect 949ms, tests 466ms, environment 5.76s, prepare 74ms)[22m
+
+            [36m>[39m
+              [0mpaid[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-2 gap-2 
+text-sm"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-gray-500"[39m
+              [36m>[39m
+                [0mTotal:[0m
+              [36m</span>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ml-1 font-semibold 
+text-gray-900"[39m
+              [36m>[39m
+                [0mR [0m
+                [0m150.00[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-gray-500"[39m
+              [36m>[39m
+                [0mDue:[0m
+              [36m</span>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ml-1 text-gray-900"[39m
+              [36m>[39m
+                [0m2025/11/03[0m
+              [36m</span>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"pt-2 border-t border-gray-100 
+flex justify-end gap-3"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"w-full sm:w-auto px-3 py-1 
+bg-blue-50 text-blue-600 rounded text-sm font-medium 
+hover:bg-blue-100"[39m
+            [36m>[39m
+              [0mView Details[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+[90m [2mΓ¥»[22m Object.getElementError ../node_modules/@testi
+ng-library/dom/dist/config.js:[2m37:19[22m[39m
+[90m [2mΓ¥»[22m ../node_modules/@testing-library/dom/dist/que
+ry-helpers.js:[2m76:38[22m[39m
+[90m [2mΓ¥»[22m ../node_modules/@testing-library/dom/dist/que
+ry-helpers.js:[2m52:17[22m[39m
+[90m [2mΓ¥»[22m ../node_modules/@testing-library/dom/dist/que
+ry-helpers.js:[2m95:19[22m[39m
+[36m [2mΓ¥»[22m 
+src/pages/admin/InvoicesManagement.test.tsx:[2m83:19[22m[39m
+    [90m 81| [39m    [90m// Check for invoice IDs in the 
+table[39m
+    [90m 82| [39m    const invoiceCells = 
+document.querySelectorAll('td.px-6.py-4.whiteΓÇª
+    [90m 83| [39m    [34mexpect[39m(screen[33m.[39m[34mge
+tByText[39m([32m'INV-2024-001'[39m))[33m.[39m[34mtoBeInThe
+Document[39m()[33m;[39m
+    [90m   | [39m                  [31m^[39m
+    [90m 84| [39m    [34mexpect[39m(screen[33m.[39m[34mge
+tByText[39m([32m'John 
+Doe'[39m))[33m.[39m[34mtoBeInTheDocument[39m()[33m;[39m
+    [90m 85| [39m    [34mexpect[39m(screen[33m.[39m[34mge
+tAllByText[39m([32m'R 90.00'[39m)[33m.[39mlength)[33m.[39
+m[34mtoBeGreaterThan[39m([34m0[39m)[33m;[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[1/1]ΓÄ»[22m[39m
+

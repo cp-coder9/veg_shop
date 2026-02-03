@@ -64,9 +64,3 @@
 - [x] Payment History Page (Filterable by method)
 - [x] Credit Balance Display Widget
 
-## Deployment
-- [x] Initialize Git Repository
-- [x] Prepare Netlify Deployment (Frontend)
-- [x] Prepare Render.com Deployment (Backend)
-- [x] Push to GitHub
-- [ ] Deploy to Production

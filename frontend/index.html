@@ -1,13 +1,38 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Organic Veg Order Management</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Our Harvest Tote</title>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCeBDhY7SOvsmfcTmxi5Ra-qOZGtLrJApM",
+      authDomain: "our-harvest-tote.firebaseapp.com",
+      projectId: "our-harvest-tote",
+      storageBucket: "our-harvest-tote.firebasestorage.app",
+      messagingSenderId: "703119370454",
+      appId: "1:703119370454:web:e27f87706d213ff30d4177",
+      measurementId: "G-YEVS64C84N"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+
+    console.log("Firebase initialized");
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

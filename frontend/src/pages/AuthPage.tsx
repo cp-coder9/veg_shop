@@ -22,6 +22,7 @@ export default function AuthPage() {
     const [regPassword, setRegPassword] = useState('');
     const [regPhone, setRegPhone] = useState('');
     const [regAddress, setRegAddress] = useState('');
+    const [regBirthday, setRegBirthday] = useState('');
 
     const navigate = useNavigate();
 
@@ -77,6 +78,7 @@ export default function AuthPage() {
                 password: regPassword,
                 phone: regPhone || undefined,
                 address: regAddress || undefined,
+                birthday: regBirthday,
             });
             handleNavigationByRole(data.user.role);
         } catch (error) {
@@ -273,6 +275,17 @@ export default function AuthPage() {
                                         onChange={(e) => setRegAddress(e.target.value)}
                                         className="input-field"
                                     />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-warm-gray-700 mb-1">Birthday</label>
+                                    <input
+                                        type="date"
+                                        value={regBirthday}
+                                        onChange={(e) => setRegBirthday(e.target.value)}
+                                        className="input-field"
+                                        required
+                                    />
+                                    <p className="text-xs text-warm-gray-500 mt-1">Required for our records.</p>
                                 </div>
 
                                 {registerUser.isError && (

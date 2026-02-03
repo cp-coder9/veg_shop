@@ -1,0 +1,137 @@
+﻿
+[1m[46m RUN [49m[22m [36mv4.0.4 [39m[90mD:/veg_shop/frontend[39m
+
+node.exe : [90mstderr[2m | src/components/ProductCard.test.tsx[2m > 
+[22m[2mProductCard[2m > [22m[2mrenders product information 
+correctly
+At C:\Program Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([90mstderr[2m...ation c 
+   orrectly:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[22m[39mΓÜá∩╕Å React Router Future Flag Warning: React Router will 
+begin wrapping state updates in `React.startTransition` in v7. You can 
+use the `v7_startTransition` future flag to opt-in early. For more 
+information, see 
+https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+ΓÜá∩╕Å React Router Future Flag Warning: Relative route resolution 
+within Splat routes is changing in v7. You can use the 
+`v7_relativeSplatPath` future flag to opt-in early. For more 
+information, see 
+https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/components/ProductCard.test.tsx[2m > 
+[22m[2mProductCard[2m > [22m[2mshows quantity in cart correctly 
+when item is in cart
+[22m[39mTypeError: selector is not a function
+    at D:/veg_shop/frontend/src/components/ProductCard.test.tsx:74:65
+    at Mock (file:///D:/veg_shop/frontend/node_modules/@vitest/spy/dist
+/index.js:274:34)
+    at ProductCard 
+(D:/veg_shop/frontend/src/components/ProductCard.tsx:11:56)
+    at renderWithHooks (D:\veg_shop\node_modules\react-dom\cjs\react-do
+m.development.js:15486:18)
+    at mountIndeterminateComponent (D:\veg_shop\node_modules\react-dom\
+cjs\react-dom.development.js:20103:13)
+    at beginWork (D:\veg_shop\node_modules\react-dom\cjs\react-dom.deve
+lopment.js:21626:16)
+    at HTMLUnknownElement.callCallback (D:\veg_shop\node_modules\react-
+dom\cjs\react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (D:\veg_shop\node
+_modules\jsdom\lib\jsdom\living\generated\EventListener.js:26:30)
+    at innerInvokeEventListeners (D:\veg_shop\node_modules\jsdom\lib\js
+dom\living\events\EventTarget-impl.js:360:16)
+    at invokeEventListeners (D:\veg_shop\node_modules\jsdom\lib\jsdom\l
+iving\events\EventTarget-impl.js:296:3)
+TypeError: selector is not a function
+    at D:/veg_shop/frontend/src/components/ProductCard.test.tsx:74:65
+    at Mock (file:///D:/veg_shop/frontend/node_modules/@vitest/spy/dist
+/index.js:274:34)
+    at ProductCard 
+(D:/veg_shop/frontend/src/components/ProductCard.tsx:11:56)
+    at renderWithHooks (D:\veg_shop\node_modules\react-dom\cjs\react-do
+m.development.js:15486:18)
+    at mountIndeterminateComponent (D:\veg_shop\node_modules\react-dom\
+cjs\react-dom.development.js:20103:13)
+    at beginWork (D:\veg_shop\node_modules\react-dom\cjs\react-dom.deve
+lopment.js:21626:16)
+    at HTMLUnknownElement.callCallback (D:\veg_shop\node_modules\react-
+dom\cjs\react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (D:\veg_shop\node
+_modules\jsdom\lib\jsdom\living\generated\EventListener.js:26:30)
+    at innerInvokeEventListeners (D:\veg_shop\node_modules\jsdom\lib\js
+dom\living\events\EventTarget-impl.js:360:16)
+    at invokeEventListeners (D:\veg_shop\node_modules\jsdom\lib\jsdom\l
+iving\events\EventTarget-impl.js:296:3)
+The above error occurred in the <ProductCard> component:
+
+    at ProductCard 
+(D:/veg_shop/frontend/src/components/ProductCard.tsx:10:24)
+    at Router (D:\veg_shop\node_modules\react-router\dist\umd\react-rou
+ter.development.js:1207:17)
+    at BrowserRouter (D:\veg_shop\node_modules\react-router-dom\dist\um
+d\react-router-dom.development.js:695:7)
+    at QueryClientProvider (file:///D:/veg_shop/node_modules/@tanstack/
+react-query/build/modern/QueryClientProvider.js:20:3)
+    at AllTheProviders (D:/veg_shop/frontend/src/test/utils.tsx:23:30)
+
+Consider adding an error boundary to your tree to customize error 
+handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about 
+error boundaries.
+
+ [31mΓ¥»[39m src/components/ProductCard.test.tsx [2m([22m[2m4 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 359[2mms[22m[39m
+     [32mΓ£ô[39m renders product information correctly[32m 70[2mms[22m[39m
+     [32mΓ£ô[39m shows seasonal badge for seasonal products[32m 9[2mms[22m[39m
+     [32mΓ£ô[39m calls addItem when add to cart button is clicked[32m 259[2mms[22m[39m
+[31m     [31m├ù[31m shows quantity in cart correctly when item is in cart[39m[32m 19[2mms[22m[39m
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m[1m[41m Failed Tests 1 
+[49m[22m[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m
+
+[41m[1m FAIL [22m[49m src/components/ProductCard.test.tsx[2m > 
+[22mProductCard[2m > [22mshows quantity in cart correctly when item 
+is in cart
+[31m[1mTypeError[22m: selector is not a function[39m
+[36m [2mΓ¥»[22m 
+src/components/ProductCard.test.tsx:[2m74:65[22m[39m
+    [90m 72| [39m  [34mit[39m([32m'shows quantity in cart 
+correctly when item is in cart'[39m[33m,[39m () [33m=>[39m {
+    [90m 73| [39m    [90m// Temporarily override the mock for this 
+specific test[39m
+    [90m 74| [39m    (useCartStore as 
+any).mockImplementation((selector: any) => selectΓÇª
+    [90m   | [39m                                                    
+            [31m^[39m
+    [90m 75| [39m      addItem[33m:[39m 
+vi[33m.[39m[34mfn[39m()[33m,[39m
+    [90m 76| [39m      getItemQuantity[33m:[39m () [33m=>[39m 
+[34m3[39m[33m,[39m
+[90m [2mΓ¥»[22m ProductCard 
+src/components/ProductCard.tsx:[2m11:56[22m[39m
+[90m [2mΓ¥»[22m renderWithHooks ../node_modules/react-dom/cjs/react-
+dom.development.js:[2m15486:18[22m[39m
+[90m [2mΓ¥»[22m mountIndeterminateComponent ../node_modules/react-do
+m/cjs/react-dom.development.js:[2m20103:13[22m[39m
+[90m [2mΓ¥»[22m beginWork ../node_modules/react-dom/cjs/react-dom.de
+velopment.js:[2m21626:16[22m[39m
+[90m [2mΓ¥»[22m beginWork$1 ../node_modules/react-dom/cjs/react-dom.
+development.js:[2m27465:14[22m[39m
+[90m [2mΓ¥»[22m performUnitOfWork ../node_modules/react-dom/cjs/reac
+t-dom.development.js:[2m26599:12[22m[39m
+[90m [2mΓ¥»[22m workLoopSync ../node_modules/react-dom/cjs/react-dom
+.development.js:[2m26505:5[22m[39m
+[90m [2mΓ¥»[22m renderRootSync ../node_modules/react-dom/cjs/react-d
+om.development.js:[2m26473:7[22m[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»[1/1]ΓÄ»[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 15:32:14
+[2m   Duration [22m 8.99s[2m (transform 291ms, setup 1.01s, collect 691ms, tests 359ms, environment 5.93s, prepare 60ms)[22m
+

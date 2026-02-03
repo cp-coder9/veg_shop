@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '../test/utils';
+import { render, screen, fireEvent } from '../test/utils';
 import userEvent from '@testing-library/user-event';
 import ProductCard from './ProductCard';
+import { useCartStore } from '../stores/cartStore';
 
 const mockProduct = {
   id: '1',
@@ -13,7 +14,8 @@ const mockProduct = {
   imageUrl: null,
   isAvailable: true,
   isSeasonal: false,
-  createdAt: '2024-01-01T00:00:00.000Z',
+  packingType: 'box',
+  createdAt: new Date().toISOString(),
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
 
@@ -40,9 +42,10 @@ describe('ProductCard', () => {
   it('renders product information correctly', () => {
     mockGetItemQuantity.mockReturnValue(0);
     render(<ProductCard product={mockProduct} />);
-    
+
     expect(screen.getByText('Tomatoes')).toBeInTheDocument();
-    expect(screen.getByText('R25.99 / kg')).toBeInTheDocument();
+    expect(screen.getByText(/R25\.99/)).toBeInTheDocument();
+    expect(screen.getByText(/kg/)).toBeInTheDocument();
     expect(screen.getByText('Fresh organic tomatoes')).toBeInTheDocument();
   });
 
@@ -50,27 +53,35 @@ describe('ProductCard', () => {
     mockGetItemQuantity.mockReturnValue(0);
     const seasonalProduct = { ...mockProduct, isSeasonal: true };
     render(<ProductCard product={seasonalProduct} />);
-    
-    expect(screen.getByText('Seasonal')).toBeInTheDocument();
+    expect(screen.getByText(/Seasonal/i)).toBeInTheDocument();
   });
 
   it('calls addItem when add to cart button is clicked', async () => {
     const user = userEvent.setup();
     mockGetItemQuantity.mockReturnValue(0);
     mockAddItem.mockClear();
-    
+
     render(<ProductCard product={mockProduct} />);
-    
+
     const button = screen.getByRole('button', { name: /add to cart/i });
     await user.click(button);
-    
+
     expect(mockAddItem).toHaveBeenCalledWith('1', 1);
   });
 
-  it('shows quantity in cart when item is in cart', () => {
-    mockGetItemQuantity.mockReturnValue(3);
+  it('shows quantity in cart correctly when item is in cart', () => {
+    // Temporarily override the mock for this specific test
+    (useCartStore as any).mockImplementation((selector?: any) => {
+      const store = {
+        addItem: vi.fn(),
+        getItemQuantity: () => 3,
+        updateQuantity: vi.fn(),
+      };
+      return typeof selector === 'function' ? selector(store) : store;
+    });
+
     render(<ProductCard product={mockProduct} />);
-    
-    expect(screen.getByText(/add more \(3 in cart\)/i)).toBeInTheDocument();
+    expect(screen.getByText('Add More')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
   });
 });

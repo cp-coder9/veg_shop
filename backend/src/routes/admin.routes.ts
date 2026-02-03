@@ -112,7 +112,7 @@ router.get('/suppliers', authenticate, requireAdmin, asyncHandler(async (_req: R
  */
 router.post('/suppliers', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
     try {
-        const supplier = await supplierService.createSupplier(req.body);
+        const supplier = await supplierService.createSupplier(req.body as { name: string; contactInfo?: string });
         return res.status(201).json(supplier);
     } catch (error) {
         console.error('Create supplier error:', error);
@@ -127,7 +127,7 @@ router.post('/suppliers', authenticate, requireAdmin, asyncHandler(async (req: R
 router.put('/suppliers/:id', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const supplier = await supplierService.updateSupplier(id, req.body);
+        const supplier = await supplierService.updateSupplier(id, req.body as { name?: string; contactInfo?: string; isAvailable?: boolean });
         return res.json(supplier);
     } catch (error) {
         console.error('Update supplier error:', error);
@@ -142,7 +142,7 @@ router.put('/suppliers/:id', authenticate, requireAdmin, asyncHandler(async (req
 router.patch('/suppliers/:id/availability', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { isAvailable } = req.body;
+        const { isAvailable } = req.body as { isAvailable: boolean };
         const supplier = await supplierService.toggleSupplierAvailability(id, isAvailable);
         return res.json(supplier);
     } catch (error) {
@@ -157,7 +157,7 @@ router.patch('/suppliers/:id/availability', authenticate, requireAdmin, asyncHan
  */
 router.post('/users', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
     try {
-        const staff = await customerService.createStaff(req.body);
+        const staff = await customerService.createStaff(req.body as { name: string; email: string; phone?: string; role: 'packer' | 'driver'; password?: string });
         return res.status(201).json(staff);
     } catch (error) {
         if (error instanceof Error && error.message.includes('exists')) {
@@ -175,7 +175,7 @@ router.post('/users', authenticate, requireAdmin, asyncHandler(async (req: Reque
 router.patch('/users/:id', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const staff = await customerService.updateStaff(id, req.body);
+        const staff = await customerService.updateStaff(id, req.body as { name?: string; email?: string; phone?: string; role?: 'packer' | 'driver'; status?: 'active' | 'inactive'; password?: string });
         return res.json(staff);
     } catch (error) {
         console.error('Update staff error:', error);

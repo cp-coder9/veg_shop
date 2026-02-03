@@ -1,4 +1,6 @@
 import { prisma } from '../lib/prisma.js';
+import { env } from '../config/env.js';
+import { auditLogRepository } from '../repositories/audit-log.repository.js';
 
 export interface AuditLogData {
   userId?: string;
@@ -16,17 +18,30 @@ class AuditService {
    */
   async log(data: AuditLogData): Promise<void> {
     try {
-      await prisma.auditLog.create({
-        data: {
-          userId: data.userId,
+      if (env.USE_FIREBASE) {
+        await auditLogRepository.create({
+          userId: data.userId || null,
           action: data.action,
           resource: data.resource,
-          resourceId: data.resourceId,
-          details: data.details,
-          ipAddress: data.ipAddress,
-          userAgent: data.userAgent,
-        },
-      });
+          resourceId: data.resourceId || null,
+          details: data.details || null,
+          ipAddress: data.ipAddress || null,
+          userAgent: data.userAgent || null,
+          createdAt: new Date(),
+        });
+      } else {
+        await prisma.auditLog.create({
+          data: {
+            userId: data.userId,
+            action: data.action,
+            resource: data.resource,
+            resourceId: data.resourceId,
+            details: data.details,
+            ipAddress: data.ipAddress,
+            userAgent: data.userAgent,
+          },
+        });
+      }
     } catch (error) {
       // Don't throw errors for audit logging failures
       console.error('Failed to create audit log:', error);

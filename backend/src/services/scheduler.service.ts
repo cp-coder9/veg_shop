@@ -1,6 +1,9 @@
 import cron from 'node-cron';
 import { notificationService } from './notification.service.js';
 import { prisma } from '../lib/prisma.js';
+import { env } from '../config/env.js';
+import { userRepository } from '../repositories/user.repository.js';
+import { orderRepository } from '../repositories/order.repository.js';
 
 export class SchedulerService {
     /**
@@ -15,11 +18,17 @@ export class SchedulerService {
             void (async (): Promise<void> => {
                 console.log('📅 Running Tuesday Product List Broadcast...');
                 try {
-                    const customers = await prisma.user.findMany({
-                        where: { role: 'customer' },
-                        select: { id: true }
-                    });
-                    const customerIds = customers.map(c => c.id);
+                    let customerIds: string[] = [];
+                    if (env.USE_FIREBASE) {
+                        const customers = await userRepository.list([{ field: 'role', operator: '==', value: 'customer' }]);
+                        customerIds = customers.map(c => c.id);
+                    } else {
+                        const customers = await prisma.user.findMany({
+                            where: { role: 'customer' },
+                            select: { id: true }
+                        });
+                        customerIds = customers.map(c => c.id);
+                    }
 
                     if (customerIds.length > 0) {
                         await notificationService.sendProductList(customerIds);
@@ -67,16 +76,25 @@ export class SchedulerService {
                     const dayBeforeYesterday = new Date();
                     dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 2);
 
-                    // Find pending orders created between 24h and 48h ago
-                    const pendingOrders = await prisma.order.findMany({
-                        where: {
-                            status: 'pending',
-                            createdAt: {
-                                lt: yesterday,
-                                gt: dayBeforeYesterday,
+                    let pendingOrders: any[] = [];
+                    if (env.USE_FIREBASE) {
+                        pendingOrders = await orderRepository.list([
+                            { field: 'status', operator: '==', value: 'pending' },
+                            { field: 'createdAt', operator: '<', value: yesterday },
+                            { field: 'createdAt', operator: '>', value: dayBeforeYesterday }
+                        ]);
+                    } else {
+                        // Find pending orders created between 24h and 48h ago
+                        pendingOrders = await prisma.order.findMany({
+                            where: {
+                                status: 'pending',
+                                createdAt: {
+                                    lt: yesterday,
+                                    gt: dayBeforeYesterday,
+                                },
                             },
-                        },
-                    });
+                        });
+                    }
 
                     for (const order of pendingOrders) {
                         try {

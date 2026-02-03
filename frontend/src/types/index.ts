@@ -28,8 +28,13 @@ export interface Order {
   deliveryMethod: 'delivery' | 'collection';
   deliveryAddress: string | null;
   specialInstructions: string | null;
-  status: 'pending' | 'confirmed' | 'packed' | 'delivered' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'packed' | 'delivered' | 'cancelled' | 'out_for_delivery';
   packerId?: string | null;
+  packerNotes?: string | null;
+  packerSignature?: string | null;
+  deliveryNotes?: string | null;
+  coolerBagOption: boolean;
+  coolerBagStatus: 'none' | 'taken' | 'returned';
   items: {
     id: string;
     productId: string;
@@ -39,6 +44,10 @@ export interface Order {
   }[];
   customerName?: string;
   totalAmount?: number;
+  customer: {
+    id: string;
+    name: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -70,27 +79,44 @@ export const CATEGORY_LABELS: Record<ProductCategory, string> = {
 };
 
 export type ProductUnit =
-  | 'bottle' | 'box' | 'bucket' | 'bunch' | 'dozen' | 'each' | 'g' | 'kg'
-  | 'kg_approx' | 'litres' | 'loaf' | 'ml' | 'pack' | 'punnet' | 'tray' | 'tub' | 'unit';
+  | 'pack'
+  | 'bottle'
+  | 'jar'
+  | 'tub'
+  | 'block'
+  | 'wedge'
+  | 'round'
+  | 'tray'
+  | 'box'
+  | 'head'
+  | 'each'
+  | 'kg'
+  | 'g'
+  | 'L'
+  | 'ml'
+  | 'loaf'
+  | 'bunch'
+  | 'piece';
 
 export const UNIT_LABELS: Record<ProductUnit, string> = {
-  bottle: 'bottle',
-  box: 'box',
-  bucket: 'bucket',
-  bunch: 'bunch',
-  dozen: 'dozen',
-  each: 'each',
-  g: 'g',
-  kg: 'kg',
-  kg_approx: 'kg (approx)',
-  litres: 'litres',
-  loaf: 'loaf',
-  ml: 'ml',
   pack: 'pack',
-  punnet: 'punnet',
-  tray: 'tray',
+  bottle: 'bottle',
+  jar: 'jar',
   tub: 'tub',
-  unit: 'unit',
+  block: 'block',
+  wedge: 'wedge',
+  round: 'round',
+  tray: 'tray',
+  box: 'box',
+  head: 'head',
+  each: 'each',
+  kg: 'kg',
+  g: 'g',
+  L: 'L',
+  ml: 'ml',
+  loaf: 'loaf',
+  bunch: 'bunch',
+  piece: 'piece',
 };
 
 export interface SalesReport {
@@ -139,4 +165,19 @@ export interface CustomerActivityReport {
     averageOrderValue: number;
     lastOrderDate: string | null;
   }[];
+}
+
+export interface User {
+  id: string;
+  phone: string | null;
+  email: string | null;
+  name: string;
+  address: string | null;
+  deliveryPreference: string;
+  birthday: string;
+  role: 'customer' | 'admin' | 'packer' | 'driver';
+  status: 'active' | 'inactive';
+  loyaltyPoints: number;
+  createdAt: string;
+  updatedAt: string;
 }

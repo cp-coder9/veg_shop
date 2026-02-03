@@ -102,7 +102,7 @@ export default function ProductsManagement() {
   };
 
   // Supplier Modal Handlers
-  const handleEditSupplier = (supplier: any) => {
+  const handleEditSupplier = (supplier: { id: string; name: string; contactInfo: string | null; isAvailable: boolean }) => {
     setEditingSupplier(supplier);
     setShowSupplierModal(true);
   };
@@ -171,10 +171,11 @@ export default function ProductsManagement() {
       <div className="bg-white rounded-lg shadow-md p-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="category-filter" className="block text-sm font-medium text-gray-700 mb-2">
               Category
             </label>
             <select
+              id="category-filter"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -188,10 +189,11 @@ export default function ProductsManagement() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="availability-filter" className="block text-sm font-medium text-gray-700 mb-2">
               Availability
             </label>
             <select
+              id="availability-filter"
               value={availabilityFilter}
               onChange={(e) => setAvailabilityFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -305,7 +307,7 @@ function SupplierSection({
   onEditSupplier
 }: {
   title: string,
-  supplier?: any,
+  supplier?: { id: string; name: string; contactInfo: string | null; isAvailable: boolean },
   products: Product[],
   allCategories: Record<string, string>,
   onEditProduct: (p: Product) => void,

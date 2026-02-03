@@ -4,15 +4,16 @@ import { authenticate } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
 import { z } from 'zod';
 
-import { notificationService } from '../services/notification.service.js';
+import { orderService } from '../services/order.service.js';
 
 const router = Router();
 
 // Validation schemas
 const updateStatusSchema = z.object({
-    status: z.enum(['delivered', 'failed']), // Order status
+    status: z.enum(['delivered', 'failed', 'out_for_delivery']), // Order status
     deliveryProof: z.enum(['handed_to_client', 'left_at_door']).optional(),
-    driverNotes: z.string().optional(),
+    deliveryNotes: z.string().optional(),
+    coolerBagStatus: z.enum(['none', 'taken', 'returned']).optional(),
 });
 
 const logbookSchema = z.object({
@@ -40,9 +41,9 @@ router.get('/orders', authenticate, asyncHandler(async (req: Request, res: Respo
         where: {
             OR: [
                 { driverId: driverId },
-                { driverId: null, status: 'pending' } // Pool of unassigned orders
+                { driverId: null, status: 'packed' } // Pool of ready unassigned orders
             ],
-            status: { in: ['pending', 'out_for_delivery'] },
+            status: { in: ['pending', 'packed', 'out_for_delivery'] },
             deliveryDate: {
                 gte: today, // Only today or future
             }
@@ -83,22 +84,25 @@ router.patch('/orders/:id/status', authenticate, asyncHandler(async (req: Reques
         return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Order not found' } });
     }
 
-    // Assign driver if not already assigned
-    const updatedOrder = await prisma.order.update({
-        where: { id },
-        data: {
-            status: validatedData.status,
-            driverId: driverId, // Claim the order
-            deliveryProof: validatedData.deliveryProof,
-            driverNotes: validatedData.driverNotes,
-        }
-    });
+    // Use centralized order service for status updates to ensure consistency/notifications
+    const updatedOrder = await orderService.updateOrderStatus(
+        id,
+        validatedData.status,
+        driverId,
+        'driver',
+        undefined, // No packedItems reconciliation here
+        undefined, // notes (packerNotes)
+        undefined, // signature
+        validatedData.deliveryNotes,
+        validatedData.coolerBagStatus
+    );
 
-    // Send notification
-    try {
-        await notificationService.sendOrderStatusUpdate(id, validatedData.status);
-    } catch (error) {
-        console.error(`Failed to send driver notification for order ${id}:`, error);
+    // If delivery proof was provided, update it separately as it's driver specific and not in core updateOrderStatus yet
+    if (validatedData.deliveryProof) {
+        await prisma.order.update({
+            where: { id },
+            data: { deliveryProof: validatedData.deliveryProof }
+        });
     }
 
     return res.json(updatedOrder);

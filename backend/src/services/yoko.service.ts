@@ -1,7 +1,9 @@
 import axios from 'axios';
+import jwt from 'jsonwebtoken';
 
 const YOKO_SECRET_KEY = process.env.YOKO_SECRET_KEY || '';
 const YOKO_API_URL = 'https://online.yoko.co.za/v1';
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
 export interface YokoChargeResult {
     success: boolean;
@@ -74,6 +76,13 @@ export class YokoService {
     }
 
     /**
+     * Generate a signed token for public payment access
+     */
+    generatePaymentToken(invoiceId: string): string {
+        return jwt.sign({ invoiceId, type: 'payment_link' }, JWT_SECRET, { expiresIn: '30d' });
+    }
+
+    /**
      * Generate a payment page URL for an invoice
      * Since we might not have a dynamic link capability configured, we'll route to our frontend payment page.
      */
@@ -81,7 +90,8 @@ export class YokoService {
         // Construct a URL to the frontend payment page
         // Ensure VITE_APP_URL is set in environment, or fallback to localhost
         const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        return `${baseUrl}/payment/${invoiceId}`;
+        const token = this.generatePaymentToken(invoiceId);
+        return `${baseUrl}/payment/${invoiceId}?token=${token}`;
     }
 }
 

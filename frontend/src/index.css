@@ -6,8 +6,14 @@
 
 @layer base {
   body {
-    @apply bg-warm-gray-50 text-warm-gray-900 font-sans;
-    @apply dark:bg-warm-gray-900 dark:text-warm-gray-100;
+    /* Palette:
+       Primary (Green): #3A5F0B (Deep Leafy Green)
+       Secondary (Orange): #D97706 (Harvest Orange/Pumpkin)
+       Background: #FDFBF7 (Cream/Off-White)
+       Text: #2D2A26 (Dark Earth) */
+
+    @apply bg-[#FDFBF7] text-[#2D2A26] font-sans;
+    @apply dark:bg-[#1C1917] dark:text-[#E7E5E4];
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.3s ease, color 0.3s ease;

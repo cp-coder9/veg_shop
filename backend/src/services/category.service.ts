@@ -1,4 +1,6 @@
 import { prisma } from '../lib/prisma.js';
+import { env } from '../config/env.js';
+import { productCategoryRepository } from '../repositories/product-category.repository.js';
 
 export interface CreateCategoryDto {
   key: string;
@@ -15,106 +17,125 @@ export interface UpdateCategoryDto {
 }
 
 export class CategoryService {
-  /**
-   * Get all categories
-   */
-  async getCategories(includeInactive = false): Promise<unknown[]> {
-    const where = includeInactive ? {} : { isActive: true };
-    
-    return prisma.productCategory.findMany({
-      where,
-      orderBy: [
-        { sortOrder: 'asc' },
-        { label: 'asc' },
-      ],
-    });
+  async getCategories(includeInactive = false): Promise<any[]> {
+    if (env.USE_FIREBASE) {
+      const filters = includeInactive ? [] : [{ field: 'isActive', operator: '==', value: true }];
+      return productCategoryRepository.list(filters);
+    } else {
+      const where = includeInactive ? {} : { isActive: true };
+
+      return prisma.productCategory.findMany({
+        where,
+        orderBy: [
+          { sortOrder: 'asc' },
+          { label: 'asc' },
+        ],
+      });
+    }
   }
 
-  /**
-   * Get category by key
-   */
-  async getCategoryByKey(key: string): Promise<unknown> {
-    return prisma.productCategory.findUnique({
-      where: { key },
-      include: {
-        _count: {
-          select: { products: true },
+  async getCategoryByKey(key: string): Promise<any> {
+    if (env.USE_FIREBASE) {
+      return productCategoryRepository.findByKey(key);
+    } else {
+      return prisma.productCategory.findUnique({
+        where: { key },
+        include: {
+          _count: {
+            select: { products: true },
+          },
         },
-      },
-    });
+      });
+    }
   }
 
-  /**
-   * Create a new category
-   */
-  async createCategory(data: CreateCategoryDto): Promise<unknown> {
+  async createCategory(data: CreateCategoryDto): Promise<any> {
     // Validate key format (lowercase, underscores only)
     if (!/^[a-z_]+$/.test(data.key)) {
       throw new Error('Category key must contain only lowercase letters and underscores');
     }
 
-    // Check if key already exists
-    const existing = await prisma.productCategory.findUnique({
-      where: { key: data.key },
-    });
+    if (env.USE_FIREBASE) {
+      const existing = await productCategoryRepository.findByKey(data.key);
+      if (existing) throw new Error('Category key already exists');
 
-    if (existing) {
-      throw new Error('Category key already exists');
-    }
-
-    return prisma.productCategory.create({
-      data: {
+      return productCategoryRepository.create({
         key: data.key,
         label: data.label,
-        description: data.description,
+        description: data.description || null,
+        isActive: true,
         sortOrder: data.sortOrder ?? 0,
-      },
-    });
-  }
+      });
+    } else {
+      // Check if key already exists
+      const existing = await prisma.productCategory.findUnique({
+        where: { key: data.key },
+      });
 
-  /**
-   * Update a category
-   */
-  async updateCategory(key: string, data: UpdateCategoryDto): Promise<unknown> {
-    const category = await prisma.productCategory.findUnique({
-      where: { key },
-    });
+      if (existing) {
+        throw new Error('Category key already exists');
+      }
 
-    if (!category) {
-      throw new Error('Category not found');
-    }
-
-    return prisma.productCategory.update({
-      where: { key },
-      data,
-    });
-  }
-
-  /**
-   * Delete a category
-   */
-  async deleteCategory(key: string): Promise<unknown> {
-    const category = await prisma.productCategory.findUnique({
-      where: { key },
-      include: {
-        _count: {
-          select: { products: true },
+      return prisma.productCategory.create({
+        data: {
+          key: data.key,
+          label: data.label,
+          description: data.description,
+          sortOrder: data.sortOrder ?? 0,
         },
-      },
-    });
-
-    if (!category) {
-      throw new Error('Category not found');
+      });
     }
+  }
 
-    // Check if category has products
-    if (category._count.products > 0) {
-      throw new Error(`Cannot delete category with ${category._count.products} products. Reassign products first.`);
+  async updateCategory(key: string, data: UpdateCategoryDto): Promise<any> {
+    if (env.USE_FIREBASE) {
+      const category = await productCategoryRepository.findByKey(key);
+      if (!category) throw new Error('Category not found');
+      return productCategoryRepository.update(category.id, data);
+    } else {
+      const category = await prisma.productCategory.findUnique({
+        where: { key },
+      });
+
+      if (!category) {
+        throw new Error('Category not found');
+      }
+
+      return prisma.productCategory.update({
+        where: { key },
+        data,
+      });
     }
+  }
 
-    return prisma.productCategory.delete({
-      where: { key },
-    });
+  async deleteCategory(key: string): Promise<any> {
+    if (env.USE_FIREBASE) {
+      const category = await productCategoryRepository.findByKey(key);
+      if (!category) throw new Error('Category not found');
+      return productCategoryRepository.delete(category.id);
+    } else {
+      const category = await prisma.productCategory.findUnique({
+        where: { key },
+        include: {
+          _count: {
+            select: { products: true },
+          },
+        },
+      });
+
+      if (!category) {
+        throw new Error('Category not found');
+      }
+
+      // Check if category has products
+      if (category._count.products > 0) {
+        throw new Error(`Cannot delete category with ${category._count.products} products. Reassign products first.`);
+      }
+
+      return prisma.productCategory.delete({
+        where: { key },
+      });
+    }
   }
 
   /**

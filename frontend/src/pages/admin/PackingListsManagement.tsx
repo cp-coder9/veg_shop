@@ -101,9 +101,9 @@ export default function PackingListsManagement() {
 
                     <div className="space-y-4">
                       {['fridge', 'freezer', 'box'].map(type => {
-                        const itemsOfType = order.items.filter((item: any) =>
+                        const itemsOfType = order.items.filter((item: { id: string; quantity: number; product: { name: string; unit: string; packingType?: string } }) =>
                           type === 'box'
-                            ? !['fridge', 'freezer'].includes(item.product.packingType)
+                            ? !['fridge', 'freezer'].includes(item.product.packingType || '')
                             : item.product.packingType === type
                         );
 
@@ -118,7 +118,7 @@ export default function PackingListsManagement() {
                               {type === 'box' ? 'Dry / Standard' : type}
                             </h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm print:grid-cols-2">
-                              {itemsOfType.map((item: any) => (
+                              {itemsOfType.map((item: { id: string; quantity: number; product: { name: string; unit: string; packingType?: string } }) => (
                                 <div key={item.id} className="flex justify-between items-center border-b border-gray-100 py-1">
                                   <span className="text-gray-800 font-medium">{item.product.name}</span>
                                   <span className="font-bold text-lg">

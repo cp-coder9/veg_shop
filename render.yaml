@@ -45,7 +45,7 @@ services:
       - key: PORT
         value: 3000
       - key: CORS_ORIGIN
-        sync: false # Set manually after Netlify deploy
+        value: https://ourharvesttote.store
 
       # File Storage
       - key: FILE_STORAGE_PATH

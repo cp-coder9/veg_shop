@@ -1,10 +1,13 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { prisma } from '../lib/prisma.js';
-import { Order, OrderItem, Prisma } from '@prisma/client';
+import { Order as PrismaOrder, OrderItem as PrismaOrderItem, Prisma } from '@prisma/client';
+import { appEvents } from '../lib/events.js';
 import { notificationService } from './notification.service.js';
+import { env } from '../config/env.js';
+import { orderRepository, Order } from '../repositories/order.repository.js';
+import { orderItemRepository } from '../repositories/order-item.repository.js';
+import { productRepository } from '../repositories/product.repository.js';
+import { userRepository } from '../repositories/user.repository.js';
+import { invoiceRepository } from '../repositories/invoice.repository.js';
 
 export interface CreateOrderDto {
   deliveryDate: Date;
@@ -16,6 +19,7 @@ export interface CreateOrderDto {
     productId: string;
     quantity: number;
   }[];
+  coolerBagOption?: boolean;
 }
 
 const DELIVERY_FEES = [
@@ -26,7 +30,7 @@ const DELIVERY_FEES = [
 ];
 
 export interface OrderWithItems extends Order {
-  items: OrderItem[];
+  items: any[];
 }
 
 export interface BulkOrderItem {
@@ -57,7 +61,7 @@ export class OrderService {
   /**
    * Create a new order with order items
    */
-  async createOrder(customerId: string, data: CreateOrderDto): Promise<OrderWithItems> {
+  async createOrder(customerId: string, data: CreateOrderDto): Promise<any> {
     // Validate delivery date
     const now = new Date();
     const deliveryDate = new Date(data.deliveryDate);
@@ -66,169 +70,252 @@ export class OrderService {
       throw new Error('Delivery date must be in the future');
     }
 
-    // Orders must be placed by Sunday 8pm for Tuesday delivery
-    // or by Wednesday 8pm for Friday delivery
-    const day = deliveryDate.getDay();
-    const hour = now.getHours();
-    console.log(`Order placement time check: Day ${day}, Hour ${hour}`); // Keep for logic context but avoid unused error
+    if (env.USE_FIREBASE) {
+      // Fetch products and customer
+      const productIds = data.items.map(item => item.productId);
+      const products = await Promise.all(productIds.map(id => productRepository.findById(id)));
 
-    // Simplify: Just check if products exist and are available
-    const productIds = data.items.map(item => item.productId);
-    const products = await prisma.product.findMany({
-      where: {
-        id: { in: productIds },
-        isAvailable: true,
-      },
-    });
+      if (products.some(p => !p || !p.isAvailable)) {
+        throw new Error('Some products do not exist or are not available');
+      }
 
-    if (products.length !== productIds.length) {
-      throw new Error('Some products do not exist or are not available');
-    }
+      const customer = await userRepository.findById(customerId);
+      if (!customer) throw new Error('Customer not found');
 
-    // Fetch customer details for ID generation
-    const customer = await prisma.user.findUnique({
-      where: { id: customerId },
-    });
+      // ID Generation
+      const sanitizedName = customer.name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().substring(0, 10);
+      const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const customId = `${sanitizedName}-${dateStr}-${randomSuffix}`;
 
-    if (!customer) {
-      throw new Error('Customer not found');
-    }
-
-    // Generate Custom Order ID: NAME-YYYYMMDD-XXXX
-    const sanitizedName = customer.name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().substring(0, 10);
-    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-    const customId = `${sanitizedName}-${dateStr}-${randomSuffix}`;
-
-    // Create the order and items in a transaction
-    const order = await prisma.$transaction(async (tx) => {
-      // Calculate delivery fee if not provided or to override
+      // Calculate delivery fee
       let deliveryFees = data.deliveryFees ?? 0;
       if (data.deliveryMethod === 'delivery' && data.deliveryAddress) {
         const address = data.deliveryAddress.toLowerCase();
         const matchedOption = DELIVERY_FEES.find(opt => address.includes(opt.keyword));
-        if (matchedOption) {
-          deliveryFees = matchedOption.fee;
-        }
+        if (matchedOption) deliveryFees = matchedOption.fee;
       }
 
-      const newOrder = await tx.order.create({
-        data: {
-          id: customId,
-          customerId,
-          deliveryDate: data.deliveryDate,
-          deliveryMethod: data.deliveryMethod,
-          deliveryAddress: data.deliveryAddress,
-          specialInstructions: data.specialInstructions,
-          deliveryFees: deliveryFees,
-          status: 'pending',
-          items: {
-            create: data.items.map(item => {
-              const product = products.find(p => p.id === item.productId)!;
-              return {
-                productId: item.productId,
-                quantity: item.quantity,
-                priceAtOrder: product.price,
-              };
-            }),
-          },
-        },
-        include: {
-          items: true,
+      // Create Order
+      const order = await orderRepository.create({
+        id: customId,
+        customerId,
+        deliveryDate: data.deliveryDate,
+        deliveryMethod: data.deliveryMethod,
+        deliveryAddress: data.deliveryAddress || null,
+        specialInstructions: data.specialInstructions || null,
+        deliveryFees,
+        status: 'pending',
+        coolerBagOption: data.coolerBagOption ?? false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
+
+      // Create Order Items
+      const items = await Promise.all(data.items.map(item => {
+        const product = products.find(p => p?.id === item.productId)!;
+        return orderItemRepository.create({
+          orderId: order.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          priceAtOrder: product.price,
+        });
+      }));
+
+      return { ...order, items };
+    } else {
+      // Simplify: Just check if products exist and are available
+      const productIds = data.items.map(item => item.productId);
+      const products = await prisma.product.findMany({
+        where: {
+          id: { in: productIds },
+          isAvailable: true,
         },
       });
 
-      return newOrder;
-    });
+      if (products.length !== productIds.length) {
+        throw new Error('Some products do not exist or are not available');
+      }
 
-    // Send confirmation asynchronously
-    void this.sendOrderConfirmation(order.id);
+      // Fetch customer details for ID generation
+      const customer = await prisma.user.findUnique({
+        where: { id: customerId },
+      });
 
-    return order as OrderWithItems;
+      if (!customer) {
+        throw new Error('Customer not found');
+      }
+
+      // Generate Custom Order ID: NAME-YYYYMMDD-XXXX
+      const sanitizedName = customer.name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().substring(0, 10);
+      const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const customId = `${sanitizedName}-${dateStr}-${randomSuffix}`;
+
+      // Create the order and items in a transaction
+      const order = await prisma.$transaction(async (tx) => {
+        // Calculate delivery fee if not provided or to override
+        let deliveryFees = data.deliveryFees ?? 0;
+        if (data.deliveryMethod === 'delivery' && data.deliveryAddress) {
+          const address = data.deliveryAddress.toLowerCase();
+          const matchedOption = DELIVERY_FEES.find(opt => address.includes(opt.keyword));
+          if (matchedOption) {
+            deliveryFees = matchedOption.fee;
+          }
+        }
+
+        const newOrder = await tx.order.create({
+          data: {
+            id: customId,
+            customerId,
+            deliveryDate: data.deliveryDate,
+            deliveryMethod: data.deliveryMethod,
+            deliveryAddress: data.deliveryAddress,
+            specialInstructions: data.specialInstructions,
+            deliveryFees: deliveryFees,
+            status: 'pending',
+            coolerBagOption: data.coolerBagOption ?? false,
+            items: {
+              create: data.items.map(item => {
+                const product = products.find(p => p.id === item.productId)!;
+                return {
+                  productId: item.productId,
+                  quantity: item.quantity,
+                  priceAtOrder: product.price,
+                };
+              }),
+            },
+          },
+          include: {
+            items: true,
+          },
+        });
+
+        return newOrder;
+      });
+
+      // Send confirmation asynchronously
+      void this.sendOrderConfirmation(order.id);
+
+      return order;
+    }
   }
 
   /**
    * Get a single order by ID with items
    */
-  async getOrder(id: string): Promise<OrderWithItems | null> {
-    const order = await prisma.order.findUnique({
-      where: { id },
-      include: {
-        items: {
-          include: {
-            product: true,
+  async getOrder(id: string): Promise<any | null> {
+    if (env.USE_FIREBASE) {
+      const order = await orderRepository.findById(id);
+      if (!order) return null;
+      const items = await orderItemRepository.findByOrder(id);
+      const customer = await userRepository.findById(order.customerId);
+      return { ...order, items, customer };
+    } else {
+      const order = await prisma.order.findUnique({
+        where: { id },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
           },
+          customer: true,
         },
-        customer: true,
-      },
-    });
+      });
 
-    return order as OrderWithItems | null;
+      return order;
+    }
   }
 
   /**
    * Get all orders for a specific customer
    */
-  async getCustomerOrders(customerId: string): Promise<OrderWithItems[]> {
-    const orders = await prisma.order.findMany({
-      where: { customerId },
-      include: {
-        items: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+  async getCustomerOrders(customerId: string): Promise<any[]> {
+    if (env.USE_FIREBASE) {
+      const orders = await orderRepository.findByCustomer(customerId);
+      return Promise.all(orders.map(async order => {
+        const items = await orderItemRepository.findByOrder(order.id);
+        return { ...order, items };
+      }));
+    } else {
+      const orders = await prisma.order.findMany({
+        where: { customerId },
+        include: {
+          items: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
 
-    return orders as OrderWithItems[];
+      return orders;
+    }
   }
 
   /**
    * Get all orders for a specific delivery date
    */
-  async getOrdersByDeliveryDate(date: Date): Promise<OrderWithItems[]> {
-    // Set to start and end of the day
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
+  async getOrdersByDeliveryDate(date: Date): Promise<any[]> {
+    if (env.USE_FIREBASE) {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
 
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+      const orders = await orderRepository.list([
+        { field: 'deliveryDate', operator: '>=', value: startOfDay },
+        { field: 'deliveryDate', operator: '<=', value: endOfDay },
+      ]);
 
-    const orders = await prisma.order.findMany({
-      where: {
-        deliveryDate: {
-          gte: startOfDay,
-          lte: endOfDay,
+      const filteredOrders = orders.filter(o => o.status !== 'cancelled');
+
+      return Promise.all(filteredOrders.map(async order => {
+        const items = await orderItemRepository.findByOrder(order.id);
+        const customer = await userRepository.findById(order.customerId);
+        return { ...order, items, customer };
+      }));
+    } else {
+      // Set to start and end of the day
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const orders = await prisma.order.findMany({
+        where: {
+          deliveryDate: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+          status: {
+            not: 'cancelled',
+          },
         },
-        status: {
-          not: 'cancelled',
+        include: {
+          items: true,
+          customer: true,
         },
-      },
-      include: {
-        items: true,
-        customer: true,
-      },
-    });
+      });
 
-    return orders as OrderWithItems[];
+      return orders;
+    }
   }
 
   /**
    * Get packing list grouped by delivery area
    */
-  async getPackingList(date: Date): Promise<Record<string, OrderWithItems[]>> {
+  async getPackingList(date: Date): Promise<Record<string, any[]>> {
     const orders = await this.getOrdersByDeliveryDate(date);
 
-    // Group by area (assuming format "Street, Suburb, City" -> take Suburb)
-    // Heuristic: Take the part before the last comma, or the whole string if no comma
-    const grouped: Record<string, OrderWithItems[]> = {};
+    // Group by area
+    const grouped: Record<string, any[]> = {};
 
     orders.forEach(order => {
       const address = order.deliveryAddress || 'Unknown Area';
       const parts = address.split(',').map(p => p.trim());
 
-      // Try to get suburb (2nd to last item) or just use the last item if only 1 exists
-      // Adjust heuristic based on actual data usage. Defaulting to 'General' if empty.
       let area = 'General';
       if (parts.length > 1) {
         area = parts[parts.length - 2] || parts[parts.length - 1];
@@ -251,25 +338,156 @@ export class OrderService {
   }
 
   /**
-   * Update order status
+   * Update order status with support for short-packing adjustments
    */
-  async updateOrderStatus(id: string, status: string, userId?: string, role?: string): Promise<Order> {
+  async updateOrderStatus(
+    id: string,
+    status: string,
+    userId?: string,
+    role?: string,
+    packedItems?: Record<string, number>,
+    notes?: string,
+    signature?: string,
+    deliveryNotes?: string,
+    coolerBagStatus?: string
+  ): Promise<any> {
     const validStatuses = ['pending', 'confirmed', 'packed', 'delivered', 'cancelled', 'out_for_delivery'];
     if (!validStatuses.includes(status)) {
       throw new Error(`Invalid status: ${status}. Must be one of ${validStatuses.join(', ')}`);
     }
 
-    const updateData: any = { status };
+    let updatedOrder: any;
 
-    // Auto-assign packer if packing
-    if (role === 'packer' && status === 'packed' && userId) {
-      updateData.packerId = userId;
+    if (env.USE_FIREBASE) {
+      const order = await orderRepository.findById(id);
+      if (!order) throw new Error(`Order ${id} not found`);
+
+      const updateData: any = { status, updatedAt: new Date() };
+      if (role === 'packer' && status === 'packed') {
+        if (userId) updateData.packerId = userId;
+        if (notes) updateData.packerNotes = notes;
+        if (signature) updateData.packerSignature = signature;
+      }
+      if (role === 'driver') {
+        if (deliveryNotes) updateData.deliveryNotes = deliveryNotes;
+        if (coolerBagStatus) updateData.coolerBagStatus = coolerBagStatus;
+      }
+
+      if (packedItems) {
+        const items = await orderItemRepository.findByOrder(id);
+        const invoice = await invoiceRepository.findByOrder(id);
+        let newOrderTotal = 0;
+
+        for (const item of items) {
+          const packedQty = packedItems[item.id];
+          if (packedQty !== undefined && packedQty < item.quantity) {
+            await orderItemRepository.update(item.id, { quantity: packedQty });
+            newOrderTotal += packedQty * item.priceAtOrder;
+          } else {
+            newOrderTotal += item.quantity * item.priceAtOrder;
+          }
+        }
+
+        const deliveryFees = order.deliveryFees || 0;
+        newOrderTotal += deliveryFees;
+
+        if (invoice) {
+          await invoiceRepository.update(invoice.id, {
+            total: newOrderTotal,
+            subtotal: newOrderTotal - deliveryFees,
+            updatedAt: new Date(),
+          });
+        }
+      }
+
+      updatedOrder = await orderRepository.update(id, updateData);
+    } else {
+      updatedOrder = await prisma.$transaction(async (tx) => {
+        // Fetch the order with items and product details
+        const order = await tx.order.findUnique({
+          where: { id },
+          include: { items: { include: { product: true } }, invoice: true, customer: true },
+        });
+
+        if (!order) {
+          throw new Error(`Order ${id} not found`);
+        }
+
+        const updateData: Record<string, unknown> = { status };
+
+        // Packer specific logic
+        if (role === 'packer' && status === 'packed') {
+          if (userId) updateData.packerId = userId;
+          if (notes) updateData.packerNotes = notes;
+          if (signature) updateData.packerSignature = signature;
+        }
+
+        // Driver specific logic
+        if (role === 'driver') {
+          if (deliveryNotes) updateData.deliveryNotes = deliveryNotes;
+          if (coolerBagStatus) updateData.coolerBagStatus = coolerBagStatus;
+        }
+
+        // If specific packed quantities were provided, reconcile them
+        if (packedItems) {
+          let totalRefundAmount = 0;
+          let newOrderTotal = 0;
+
+          for (const item of order.items) {
+            const packedQty = packedItems[item.id];
+
+            if (packedQty !== undefined) {
+              if (packedQty < item.quantity) {
+                const diff = Number(item.quantity) - packedQty;
+                const refund = diff * Number(item.priceAtOrder);
+                totalRefundAmount += refund;
+
+                await tx.orderItem.update({
+                  where: { id: item.id },
+                  data: { quantity: packedQty },
+                });
+
+                newOrderTotal += packedQty * Number(item.priceAtOrder);
+              } else {
+                newOrderTotal += Number(item.quantity) * Number(item.priceAtOrder);
+              }
+            } else {
+              newOrderTotal += Number(item.quantity) * Number(item.priceAtOrder);
+            }
+          }
+
+          const deliveryFees = Number(order.deliveryFees || 0);
+          newOrderTotal += deliveryFees;
+
+          if (totalRefundAmount > 0) {
+            await tx.credit.create({
+              data: {
+                customerId: order.customerId,
+                amount: totalRefundAmount,
+                reason: `Short-packed order #${order.id.slice(-6)}`,
+                type: 'short_delivery',
+              },
+            });
+
+            // Update Invoice if it exists
+            if (order.invoice) {
+              await tx.invoice.update({
+                where: { id: order.invoice.id },
+                data: {
+                  total: newOrderTotal,
+                  subtotal: newOrderTotal - deliveryFees
+                },
+              });
+            }
+          }
+        }
+
+        return await tx.order.update({
+          where: { id },
+          data: updateData,
+        });
+      });
     }
-
-    const order = await prisma.order.update({
-      where: { id },
-      data: updateData,
-    });
 
     // Send notification
     try {
@@ -280,17 +498,24 @@ export class OrderService {
       console.error(`Failed to send status notification for order ${id}:`, error);
     }
 
-    return order;
+    // Emit event for real-time updates
+    appEvents.emit('orderUpdated', { orderId: id, status });
+
+    return updatedOrder;
   }
 
   /**
-   * Update order details (e.g. packer assignment)
+   * Update order details (generic)
    */
-  async updateOrder(id: string, data: Prisma.OrderUpdateInput): Promise<Order> {
-    return prisma.order.update({
-      where: { id },
-      data,
-    });
+  async updateOrder(id: string, data: any): Promise<any> {
+    if (env.USE_FIREBASE) {
+      return orderRepository.update(id, { ...data, updatedAt: new Date() });
+    } else {
+      return prisma.order.update({
+        where: { id },
+        data,
+      });
+    }
   }
 
   /**
@@ -421,12 +646,10 @@ export class OrderService {
     const whatsappMessage = this.formatBulkOrderForWhatsApp(bulkOrder);
     const emailHtml = this.formatBulkOrderForEmail(bulkOrder);
 
-    // Send WhatsApp
     if (supplierPhone) {
       await notificationService.sendWhatsAppMessage(supplierPhone, whatsappMessage);
     }
 
-    // Send Email
     if (supplierEmail) {
       await notificationService.sendEmailMessage(supplierEmail, `Bulk Order - Week of ${bulkOrder.weekStartDate.toLocaleDateString()}`, emailHtml);
     }
@@ -448,57 +671,85 @@ export class OrderService {
     deliveryDate?: string;
     startDate?: string;
     endDate?: string;
-    customerId?: string
-  } = {}): Promise<Array<Order & { customerName: string; totalAmount: number; items: unknown[] }>> {
-    const { limit, status, deliveryDate, startDate, endDate, customerId } = options;
+    customerId?: string;
+    packerId?: string;
+    driverId?: string;
+  } = {}): Promise<any[]> {
+    const { limit, status, deliveryDate, startDate, endDate, customerId, packerId, driverId } = options;
 
-    const where: Prisma.OrderWhereInput = {};
-    if (status) where.status = status;
+    if (env.USE_FIREBASE) {
+      const filters: any[] = [];
+      if (status) filters.push({ field: 'status', operator: '==', value: status });
+      if (deliveryDate) filters.push({ field: 'deliveryDate', operator: '==', value: new Date(deliveryDate) });
+      if (startDate) filters.push({ field: 'deliveryDate', operator: '>=', value: new Date(startDate) });
+      if (endDate) filters.push({ field: 'deliveryDate', operator: '<=', value: new Date(endDate) });
+      if (customerId) filters.push({ field: 'customerId', operator: '==', value: customerId });
+      if (packerId) filters.push({ field: 'packerId', operator: '==', value: packerId });
+      if (driverId) filters.push({ field: 'driverId', operator: '==', value: driverId });
 
-    // Exact date match (legacy support)
-    if (deliveryDate) {
-      where.deliveryDate = new Date(deliveryDate);
-    }
+      const orders = await orderRepository.list(filters);
+      const topOrders = limit ? orders.slice(0, limit) : orders;
 
-    // Date range filtering
-    if (startDate || endDate) {
-      where.deliveryDate = {
-        ...((where.deliveryDate as Prisma.DateTimeFilter) || {}),
-        ...(startDate ? { gte: new Date(startDate) } : {}),
-        ...(endDate ? { lte: new Date(endDate) } : {}),
-      };
-    }
+      return Promise.all(topOrders.map(async order => {
+        const items = await orderItemRepository.findByOrder(order.id);
+        const customer = await userRepository.findById(order.customerId);
+        const totalAmount = items.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), order.deliveryFees || 0);
+        return {
+          ...order,
+          items,
+          customer,
+          customerName: customer?.name || 'Unknown',
+          totalAmount,
+        };
+      }));
+    } else {
+      const where: Prisma.OrderWhereInput = {};
+      if (status) where.status = status;
 
-    if (customerId) where.customerId = customerId;
+      if (deliveryDate) {
+        where.deliveryDate = new Date(deliveryDate);
+      }
 
-    const orders = await prisma.order.findMany({
-      where,
-      take: limit,
-      orderBy: {
-        deliveryDate: 'desc', // Changed from createdAt to deliveryDate for better logical ordering
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
+      if (startDate || endDate) {
+        where.deliveryDate = {
+          ...((where.deliveryDate as Prisma.DateTimeFilter) || {}),
+          ...(startDate ? { gte: new Date(startDate) } : {}),
+          ...(endDate ? { lte: new Date(endDate) } : {}),
+        };
+      }
+
+      if (customerId) where.customerId = customerId;
+      if (packerId) where.packerId = packerId;
+      if (driverId) where.driverId = driverId;
+
+      const orders = await prisma.order.findMany({
+        where,
+        take: limit,
+        orderBy: {
+          deliveryDate: 'desc',
         },
-        customer: true,
-      },
-    });
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          customer: true,
+        },
+      });
 
-    // Add total amount calculation for each order
-    return orders.map(order => {
-      const totalAmount = order.items.reduce((sum, item) => {
-        return sum + (Number(item.priceAtOrder) * item.quantity);
-      }, Number(order.deliveryFees || 0));
+      return orders.map(order => {
+        const totalAmount = order.items.reduce((sum, item) => {
+          return sum + (Number(item.priceAtOrder) * item.quantity);
+        }, Number(order.deliveryFees || 0));
 
-      return {
-        ...order,
-        customerName: order.customer.name,
-        totalAmount,
-      };
-    });
+        return {
+          ...order,
+          customerName: order.customer.name,
+          totalAmount,
+        };
+      });
+    }
   }
 
   /**

@@ -306,7 +306,7 @@ async function main() {
 
   let totalProducts = 0;
   for (const { category, items } of productCategories) {
-    for (const item of items) {
+    for (const item of items as any[]) {
       await prisma.product.upsert({
         where: { name: item.name },
         update: {

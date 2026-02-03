@@ -10,6 +10,42 @@ import { yokoService } from '../services/yoko.service.js';
 import { notificationService } from '../services/notification.service.js';
 
 const router = Router();
+
+/**
+ * POST /api/payments/webhook/yoko
+ * Webhook for Yoko payment capture
+ */
+interface YokoWebhookPayload {
+  id: string;
+  status: string;
+  amount: number;
+  metadata?: { invoiceId?: string };
+}
+
+router.post('/webhook/yoko', asyncHandler(async (req: Request, res: Response) => {
+  const { id, status, amount, metadata } = req.body as YokoWebhookPayload;
+
+  // Yoko payload usually includes status and metadata we passed in checkout
+  if (status === 'SUCCESSFUL' && metadata?.invoiceId) {
+    const invoice = await prisma.invoice.findUnique({
+      where: { id: metadata.invoiceId },
+    });
+
+    if (invoice) {
+      await paymentService.recordPayment({
+        invoiceId: invoice.id,
+        customerId: invoice.customerId,
+        amount: amount / 100, // Convert from cents
+        method: 'yoco',
+        paymentDate: new Date(),
+        notes: `Automated capture from Yoko (Ref: ${id})`,
+      });
+      console.log(`Payment captured for invoice ${invoice.id} via webhook`);
+    }
+  }
+
+  return res.json({ received: true });
+}));
 // Validation schemas
 const recordPaymentSchema = z.object({
   invoiceId: z.string().uuid(),
@@ -23,8 +59,13 @@ const recordPaymentSchema = z.object({
 
 
 // Send payment link
+interface SendLinkPayload {
+  invoiceId: string;
+  method: 'email' | 'whatsapp';
+}
+
 router.post('/send-link', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
-  const { invoiceId, method } = req.body; // method: 'whatsapp' | 'email'
+  const { invoiceId, method } = req.body as SendLinkPayload;
 
   if (!invoiceId || !method) {
     return res.status(400).json({
@@ -54,6 +95,66 @@ router.post('/send-link', authenticate, requireAdmin, asyncHandler(async (req: R
   return res.json({ success: true, message: `Payment link sent via ${method}` });
 }));
 
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
+
+/**
+ * POST /api/payments/public
+ * Record a payment via public link
+ */
+router.post('/public', asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { token, ...paymentData } = req.body;
+
+    // Verify token
+    const decoded = jwt.verify(token, JWT_SECRET) as { invoiceId: string, type: string };
+
+    if (decoded.type !== 'payment_link' || !decoded.invoiceId) {
+      return res.status(401).json({ error: { code: 'INVALID_TOKEN', message: 'Invalid payment link' } });
+    }
+
+    // Ensure we are paying for the correct invoice
+    if (paymentData.invoiceId !== decoded.invoiceId) {
+      return res.status(400).json({ error: { code: 'MISMATCH', message: 'Invoice ID mismatch' } });
+    }
+
+    const validatedData = recordPaymentSchema.parse(paymentData);
+
+    const payment = await paymentService.recordPayment({
+      invoiceId: validatedData.invoiceId,
+      customerId: validatedData.customerId,
+      amount: validatedData.amount,
+      method: validatedData.method as 'cash' | 'yoco' | 'eft',
+      paymentDate: new Date(validatedData.paymentDate),
+      notes: validatedData.notes,
+    });
+
+    return res.status(201).json(payment);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid input data',
+          details: error.errors,
+        },
+      });
+    }
+
+    if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(401).json({ error: { code: 'INVALID_TOKEN', message: 'Invalid token' } });
+    }
+
+    return res.status(400).json({
+      error: {
+        code: 'PAYMENT_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to record payment',
+      },
+    });
+  }
+}));
+
 /**
  * POST /api/payments
  * Record a payment (admin only)
@@ -63,8 +164,12 @@ router.post('/', authenticate, requireAdmin, auditLog('CREATE', 'payment'), asyn
     const validatedData = recordPaymentSchema.parse(req.body);
 
     const payment = await paymentService.recordPayment({
-      ...validatedData,
+      invoiceId: validatedData.invoiceId,
+      customerId: validatedData.customerId,
+      amount: validatedData.amount,
+      method: validatedData.method as 'cash' | 'yoco' | 'eft',
       paymentDate: new Date(validatedData.paymentDate),
+      notes: validatedData.notes,
     });
 
     return res.status(201).json(payment);

@@ -1,5 +1,10 @@
 import { prisma } from '../lib/prisma.js';
 import { pdfGenerator, PackingListPDFData } from '../lib/pdf-generator.js';
+import { env } from '../config/env.js';
+import { orderRepository } from '../repositories/order.repository.js';
+import { userRepository } from '../repositories/user.repository.js';
+import { orderItemRepository } from '../repositories/order-item.repository.js';
+import { productRepository } from '../repositories/product.repository.js';
 
 export interface PackingListItem {
   productName: string;
@@ -24,35 +29,63 @@ export class PackingListService {
    * Generate a packing list for a single order
    */
   async generatePackingList(orderId: string): Promise<PackingList> {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        customer: true,
-        items: {
-          include: {
-            product: true,
+    if (env.USE_FIREBASE) {
+      const order = await orderRepository.findById(orderId);
+      if (!order) throw new Error('Order not found');
+
+      const customer = await userRepository.findById(order.customerId);
+      if (!customer) throw new Error('Customer not found');
+
+      const items = await orderItemRepository.findByOrder(orderId);
+      const itemsWithProducts = await Promise.all(items.map(async item => {
+        const product = await productRepository.findById(item.productId);
+        return { ...item, product };
+      }));
+
+      return {
+        orderId: order.id,
+        customerName: customer.name,
+        customerAddress: order.deliveryAddress || customer.address || null,
+        deliveryDate: order.deliveryDate,
+        deliveryMethod: order.deliveryMethod,
+        specialInstructions: order.specialInstructions || null,
+        items: itemsWithProducts.map(item => ({
+          productName: item.product?.name || 'Unknown Product',
+          quantity: item.quantity,
+          unit: item.product?.unit || 'unit',
+        })),
+      };
+    } else {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          customer: true,
+          items: {
+            include: {
+              product: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!order) {
-      throw new Error('Order not found');
+      if (!order) {
+        throw new Error('Order not found');
+      }
+
+      return {
+        orderId: order.id,
+        customerName: order.customer.name,
+        customerAddress: order.deliveryAddress || order.customer.address,
+        deliveryDate: order.deliveryDate,
+        deliveryMethod: order.deliveryMethod,
+        specialInstructions: order.specialInstructions,
+        items: order.items.map((item) => ({
+          productName: item.product.name,
+          quantity: item.quantity,
+          unit: item.product.unit,
+        })),
+      };
     }
-
-    return {
-      orderId: order.id,
-      customerName: order.customer.name,
-      customerAddress: order.deliveryAddress || order.customer.address,
-      deliveryDate: order.deliveryDate,
-      deliveryMethod: order.deliveryMethod,
-      specialInstructions: order.specialInstructions,
-      items: order.items.map((item) => ({
-        productName: item.product.name,
-        quantity: item.quantity,
-        unit: item.product.unit,
-      })),
-    };
   }
 
   /**
@@ -63,51 +96,70 @@ export class PackingListService {
     date: Date,
     sortBy: SortBy = 'name'
   ): Promise<PackingList[]> {
-    // Normalize date to start of day
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
+    if (env.USE_FIREBASE) {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
 
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+      const allOrders = await orderRepository.list([
+        { field: 'deliveryDate', operator: '>=', value: startOfDay },
+        { field: 'deliveryDate', operator: '<=', value: endOfDay },
+        { field: 'status', operator: 'in', value: ['confirmed', 'packed'] }
+      ]);
 
-    // Fetch all orders for the delivery date
-    const orders = await prisma.order.findMany({
-      where: {
-        deliveryDate: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-        status: {
-          in: ['confirmed', 'packed'],
-        },
-      },
-      include: {
-        customer: true,
-        items: {
-          include: {
-            product: true,
+      const packingLists = await Promise.all(allOrders.map(async order => {
+        return this.generatePackingList(order.id);
+      }));
+
+      return this.sortPackingLists(packingLists, sortBy);
+    } else {
+      // Normalize date to start of day
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      // Fetch all orders for the delivery date
+      const orders = await prisma.order.findMany({
+        where: {
+          deliveryDate: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+          status: {
+            in: ['confirmed', 'packed'],
           },
         },
-      },
-    });
+        include: {
+          customer: true,
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
 
-    // Convert orders to packing lists
-    const packingLists: PackingList[] = orders.map((order) => ({
-      orderId: order.id,
-      customerName: order.customer.name,
-      customerAddress: order.deliveryAddress || order.customer.address,
-      deliveryDate: order.deliveryDate,
-      deliveryMethod: order.deliveryMethod,
-      specialInstructions: order.specialInstructions,
-      items: order.items.map((item) => ({
-        productName: item.product.name,
-        quantity: item.quantity,
-        unit: item.product.unit,
-      })),
-    }));
+      // Convert orders to packing lists
+      const packingLists: PackingList[] = orders.map((order) => ({
+        orderId: order.id,
+        customerName: order.customer.name,
+        customerAddress: order.deliveryAddress || order.customer.address,
+        deliveryDate: order.deliveryDate,
+        deliveryMethod: order.deliveryMethod,
+        specialInstructions: order.specialInstructions,
+        items: order.items.map((item) => ({
+          productName: item.product.name,
+          quantity: item.quantity,
+          unit: item.product.unit,
+        })),
+      }));
 
-    // Sort packing lists
-    return this.sortPackingLists(packingLists, sortBy);
+      // Sort packing lists
+      return this.sortPackingLists(packingLists, sortBy);
+    }
   }
 
   /**

@@ -12,6 +12,8 @@ interface DriverOrder {
     specialInstructions?: string;
     deliveryProof?: string;
     driverNotes?: string;
+    coolerBagOption: boolean;
+    coolerBagStatus: 'none' | 'taken' | 'returned';
     customer: {
         name: string;
         address: string;
@@ -36,7 +38,13 @@ export default function DriverDashboard() {
 
     // Update Status Mutation
     const updateStatus = useMutation({
-        mutationFn: async (data: { id: string; status: string; deliveryProof: string; driverNotes?: string }) => {
+        mutationFn: async (data: {
+            id: string;
+            status: string;
+            deliveryProof: string;
+            deliveryNotes?: string;
+            coolerBagStatus?: 'none' | 'taken' | 'returned';
+        }) => {
             await api.patch(`/driver/orders/${data.id}/status`, data);
         },
         onSuccess: () => {
@@ -55,7 +63,8 @@ export default function DriverDashboard() {
             id: selectedOrder.id,
             status: 'delivered',
             deliveryProof: proof,
-            driverNotes: selectedOrder.driverNotes || '', // Maintain typed notes
+            deliveryNotes: selectedOrder.driverNotes || '', // Mapping UI driverNotes to backend deliveryNotes
+            coolerBagStatus: selectedOrder.coolerBagStatus || 'none',
         });
     };
 
@@ -96,8 +105,30 @@ export default function DriverDashboard() {
                     </div>
 
                     {selectedOrder.specialInstructions && (
-                        <div className="bg-yellow-50 p-4 rounded-lg mb-6 border border-yellow-200">
+                        <div className="bg-yellow-50 p-4 rounded-lg mb-4 border border-yellow-200">
                             <p className="text-yellow-800 font-medium">⚠️ Note: {selectedOrder.specialInstructions}</p>
+                        </div>
+                    )}
+
+                    {selectedOrder.coolerBagOption && (
+                        <div className="bg-green-50 p-4 rounded-lg mb-6 border border-green-200">
+                            <p className="text-green-800 font-bold mb-1">👜 Cooler Bag Requested</p>
+                            <p className="text-xs text-green-700">Please collect the returnable cooler bag if provided.</p>
+
+                            <div className="mt-3 flex gap-2">
+                                {(['taken', 'returned', 'none'] as const).map(status => (
+                                    <button
+                                        key={status}
+                                        onClick={() => setSelectedOrder(prev => prev ? { ...prev, coolerBagStatus: status } : null)}
+                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors ${selectedOrder.coolerBagStatus === status
+                                                ? 'bg-green-600 text-white'
+                                                : 'bg-white border border-green-200 text-green-700'
+                                            }`}
+                                    >
+                                        {status.toUpperCase()}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     )}
 
@@ -121,9 +152,10 @@ export default function DriverDashboard() {
                         </div>
 
                         <textarea
-                            placeholder="Driver notes (optional)..."
+                            placeholder="Delivery notes (gate codes, where left, etc)..."
                             className="w-full p-4 border rounded-xl mt-4 text-base shadow-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             rows={3}
+                            value={selectedOrder.driverNotes || ''}
                             onChange={(e) => setSelectedOrder(prev => prev ? { ...prev, driverNotes: e.target.value } : null)}
                         />
                     </div>

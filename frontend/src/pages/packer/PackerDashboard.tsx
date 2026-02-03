@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAdminOrders, useUpdateOrderStatus, useOrder } from '../../hooks/useAdminOrders';
 import { toast } from 'react-hot-toast';
+import { Order } from '../../types';
 
 export default function PackerDashboard() {
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -13,41 +14,61 @@ export default function PackerDashboard() {
     const { data: selectedOrder } = useOrder(selectedOrderId || '');
     const updateStatus = useUpdateOrderStatus();
 
-    // Local state for tracking packed items in the current session
-    const [packedItems, setPackedItems] = useState<Set<string>>(new Set());
+    // Local state for tracking packed quantities: { itemId: quantity }
+    const [packedQuantities, setPackedQuantities] = useState<{ [key: string]: number }>({});
+    const [packerNotes, setPackerNotes] = useState('');
+    const [packerSignature, setPackerSignature] = useState('');
 
-    const toggleItemPacked = (itemId: string) => {
-        const newPacked = new Set(packedItems);
-        if (newPacked.has(itemId)) {
-            newPacked.delete(itemId);
-        } else {
-            newPacked.add(itemId);
-        }
-        setPackedItems(newPacked);
+    const toggleItemPacked = (item: Order['items'][number]) => {
+        const itemId = item.id;
+        setPackedQuantities(prev => {
+            const next = { ...prev };
+            if (itemId in next) {
+                delete next[itemId];
+            } else {
+                next[itemId] = item.quantity;
+            }
+            return next;
+        });
+    };
+
+    const updatePackedQty = (itemId: string, qty: number) => {
+        setPackedQuantities(prev => ({
+            ...prev,
+            [itemId]: qty
+        }));
     };
 
     const handleCompletePacking = async () => {
         if (!selectedOrder) return;
 
-        // Optional: Validations that all items are checked
-        if (packedItems.size !== selectedOrder.items.length) {
-            if (!confirm('Not all items are checked. Mark as packed anyway?')) {
-                return;
-            }
+        // Check if anything is non-standard
+        const isShortPacked = selectedOrder.items.some(item =>
+            packedQuantities[item.id] !== undefined && packedQuantities[item.id] < item.quantity
+        );
+
+        if (isShortPacked && !confirm('Some items are short-packed. This will adjust the invoice and notify the customer. Proceed?')) {
+            return;
         }
 
         try {
             await updateStatus.mutateAsync({
                 id: selectedOrder.id,
                 status: 'packed',
+                packedItems: packedQuantities,
+                notes: packerNotes,
+                signature: packerSignature
             });
             toast.success('Order marked as PACKED! 📦');
             setSelectedOrderId(null);
-            setPackedItems(new Set());
+            setPackedQuantities({});
+            setPackerNotes('');
+            setPackerSignature('');
         } catch (error) {
             toast.error('Failed to update status');
         }
     };
+    // ... (rest of the file logic remains similar but UI needs update for Qty)
 
     if (isLoading) {
         return (
@@ -94,11 +115,16 @@ export default function PackerDashboard() {
                             <h3 className="font-bold text-gray-900">{order.customer.name}</h3>
                             <p className="text-xs text-gray-500">#{order.id.slice(-6)}</p>
                         </div>
-                        <div className="flex flex-col items-end">
+                        <div className="flex flex-col items-end gap-1">
                             <span className={`px-2 py-1 rounded text-xs font-bold ${order.deliveryMethod === 'delivery' ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'
                                 }`}>
                                 {order.deliveryMethod === 'delivery' ? '🚚 Delivery' : '🏪 Collect'}
                             </span>
+                            {order.coolerBagOption && (
+                                <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                    👜 Cooler Bag
+                                </span>
+                            )}
                         </div>
                     </div>
 
@@ -145,45 +171,97 @@ export default function PackerDashboard() {
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     {selectedOrder.specialInstructions && (
                         <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-sm text-yellow-800 font-medium">
-                            ⚠️ Note: {selectedOrder.specialInstructions}
+                            ⚠️ Customer Note: {selectedOrder.specialInstructions}
                         </div>
                     )}
 
-                    <div className="space-y-2">
+                    {selectedOrder.coolerBagOption && (
+                        <div className="bg-green-50 border border-green-200 p-3 rounded-lg text-sm text-green-800 font-medium flex items-center gap-2">
+                            <span>👜</span> <strong>Pack in Cooler Bag:</strong> Customer requested a returnable cooler bag.
+                        </div>
+                    )}
+
+                    <div className="space-y-3">
                         {selectedOrder.items.map((item) => {
-                            const isPacked = packedItems.has(item.id);
+                            const currentQty = packedQuantities[item.id] ?? 0;
+                            const isPacked = item.id in packedQuantities;
                             const isFridge = item.product?.packingType === 'fridge';
                             const isFreezer = item.product?.packingType === 'freezer';
 
                             return (
                                 <div
                                     key={item.id}
-                                    onClick={() => toggleItemPacked(item.id)}
-                                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center gap-4 ${isPacked
-                                            ? 'bg-green-50 border-green-500 opacity-70'
-                                            : 'bg-white border-gray-100 shadow-sm hover:border-green-200'
+                                    className={`p-4 rounded-xl border-2 transition-all flex flex-col gap-3 ${isPacked
+                                        ? 'bg-green-50 border-green-500 shadow-sm'
+                                        : 'bg-white border-gray-100 shadow-sm'
                                         }`}
                                 >
-                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isPacked ? 'bg-green-500 border-green-500' : 'border-gray-300'
-                                        }`}>
-                                        {isPacked && <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                                    </div>
+                                    <div className="flex items-center gap-4 cursor-pointer" onClick={() => toggleItemPacked(item)}>
+                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isPacked ? 'bg-green-500 border-green-500' : 'border-gray-300'
+                                            }`}>
+                                            {isPacked && <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                        </div>
 
-                                    <div className="flex-1">
-                                        <p className={`font-bold text-lg ${isPacked ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
-                                            {item.product?.name}
-                                        </p>
-                                        <div className="flex gap-2 mt-1">
-                                            <span className="text-sm font-medium text-gray-600">
-                                                Qty: {item.quantity} {item.product?.unit}
-                                            </span>
-                                            {isFridge && <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-bold">❄️ Fridge</span>}
-                                            {isFreezer && <span className="text-xs bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded font-bold">🧊 Freezer</span>}
+                                        <div className="flex-1">
+                                            <p className={`font-bold text-lg ${isPacked ? 'text-green-900' : 'text-gray-900'}`}>
+                                                {item.product?.name}
+                                            </p>
+                                            <div className="flex gap-2 mt-1">
+                                                <span className="text-sm font-medium text-gray-600">
+                                                    Target: {item.quantity} {item.product?.unit}
+                                                </span>
+                                                {isFridge && <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-bold">❄️ Fridge</span>}
+                                                {isFreezer && <span className="text-xs bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded font-bold">🧊 Freezer</span>}
+                                            </div>
                                         </div>
                                     </div>
+
+                                    {isPacked && (
+                                        <div className="flex items-center justify-between pt-3 border-t border-green-100">
+                                            <span className="text-sm font-bold text-green-700">Packed Quantity:</span>
+                                            <div className="flex items-center gap-4">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); updatePackedQty(item.id, Math.max(0, currentQty - 1)); }}
+                                                    className="w-10 h-10 flex items-center justify-center bg-white border border-green-200 rounded-lg shadow-sm active:scale-90"
+                                                >
+                                                    -
+                                                </button>
+                                                <span className="font-bold text-lg w-12 text-center">{currentQty}</span>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); updatePackedQty(item.id, currentQty + 1); }}
+                                                    className="w-10 h-10 flex items-center justify-center bg-white border border-green-200 rounded-lg shadow-sm active:scale-90"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
+                    </div>
+
+                    <div className="mt-6">
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Internal Packer Notes</label>
+                        <textarea
+                            value={packerNotes}
+                            onChange={(e) => setPackerNotes(e.target.value)}
+                            placeholder="e.g. Swapped regular carrots for organic..."
+                            className="w-full p-3 border-2 border-gray-100 rounded-xl focus:border-green-500 outline-none h-24"
+                        />
+                    </div>
+
+                    <div className="mt-6 pb-6">
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Packer Signature</label>
+                        <input
+                            type="text"
+                            value={packerSignature}
+                            onChange={(e) => setPackerSignature(e.target.value)}
+                            placeholder="Type full name as signature"
+                            className="w-full p-3 border-2 border-gray-100 rounded-xl focus:border-green-500 outline-none"
+                            required
+                        />
+                        <p className="text-xs text-gray-400 mt-1">Please type your name to authorize this pack.</p>
                     </div>
                 </div>
 
@@ -193,7 +271,7 @@ export default function PackerDashboard() {
                             onClick={handleCompletePacking}
                             className="w-full bg-green-600 text-white font-bold py-4 rounded-xl text-lg shadow-lg active:scale-[0.98] transition-transform"
                         >
-                            Full Order Packed ({packedItems.size}/{selectedOrder.items.length})
+                            Finalize Order ({Object.keys(packedQuantities).length}/{selectedOrder.items.length})
                         </button>
                     ) : (
                         <div className="text-center font-bold text-gray-500 py-2">

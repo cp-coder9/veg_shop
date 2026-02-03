@@ -1,5 +1,8 @@
 import { prisma } from '../lib/prisma.js';
-import { Product, Prisma } from '@prisma/client';
+import { Product as PrismaProduct, Prisma } from '@prisma/client';
+import { env } from '../config/env.js';
+import { productRepository, Product } from '../repositories/product.repository.js';
+import { priceHistoryRepository } from '../repositories/price-history.repository.js';
 
 export interface CreateProductDto {
   name: string;
@@ -32,127 +35,165 @@ export interface ProductFilters {
 }
 
 export class ProductService {
-  /**
-   * Create a new product
-   */
-  async createProduct(data: CreateProductDto): Promise<Product> {
-    const product = await prisma.product.create({
-      data: {
-        name: data.name,
-        price: data.price,
-        category: data.category,
-        unit: data.unit,
-        description: data.description,
-        imageUrl: data.imageUrl,
-        isAvailable: data.isAvailable,
-        isSeasonal: data.isSeasonal,
-        supplierId: data.supplierId,
-      },
-    });
+  async createProduct(data: CreateProductDto): Promise<any> {
+    if (env.USE_FIREBASE) {
+      const product = await productRepository.create({
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
-    // Track initial price in history
-    await prisma.priceHistory.create({
-      data: {
+      await priceHistoryRepository.create({
         productId: product.id,
         price: product.price,
-      },
-    });
+        effectiveDate: new Date(),
+      });
 
-    return product;
-  }
+      return product;
+    } else {
+      const product = await prisma.product.create({
+        data: {
+          name: data.name,
+          price: data.price,
+          category: data.category,
+          unit: data.unit,
+          description: data.description,
+          imageUrl: data.imageUrl,
+          isAvailable: data.isAvailable,
+          isSeasonal: data.isSeasonal,
+          supplierId: data.supplierId,
+        },
+      });
 
-  /**
-   * Update an existing product
-   */
-  async updateProduct(id: string, data: UpdateProductDto): Promise<Product> {
-    const existingProduct = await prisma.product.findUnique({
-      where: { id },
-    });
-
-    if (!existingProduct) {
-      throw new Error('Product not found');
-    }
-
-    const product = await prisma.product.update({
-      where: { id },
-      data,
-    });
-
-    // Track price change in history if price was updated
-    if (data.price !== undefined && data.price !== existingProduct.price.toNumber()) {
+      // Track initial price in history
       await prisma.priceHistory.create({
         data: {
           productId: product.id,
-          price: data.price,
+          price: product.price,
         },
       });
-    }
 
-    return product;
+      return product;
+    }
   }
 
-  /**
-   * Delete a product
-   */
+  async updateProduct(id: string, data: UpdateProductDto): Promise<any> {
+    if (env.USE_FIREBASE) {
+      const existingProduct = await productRepository.findById(id);
+      if (!existingProduct) throw new Error('Product not found');
+
+      const product = await productRepository.update(id, {
+        ...data,
+        updatedAt: new Date(),
+      });
+
+      if (data.price !== undefined && data.price !== existingProduct.price) {
+        await priceHistoryRepository.create({
+          productId: id,
+          price: data.price,
+          effectiveDate: new Date(),
+        });
+      }
+      return product;
+    } else {
+      const existingProduct = await prisma.product.findUnique({
+        where: { id },
+      });
+
+      if (!existingProduct) {
+        throw new Error('Product not found');
+      }
+
+      const product = await prisma.product.update({
+        where: { id },
+        data,
+      });
+
+      // Track price change in history if price was updated
+      if (data.price !== undefined && data.price !== existingProduct.price.toNumber()) {
+        await prisma.priceHistory.create({
+          data: {
+            productId: product.id,
+            price: data.price,
+          },
+        });
+      }
+
+      return product;
+    }
+  }
+
   async deleteProduct(id: string): Promise<void> {
-    await prisma.product.delete({
-      where: { id },
-    });
+    if (env.USE_FIREBASE) {
+      await productRepository.delete(id);
+    } else {
+      await prisma.product.delete({
+        where: { id },
+      });
+    }
   }
 
-  /**
-   * Get a single product by ID
-   */
-  async getProduct(id: string): Promise<Product | null> {
-    return prisma.product.findUnique({
-      where: { id },
-    });
+  async getProduct(id: string): Promise<any> {
+    if (env.USE_FIREBASE) {
+      return productRepository.findById(id);
+    } else {
+      return prisma.product.findUnique({
+        where: { id },
+      });
+    }
   }
 
-  /**
-   * Get products with optional filtering
-   */
-  async getProducts(filters?: ProductFilters): Promise<Product[]> {
-    const where: Prisma.ProductWhereInput = {};
+  async getProducts(filters?: ProductFilters): Promise<any[]> {
+    if (env.USE_FIREBASE) {
+      const fsFilters: any[] = [];
+      if (filters?.category) fsFilters.push({ field: 'category', operator: '==', value: filters.category });
+      if (filters?.isAvailable !== undefined) fsFilters.push({ field: 'isAvailable', operator: '==', value: filters.isAvailable });
+      if (filters?.isSeasonal !== undefined) fsFilters.push({ field: 'isSeasonal', operator: '==', value: filters.isSeasonal });
 
-    if (filters?.category) {
-      where.category = filters.category;
+      return productRepository.list(fsFilters);
+    } else {
+      const where: Prisma.ProductWhereInput = {};
+
+      if (filters?.category) {
+        where.category = filters.category;
+      }
+
+      if (filters?.isAvailable !== undefined) {
+        where.isAvailable = filters.isAvailable;
+      }
+
+      if (filters?.isSeasonal !== undefined) {
+        where.isSeasonal = filters.isSeasonal;
+      }
+
+      return prisma.product.findMany({
+        where,
+        orderBy: [
+          { category: 'asc' },
+          { name: 'asc' },
+        ],
+      });
     }
-
-    if (filters?.isAvailable !== undefined) {
-      where.isAvailable = filters.isAvailable;
-    }
-
-    if (filters?.isSeasonal !== undefined) {
-      where.isSeasonal = filters.isSeasonal;
-    }
-
-    return prisma.product.findMany({
-      where,
-      orderBy: [
-        { category: 'asc' },
-        { name: 'asc' },
-      ],
-    });
   }
 
-  /**
-   * Get available products for customer view (grouped by category)
-   */
-  async getAvailableProducts(): Promise<Product[]> {
-    return prisma.product.findMany({
-      where: {
-        isAvailable: true,
-        OR: [
-          { supplierId: null },
-          { supplier: { isAvailable: true } }
-        ]
-      },
-      orderBy: [
-        { category: 'asc' },
-        { name: 'asc' },
-      ],
-    });
+  async getAvailableProducts(): Promise<any[]> {
+    if (env.USE_FIREBASE) {
+      return productRepository.listAvailable();
+    } else {
+      return prisma.product.findMany({
+        where: {
+          isAvailable: true,
+          OR: [
+            { supplierId: null },
+            { supplier: { isAvailable: true } }
+          ]
+        },
+        orderBy: [
+          { category: 'asc' },
+          { name: 'asc' },
+        ],
+      });
+    }
   }
 
   /**

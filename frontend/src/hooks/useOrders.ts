@@ -9,6 +9,7 @@ interface CreateOrderRequest {
   deliveryAddress?: string;
   specialInstructions?: string;
   deliveryFees?: number;
+  coolerBagOption?: boolean;
   items: OrderItem[];
 }
 

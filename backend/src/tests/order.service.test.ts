@@ -122,7 +122,7 @@ describe('OrderService', () => {
         });
       });
 
-      const result = await orderService.createOrder(customerId, orderData);
+const result = await orderService.createOrder(customerId, orderData);
 
       expect(result.id).toBe(mockOrder.id);
       expect(result.customerId).toBe(customerId);
@@ -226,7 +226,7 @@ describe('OrderService', () => {
 
       vi.mocked(prisma.order.findUnique).mockResolvedValue(mockOrder);
 
-      const result = await orderService.getOrder('order-1');
+const result = await orderService.getOrder('order-1');
 
       expect(result).toEqual(mockOrder);
       expect(prisma.order.findUnique).toHaveBeenCalledWith({
@@ -264,7 +264,7 @@ describe('OrderService', () => {
 
       vi.mocked(prisma.order.findMany).mockResolvedValue(mockOrders);
 
-      const result = await orderService.getCustomerOrders(customerId);
+const result = await orderService.getCustomerOrders(customerId);
 
       expect(result).toEqual(mockOrders);
       expect(prisma.order.findMany).toHaveBeenCalledWith({
@@ -315,7 +315,7 @@ describe('OrderService', () => {
 
       vi.mocked(prisma.order.findMany).mockResolvedValue(mockOrders);
 
-      const result = await orderService.getOrdersByDeliveryDate(deliveryDate);
+const result = await orderService.getOrdersByDeliveryDate(deliveryDate);
 
       expect(result).toEqual(mockOrders);
     });
@@ -341,7 +341,7 @@ describe('OrderService', () => {
 
       vi.mocked(prisma.order.update).mockResolvedValue(mockOrder);
 
-      const result = await orderService.updateOrderStatus(orderId, newStatus);
+const result = await orderService.updateOrderStatus(orderId, newStatus);
 
       expect(result.status).toBe(newStatus);
       expect(prisma.order.update).toHaveBeenCalledWith({
@@ -435,7 +435,7 @@ describe('OrderService', () => {
 
       vi.mocked(prisma.order.findMany).mockResolvedValue(mockOrders);
 
-      const result = await orderService.generateBulkOrder(weekStartDate, bufferPercentage);
+const result = await orderService.generateBulkOrder(weekStartDate, bufferPercentage);
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0].productName).toBe('Tomatoes');
@@ -463,9 +463,9 @@ describe('OrderService', () => {
         generatedAt: new Date('2025-10-27T10:00:00Z'),
       };
 
-      const result = orderService.formatBulkOrderForWhatsApp(bulkOrder);
+const result = orderService.formatBulkOrderForWhatsApp(bulkOrder);
 
-      expect(result).toContain('📦 Bulk Order');
+      expect(result).toContain('🛒 *Bulk Order Consolidation*');
       expect(result).toContain('Tomatoes');
       expect(result).toContain('Base: 8');
       expect(result).toContain('Buffer: 1');
@@ -490,9 +490,9 @@ describe('OrderService', () => {
         generatedAt: new Date('2025-10-27T10:00:00Z'),
       };
 
-      const result = orderService.formatBulkOrderForEmail(bulkOrder);
+const result = orderService.formatBulkOrderForEmail(bulkOrder);
 
-      expect(result).toContain('<h2>Bulk Order');
+      expect(result).toContain('<h2>Bulk Order Consolidation');
       expect(result).toContain('<table');
       expect(result).toContain('Tomatoes');
       expect(result).toContain('<td>8</td>');
