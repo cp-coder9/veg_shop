@@ -31,8 +31,8 @@ export default function OrdersPage() {
   const handleReorder = (items: { product?: { id: string }, productId?: string, quantity: number }[]) => {
     // Map order items to cart items, filtering out items without product data
     const cartItems = items
-      .filter(item => item.product?.id || item.productId)
-      .map(item => ({
+      .filter((item: any) => item.product?.id || item.productId)
+      .map((item: any) => ({
         productId: item.product?.id || item.productId!,
         quantity: item.quantity
       }));
@@ -81,9 +81,9 @@ export default function OrdersPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {orders?.map((order) => {
+          {orders?.map((order: any) => {
             const total = order.items.reduce(
-              (sum, item) => sum + toNumber(item.priceAtOrder) * item.quantity,
+              (sum: number, item: any) => sum + toNumber(item.priceAtOrder) * item.quantity,
               0
             );
 
@@ -121,11 +121,11 @@ export default function OrdersPage() {
                 </div>
 
                 {selectedOrder === order.id && (
-                  <div className="border-t pt-4 mt-4 cursor-auto" onClick={(e) => e.stopPropagation()}>
+                  <div className="border-t pt-4 mt-4 cursor-auto" onClick={(e: any) => e.stopPropagation()}>
                     <h3 className="font-semibold text-gray-900 mb-3">Order Details</h3>
 
                     <div className="space-y-2 mb-4">
-                      {order.items.map((item) => (
+                      {order.items.map((item: any) => (
                         <div key={item.id} className="flex justify-between text-sm">
                           <span className="text-gray-600">
                             {item.product?.name || 'Unknown Product'} x {item.quantity}

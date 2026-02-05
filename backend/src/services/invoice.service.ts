@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma.js';
-import { Invoice as PrismaInvoice, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { pdfGenerator, InvoicePDFData } from '../lib/pdf-generator.js';
 import { promises as fs } from 'fs';
@@ -104,7 +104,7 @@ export class InvoiceService {
       if (!order) throw new Error('Order not found');
 
       const items = await orderItemRepository.findByOrder(orderId);
-      const subtotal = items.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), 0);
+      const subtotal = items.reduce((sum: number, item: any) => sum + (item.priceAtOrder * item.quantity), 0);
 
       const creditBalance = await this.getCustomerCreditBalance(order.customerId);
       const creditToApply = Math.min(creditBalance, subtotal);
@@ -164,7 +164,7 @@ export class InvoiceService {
       }
 
       // Calculate subtotal from order items
-      const subtotal = order.items.reduce((sum, item) => {
+      const subtotal = order.items.reduce((sum: number, item: any) => {
         return sum + Number(item.priceAtOrder) * item.quantity;
       }, 0);
 
@@ -182,7 +182,7 @@ export class InvoiceService {
       dueDate.setDate(dueDate.getDate() + 14);
 
       // Create invoice in a transaction
-      const invoice = await prisma.$transaction(async (tx) => {
+      const invoice = await prisma.$transaction(async (tx: any) => {
         // Create the invoice
         const newInvoice = await tx.invoice.create({
           data: {
@@ -368,14 +368,14 @@ export class InvoiceService {
   async getCustomerCreditBalance(customerId: string): Promise<number> {
     if (env.USE_FIREBASE) {
       const credits = await creditRepository.findByCustomer(customerId);
-      const balance = credits.reduce((sum, credit) => sum + credit.amount, 0);
+      const balance = credits.reduce((sum: number, credit: any) => sum + credit.amount, 0);
       return Math.max(0, balance);
     } else {
       const credits = await prisma.credit.findMany({
         where: { customerId },
       });
 
-      const balance = credits.reduce((sum, credit) => {
+      const balance = credits.reduce((sum: number, credit: any) => {
         return sum + Number(credit.amount);
       }, 0);
 
@@ -530,7 +530,7 @@ export class InvoiceService {
     // Calculate stats
     for (const invoice of invoices) {
       const total = Number(invoice.total);
-      const totalPaid = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0);
+      const totalPaid = invoice.payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
       const remaining = total - totalPaid;
 
       // Count by status

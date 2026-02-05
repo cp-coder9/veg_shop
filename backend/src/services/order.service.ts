@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma.js';
-import { Order as PrismaOrder, OrderItem as PrismaOrderItem, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { appEvents } from '../lib/events.js';
 import { notificationService } from './notification.service.js';
 import { env } from '../config/env.js';
@@ -153,7 +153,7 @@ export class OrderService {
       const customId = `${sanitizedName}-${dateStr}-${randomSuffix}`;
 
       // Create the order and items in a transaction
-      const order = await prisma.$transaction(async (tx) => {
+      const order = await prisma.$transaction(async (tx: any) => {
         // Calculate delivery fee if not provided or to override
         let deliveryFees = data.deliveryFees ?? 0;
         if (data.deliveryMethod === 'delivery' && data.deliveryAddress) {
@@ -176,8 +176,8 @@ export class OrderService {
             status: 'pending',
             coolerBagOption: data.coolerBagOption ?? false,
             items: {
-              create: data.items.map(item => {
-                const product = products.find(p => p.id === item.productId)!;
+              create: data.items.map((item: { productId: string; quantity: number }) => {
+                const product = products.find((p: any) => p.id === item.productId)!;
                 return {
                   productId: item.productId,
                   quantity: item.quantity,
@@ -234,7 +234,7 @@ export class OrderService {
   async getCustomerOrders(customerId: string): Promise<any[]> {
     if (env.USE_FIREBASE) {
       const orders = await orderRepository.findByCustomer(customerId);
-      return Promise.all(orders.map(async order => {
+      return Promise.all(orders.map(async (order: any) => {
         const items = await orderItemRepository.findByOrder(order.id);
         return { ...order, items };
       }));
@@ -270,7 +270,7 @@ export class OrderService {
 
       const filteredOrders = orders.filter(o => o.status !== 'cancelled');
 
-      return Promise.all(filteredOrders.map(async order => {
+      return Promise.all(filteredOrders.map(async (order: any) => {
         const items = await orderItemRepository.findByOrder(order.id);
         const customer = await userRepository.findById(order.customerId);
         return { ...order, items, customer };
@@ -312,9 +312,9 @@ export class OrderService {
     // Group by area
     const grouped: Record<string, any[]> = {};
 
-    orders.forEach(order => {
+    orders.forEach((order: any) => {
       const address = order.deliveryAddress || 'Unknown Area';
-      const parts = address.split(',').map(p => p.trim());
+      const parts = address.split(',').map((p: string) => p.trim());
 
       let area = 'General';
       if (parts.length > 1) {
@@ -402,7 +402,7 @@ export class OrderService {
 
       updatedOrder = await orderRepository.update(id, updateData);
     } else {
-      updatedOrder = await prisma.$transaction(async (tx) => {
+      updatedOrder = await prisma.$transaction(async (tx: any) => {
         // Fetch the order with items and product details
         const order = await tx.order.findUnique({
           where: { id },
@@ -546,8 +546,8 @@ export class OrderService {
 
     const productMap = new Map<string, BulkOrderItem>();
 
-    orders.forEach(order => {
-      order.items.forEach(item => {
+    orders.forEach((order: any) => {
+      order.items.forEach((item: any) => {
         const existing = productMap.get(item.productId);
         if (existing) {
           existing.totalQuantity += item.quantity;
@@ -565,7 +565,7 @@ export class OrderService {
       });
     });
 
-    const items = Array.from(productMap.values()).map(item => {
+    const items = Array.from(productMap.values()).map((item: any) => {
       item.bufferQuantity = Math.ceil(item.totalQuantity * (bufferPercentage / 100));
       item.finalQuantity = item.totalQuantity + item.bufferQuantity;
       return item;
@@ -586,7 +586,7 @@ export class OrderService {
     message += `📅 Week of: ${bulkOrder.weekStartDate.toLocaleDateString()}\n`;
     message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-    bulkOrder.items.forEach(item => {
+    bulkOrder.items.forEach((item: any) => {
       message += `• *${item.productName}*\n`;
       message += `  Qty: ${item.totalQuantity} (+${item.bufferQuantity} buffer) = *${item.finalQuantity}*\n\n`;
     });
@@ -618,7 +618,7 @@ export class OrderService {
           <tbody>
     `;
 
-    bulkOrder.items.forEach(item => {
+    bulkOrder.items.forEach((item: any) => {
       html += `
         <tr>
           <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.productName}</td>
@@ -690,10 +690,10 @@ export class OrderService {
       const orders = await orderRepository.list(filters);
       const topOrders = limit ? orders.slice(0, limit) : orders;
 
-      return Promise.all(topOrders.map(async order => {
+      return Promise.all(topOrders.map(async (order: any) => {
         const items = await orderItemRepository.findByOrder(order.id);
         const customer = await userRepository.findById(order.customerId);
-        const totalAmount = items.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), order.deliveryFees || 0);
+        const totalAmount = items.reduce((sum: number, item: any) => sum + (item.priceAtOrder * item.quantity), order.deliveryFees || 0);
         return {
           ...order,
           items,
@@ -738,14 +738,14 @@ export class OrderService {
         },
       });
 
-      return orders.map(order => {
-        const totalAmount = order.items.reduce((sum, item) => {
+      return orders.map((order: any) => {
+        const totalAmount = order.items.reduce((sum: number, item: any) => {
           return sum + (Number(item.priceAtOrder) * item.quantity);
         }, Number(order.deliveryFees || 0));
 
         return {
           ...order,
-          customerName: order.customer.name,
+          customerName: (order as any).customer.name,
           totalAmount,
         };
       });
@@ -777,8 +777,8 @@ export class OrderService {
 
     const collationMap = new Map<string, CollationItem>();
 
-    orders.forEach(order => {
-      order.items.forEach(item => {
+    orders.forEach((order: any) => {
+      order.items.forEach((item: any) => {
         const existing = collationMap.get(item.productId);
         if (existing) {
           existing.totalQuantity += item.quantity;

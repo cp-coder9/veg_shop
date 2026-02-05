@@ -31,10 +31,17 @@ export class VerificationCodeRepository extends BaseRepository<VerificationCode>
         this.checkConnection();
         const snapshot = await this.collection!.where('contact', '==', contact).get();
         const batch = this.collection!.firestore.batch();
-        snapshot.docs.forEach(doc => {
+        snapshot.docs.forEach((doc: any) => {
             batch.delete(doc.ref);
         });
         await batch.commit();
+    }
+
+    protected toModel(doc: any): VerificationCode {
+        return {
+            id: doc.id,
+            ...doc.data()
+        } as VerificationCode;
     }
 }
 

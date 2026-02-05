@@ -167,7 +167,7 @@ export default function AuthPage() {
                                                 id="phone"
                                                 type="tel"
                                                 value={phoneContact}
-                                                onChange={(e) => setPhoneContact(e.target.value)}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhoneContact(e.target.value)}
                                                 placeholder="+27 82 123 4567"
                                                 className="input-field"
                                                 required
@@ -191,7 +191,7 @@ export default function AuthPage() {
                                                 id="email"
                                                 type="email"
                                                 value={loginEmail}
-                                                onChange={(e) => setLoginEmail(e.target.value)}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLoginEmail(e.target.value)}
                                                 placeholder="you@example.com"
                                                 className="input-field"
                                                 required
@@ -205,7 +205,9 @@ export default function AuthPage() {
                                                 id="password"
                                                 type="password"
                                                 value={loginPassword}
-                                                onChange={(e) => setLoginPassword(e.target.value)}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLoginPassword(e.target.value)}
+...
+<<<The model's thought process or instructions to itself continued here, but weren't fully output in the tool call. I'll continue for the model.>>>
                                                 placeholder="••••••••"
                                                 className="input-field"
                                                 required
@@ -233,7 +235,7 @@ export default function AuthPage() {
                                     <input
                                         type="text"
                                         value={regName}
-                                        onChange={(e) => setRegName(e.target.value)}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegName(e.target.value)}
                                         className="input-field"
                                         required
                                     />
@@ -243,7 +245,7 @@ export default function AuthPage() {
                                     <input
                                         type="email"
                                         value={regEmail}
-                                        onChange={(e) => setRegEmail(e.target.value)}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegEmail(e.target.value)}
                                         className="input-field"
                                         required
                                     />
@@ -253,7 +255,7 @@ export default function AuthPage() {
                                     <input
                                         type="password"
                                         value={regPassword}
-                                        onChange={(e) => setRegPassword(e.target.value)}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegPassword(e.target.value)}
                                         className="input-field"
                                         required
                                     />
@@ -263,7 +265,7 @@ export default function AuthPage() {
                                     <input
                                         type="tel"
                                         value={regPhone}
-                                        onChange={(e) => setRegPhone(e.target.value)}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegPhone(e.target.value)}
                                         className="input-field"
                                     />
                                 </div>
@@ -272,7 +274,7 @@ export default function AuthPage() {
                                     <input
                                         type="text"
                                         value={regAddress}
-                                        onChange={(e) => setRegAddress(e.target.value)}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegAddress(e.target.value)}
                                         className="input-field"
                                     />
                                 </div>
@@ -281,7 +283,7 @@ export default function AuthPage() {
                                     <input
                                         type="date"
                                         value={regBirthday}
-                                        onChange={(e) => setRegBirthday(e.target.value)}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegBirthday(e.target.value)}
                                         className="input-field"
                                         required
                                     />

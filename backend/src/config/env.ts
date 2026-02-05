@@ -40,7 +40,7 @@ const envSchema = z.object({
   FIREBASE_PROJECT_ID: z.string().optional(),
   FIREBASE_CLIENT_EMAIL: z.string().optional(),
   FIREBASE_PRIVATE_KEY: z.string().optional(),
-  USE_FIREBASE: z.string().default('false').transform((val) => val === 'true'),
+  USE_FIREBASE: z.string().default('false').transform((val: string) => val === 'true'),
 });
 
 // Validate environment variables
@@ -51,12 +51,13 @@ function validateEnv(): z.infer<typeof envSchema> {
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error('❌ Environment validation failed:');
-      error.errors.forEach((err) => {
+      error.errors.forEach((err: z.ZodIssue) => {
         console.error(`  - ${err.path.join('.')}: ${err.message}`);
       });
       process.exit(1);
     }
-    throw error;
+    console.error('❌ Invalid environment variables:', (error as any).errors || error);
+    process.exit(1);
   }
 }
 

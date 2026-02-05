@@ -250,11 +250,11 @@ export class CustomerService {
         { field: 'status', operator: 'in', value: ['unpaid', 'partial'] }
       ]);
 
-      const outstandingAmount = invoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
+      const outstandingAmount = invoices.reduce((sum: number, inv: any) => sum + (inv.total || 0), 0);
 
       // Get next delivery date
       const nextOrder = orders
-        .filter(o => ['pending', 'confirmed'].includes(o.status) && o.deliveryDate >= new Date())
+        .filter((o: any) => ['pending', 'confirmed'].includes(o.status) && o.deliveryDate >= new Date())
         .sort((a, b) => a.deliveryDate.getTime() - b.deliveryDate.getTime())[0];
 
       return {
@@ -272,13 +272,13 @@ export class CustomerService {
           totalOrders: orders.length,
           totalSpent: 0, // Simplified for now
         },
-        recentOrders: ordersWithItems.map(order => ({
+        recentOrders: ordersWithItems.map((order: any) => ({
           id: order.id,
           status: order.status,
           deliveryDate: order.deliveryDate,
           createdAt: order.createdAt,
           itemCount: order.items.length,
-          total: order.items.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), 0),
+          total: order.items.reduce((sum: number, item: any) => sum + (item.priceAtOrder * item.quantity), 0),
         })),
         nextDelivery: nextOrder ? {
           orderId: nextOrder.id,
@@ -320,8 +320,8 @@ export class CustomerService {
         },
       });
 
-      const outstandingAmount = invoices.reduce((sum, inv) => {
-        const paidAmount = inv.payments.reduce((pSum, p) => pSum + Number(p.amount), 0);
+      const outstandingAmount = invoices.reduce((sum: number, inv: any) => {
+        const paidAmount = inv.payments.reduce((pSum: number, p: any) => pSum + Number(p.amount), 0);
         return sum + (Number(inv.total) - paidAmount);
       }, 0);
 
@@ -344,7 +344,7 @@ export class CustomerService {
       const allInvoices = await prisma.invoice.findMany({
         where: { customerId: id, status: 'paid' }
       });
-      const totalSpent = allInvoices.reduce((sum, inv) => sum + Number(inv.total), 0);
+      const totalSpent = allInvoices.reduce((sum: number, inv: any) => sum + Number(inv.total), 0);
 
       return {
         customer: {
@@ -361,13 +361,13 @@ export class CustomerService {
           totalOrders: totalOrdersCount,
           totalSpent,
         },
-        recentOrders: recentOrders.map(order => ({
+        recentOrders: recentOrders.map((order: any) => ({
           id: order.id,
           status: order.status,
           deliveryDate: order.deliveryDate,
           createdAt: order.createdAt,
           itemCount: order.items.length,
-          total: order.items.reduce((sum, item) => sum + Number(item.priceAtOrder) * item.quantity, 0),
+          total: order.items.reduce((sum: number, item: any) => sum + Number(item.priceAtOrder) * item.quantity, 0),
         })),
         nextDelivery: nextOrder ? {
           orderId: nextOrder.id,
@@ -402,7 +402,7 @@ export class CustomerService {
       orderBy: { paymentDate: 'desc' },
     });
 
-    return payments.map(payment => ({
+    return payments.map((payment: any) => ({
       id: payment.id,
       amount: Number(payment.amount),
       method: payment.method,

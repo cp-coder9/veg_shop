@@ -12,7 +12,7 @@ export default function DashboardPage() {
     const { data: dashboard, isLoading, isError } = useClientDashboard();
     const { data: productsData, isLoading: productsLoading } = useProducts();
     const { addItem, getItemQuantity, updateQuantity } = useCartStore();
-    const setCartItems = useCartStore(state => state.setItems);
+    const setCartItems = useCartStore((state: any) => state.setItems);
     const [searchTerm, setSearchTerm] = useState('');
 
     interface OrderItem {
@@ -194,7 +194,7 @@ export default function DashboardPage() {
                         type="text"
                         placeholder="Search products..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                         className="w-full px-4 py-3 pl-10 rounded-xl border border-warm-gray-200 dark:border-warm-gray-700 bg-white dark:bg-warm-gray-800 text-warm-gray-900 dark:text-warm-gray-100 focus:ring-2 focus:ring-organic-green-500 focus:border-transparent text-base"
                     />
                     <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

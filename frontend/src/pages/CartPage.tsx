@@ -12,7 +12,7 @@ export default function CartPage() {
   const { items, clearCart } = useCartStore();
   const { data: products } = useProducts();
   const createOrder = useCreateOrder();
-  const user = useAuthStore((state) => state.user);
+  const user = useAuthStore((state: any) => state.user);
   const navigate = useNavigate();
 
   // Delivery State
@@ -44,15 +44,15 @@ export default function CartPage() {
     { id: 'delivery_pearlvalley', label: 'Delivery: Pearl Valley (R50)', fee: 50, type: 'delivery' },
   ];
 
-  const selectedDeliveryOption = deliveryOptions.find(opt => opt.id === deliveryLocation);
+  const selectedDeliveryOption = deliveryOptions.find((opt: any) => opt.id === deliveryLocation);
   const deliveryFee = selectedDeliveryOption ? selectedDeliveryOption.fee : 0;
   const isDelivery = selectedDeliveryOption?.type === 'delivery';
 
   const cartProducts = useMemo(() => {
     if (!products) return [];
     return items
-      .map((item) => {
-        const product = products.find((p) => p.id === item.productId);
+      .map((item: any) => {
+        const product = products.find((p: any) => p.id === item.productId);
         return product ? { product, quantity: item.quantity } : null;
       })
       .filter((item): item is { product: Product; quantity: number } => item !== null);
@@ -60,7 +60,7 @@ export default function CartPage() {
 
   const productTotal = useMemo(() => {
     return cartProducts.reduce(
-      (sum, item) => sum + toNumber(item.product.price) * item.quantity,
+      (sum: number, item: any) => sum + toNumber(item.product.price) * item.quantity,
       0
     );
   }, [cartProducts]);
@@ -100,7 +100,7 @@ export default function CartPage() {
         deliveryAddress: isDelivery ? deliveryAddress : selectedDeliveryOption?.label,
         specialInstructions: specialInstructions || undefined,
         coolerBagOption,
-        items: items.map((item) => ({
+        items: items.map((item: any) => ({
           productId: item.productId,
           quantity: item.quantity,
         })),
@@ -187,7 +187,7 @@ export default function CartPage() {
             <select
               id="deliveryLocation"
               value={deliveryLocation}
-              onChange={(e) => setDeliveryLocation(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDeliveryLocation(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               required
             >
@@ -208,7 +208,7 @@ export default function CartPage() {
             <select
               id="deliveryDate"
               value={deliveryDate}
-              onChange={(e) => setDeliveryDate(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDeliveryDate(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               required
             >
@@ -235,7 +235,7 @@ export default function CartPage() {
               <textarea
                 id="deliveryAddress"
                 value={deliveryAddress}
-                onChange={(e) => setDeliveryAddress(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDeliveryAddress(e.target.value)}
                 rows={3}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 required={isDelivery}
@@ -251,7 +251,7 @@ export default function CartPage() {
             <textarea
               id="specialInstructions"
               value={specialInstructions}
-              onChange={(e) => setSpecialInstructions(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSpecialInstructions(e.target.value)}
               rows={2}
               placeholder="Gate code, specific packaging requests, etc."
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -264,7 +264,7 @@ export default function CartPage() {
               id="coolerBagOption"
               type="checkbox"
               checked={coolerBagOption}
-              onChange={(e) => setCoolerBagOption(e.target.checked)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCoolerBagOption(e.target.checked)}
               className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
             />
             <label htmlFor="coolerBagOption" className="text-sm text-green-800 font-medium">
@@ -315,12 +315,12 @@ export default function CartPage() {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
         <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="font-semibold text-gray-700">Your Checklist ({items.reduce((acc, i) => acc + i.quantity, 0)} items)</h2>
+          <h2 className="font-semibold text-gray-700">Your Checklist ({items.reduce((acc: number, i: any) => acc + i.quantity, 0)} items)</h2>
           <Link to="/products" className="text-sm text-green-600 hover:text-green-700 font-medium">+ Add More Items</Link>
         </div>
 
         <div className="divide-y divide-gray-100">
-          {cartProducts.map((item) => (
+          {cartProducts.map((item: any) => (
             <div key={item.product.id} className="p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors group">
               {/* Checkbox visual cue */}
               <div className="flex-shrink-0 text-green-500 opacity-20 group-hover:opacity-100 transition-opacity">

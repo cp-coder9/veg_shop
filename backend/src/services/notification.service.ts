@@ -528,7 +528,7 @@ export class NotificationService {
     }
 
     const totalOutstanding = overdueInvoices.reduce(
-      (sum, invoice) => sum + Number(invoice.total),
+      (sum: number, invoice: any) => sum + Number(invoice.total),
       0
     );
 
@@ -1152,7 +1152,7 @@ export class NotificationService {
     if (seasonalProducts.length === 0) return;
 
     const question = 'Which of these seasonal items would you like to add to your order this week?';
-    const options = seasonalProducts.map(p => `${p.name} (R${Number(p.price).toFixed(2)})`);
+    const options = seasonalProducts.map((p: any) => `${p.name} (R${Number(p.price).toFixed(2)})`);
 
     for (const customerId of customerIds) {
       const customer = await prisma.user.findUnique({
@@ -1216,7 +1216,7 @@ export class NotificationService {
     message += `Regarding your order #${orderId.substring(0, 8)}:\n`;
     message += `Unfortunately, the following items are short/out of stock and have been removed from your invoice:\n\n`;
 
-    items.forEach(item => {
+    items.forEach((item: any) => {
       message += `• ${item.productName} (${item.quantity} ${item.unit})\n`;
     });
 

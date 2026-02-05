@@ -7,35 +7,35 @@ import { CATEGORY_LABELS, Product, ProductCategory } from '../types';
 
 export default function ProductsPage() {
   const { data: products, isLoading, isError } = useProducts();
-  const totalItems = useCartStore((state) => state.getTotalItems());
+  const totalItems = useCartStore((state: any) => state.getTotalItems());
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const categories = useMemo(() => {
     if (!products) return [];
-    const uniqueCategories = [...new Set(products.map(p => p.category))];
+    const uniqueCategories = [...new Set(products.map((p: any) => p.category))];
     return uniqueCategories.sort();
   }, [products]);
 
   const filteredProducts = useMemo(() => {
     if (!products) return {};
-    
+
     let filtered = products;
-    
+
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(p => p.category === selectedCategory);
+      filtered = filtered.filter((p: any) => p.category === selectedCategory);
     }
-    
+
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter((p: any) =>
         p.name.toLowerCase().includes(query) ||
         p.description?.toLowerCase().includes(query) ||
         CATEGORY_LABELS[p.category].toLowerCase().includes(query)
       );
     }
-    
-    return filtered.reduce((acc, product) => {
+
+    return filtered.reduce((acc: any, product: any) => {
       if (!acc[product.category]) {
         acc[product.category] = [];
       }
@@ -74,7 +74,7 @@ export default function ProductsPage() {
                 <p className="text-warm-gray-600 mb-4">
                   We're having trouble fetching our product catalog. Please try again in a few moments.
                 </p>
-                <button 
+                <button
                   onClick={() => window.location.reload()}
                   className="btn-primary"
                 >
@@ -118,7 +118,7 @@ export default function ProductsPage() {
             )}
           </div>
         </div>
-        
+
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full filter blur-3xl transform translate-x-16 -translate-y-16"></div>
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full filter blur-2xl transform -translate-x-8 translate-y-8"></div>
@@ -143,13 +143,13 @@ export default function ProductsPage() {
                   type="text"
                   id="search"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e: any) => setSearchQuery(e.target.value)}
                   className="input-field pl-10"
                   placeholder="Search by name, description, or category..."
                 />
               </div>
             </div>
-            
+
             {/* Category Filter */}
             <div className="lg:w-80">
               <label htmlFor="category" className="block text-sm font-medium text-warm-gray-700 mb-2">
@@ -158,11 +158,11 @@ export default function ProductsPage() {
               <select
                 id="category"
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={(e: any) => setSelectedCategory(e.target.value)}
                 className="input-field"
               >
                 <option value="all">All Categories</option>
-                {categories.map((category) => (
+                {categories.map((category: any) => (
                   <option key={category} value={category}>
                     {CATEGORY_LABELS[category as ProductCategory]}
                   </option>
@@ -170,11 +170,11 @@ export default function ProductsPage() {
               </select>
             </div>
           </div>
-          
+
           {/* Results count */}
           <div className="mt-4 flex items-center justify-between">
             <p className="text-sm text-warm-gray-600">
-              {Object.values(filteredProducts).reduce((acc: number, prods) => acc + (prods as Product[]).length, 0)} products found
+              {Object.values(filteredProducts).reduce((acc: number, prods: any) => acc + (prods as Product[]).length, 0)} products found
             </p>
             {(selectedCategory !== 'all' || searchQuery) && (
               <button
@@ -208,7 +208,7 @@ export default function ProductsPage() {
               {(categoryProducts as Product[]).length} items
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {(categoryProducts as Product[]).map((product) => (
               <ProductCard key={product.id} product={product} />
@@ -218,7 +218,7 @@ export default function ProductsPage() {
       ))}
 
       {/* Empty State */}
-      {products && Object.values(filteredProducts).reduce((acc: number, prods) => acc + (prods as Product[]).length, 0) === 0 && (
+      {products && Object.values(filteredProducts).reduce((acc: number, prods: any) => acc + (prods as Product[]).length, 0) === 0 && (
         <div className="card">
           <div className="p-12 text-center">
             <div className="w-20 h-20 bg-warm-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -230,11 +230,11 @@ export default function ProductsPage() {
               No Products Found
             </h3>
             <p className="text-warm-gray-600 max-w-md mx-auto">
-              {searchQuery 
+              {searchQuery
                 ? `No products match your search for "${searchQuery}"`
                 : selectedCategory !== 'all'
-                ? `No products available in ${CATEGORY_LABELS[selectedCategory as ProductCategory]}`
-                : 'No products are currently available in our catalog.'}
+                  ? `No products available in ${CATEGORY_LABELS[selectedCategory as ProductCategory]}`
+                  : 'No products are currently available in our catalog.'}
             </p>
             {(searchQuery || selectedCategory !== 'all') && (
               <button

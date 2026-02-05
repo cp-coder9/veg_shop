@@ -21,7 +21,7 @@ export class SchedulerService {
                     let customerIds: string[] = [];
                     if (env.USE_FIREBASE) {
                         const customers = await userRepository.list([{ field: 'role', operator: '==', value: 'customer' }]);
-                        customerIds = customers.map(c => c.id);
+                        customerIds = customers.map((c: any) => c.id);
                     } else {
                         const customers = await prisma.user.findMany({
                             where: { role: 'customer' },
@@ -48,7 +48,7 @@ export class SchedulerService {
                 console.log('📅 Running Weekly Payment Reminders...');
                 try {
                     const overdueInvoices = await notificationService.getOverdueInvoices();
-                    const uniqueCustomerIds = [...new Set(overdueInvoices.map(inv => inv.customerId))];
+                    const uniqueCustomerIds = [...new Set(overdueInvoices.map((inv: any) => inv.customerId))];
 
                     for (const customerId of uniqueCustomerIds) {
                         try {
@@ -96,7 +96,7 @@ export class SchedulerService {
                         });
                     }
 
-                    for (const order of pendingOrders) {
+                    for (const order of pendingOrders as any[]) {
                         try {
                             await notificationService.sendOrderReminder(order.id);
                         } catch (error) {

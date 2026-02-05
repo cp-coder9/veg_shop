@@ -91,7 +91,7 @@ export class PaymentService {
       } as any);
 
       const allPayments = await paymentRepository.findByInvoice(data.invoiceId);
-      const totalPaid = allPayments.reduce((sum, p) => sum + p.amount, 0);
+      const totalPaid = allPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
       const invoiceTotal = invoice.total;
 
       let newStatus: string;
@@ -166,7 +166,7 @@ export class PaymentService {
       }
 
       // Record payment and update invoice in a transaction
-      const payment = await prisma.$transaction(async (tx) => {
+      const payment = await prisma.$transaction(async (tx: any) => {
         // Create payment record
         const newPayment = await tx.payment.create({
           data: {
@@ -188,7 +188,7 @@ export class PaymentService {
           where: { invoiceId: data.invoiceId },
         });
 
-        const totalPaid = allPayments.reduce((sum, p) => {
+        const totalPaid = allPayments.reduce((sum: number, p: any) => {
           return sum + Number(p.amount);
         }, 0);
 
@@ -351,7 +351,7 @@ export class PaymentService {
       });
 
       // Convert Decimal fields to numbers
-      return payments.map(payment => {
+      return payments.map((payment: any) => {
         const result: PaymentWithDetails = {
           id: payment.id,
           invoiceId: payment.invoiceId,
@@ -395,7 +395,7 @@ export class PaymentService {
     });
 
     // Convert Decimal fields to numbers
-    return payments.map(payment => {
+    return payments.map((payment: any) => {
       const result: PaymentWithDetails = {
         id: payment.id,
         invoiceId: payment.invoiceId,
@@ -435,7 +435,7 @@ export class PaymentService {
         where: { customerId },
       });
 
-      const balance = credits.reduce((sum, credit) => {
+      const balance = credits.reduce((sum: number, credit: any) => {
         return sum + Number(credit.amount);
       }, 0);
 
@@ -515,7 +515,7 @@ export class PaymentService {
         const newTotal = invoice.total - creditToApply;
         const newCreditApplied = invoice.creditApplied + creditToApply;
         const payments = await paymentRepository.findByInvoice(invoice.id);
-        const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+        const totalPaid = payments.reduce((sum: number, p: any) => sum + p.amount, 0);
 
         let newStatus = invoice.status;
         if (totalPaid >= newTotal || newTotal <= 0) newStatus = 'paid';
@@ -553,7 +553,7 @@ export class PaymentService {
       }
 
       // Validate short delivery items exist in order
-      const orderItemProductIds = order.items.map(item => item.productId);
+      const orderItemProductIds = order.items.map((item: any) => item.productId);
       const invalidItems = data.items.filter(item => !orderItemProductIds.includes(item.productId));
 
       if (invalidItems.length > 0) {
@@ -585,7 +585,7 @@ export class PaymentService {
       }
 
       // Create credit record
-      const credit = await prisma.$transaction(async (tx) => {
+      const credit = await prisma.$transaction(async (tx: any) => {
         // 1. Create the Short Delivery Credit (User gets money back)
         const newCredit = await tx.credit.create({
           data: {
@@ -629,7 +629,7 @@ export class PaymentService {
           const newCreditApplied = invoice.creditApplied.add(creditToApply);
 
           // Check if invoice is now Paid (Total Paid >= New Total)
-          const totalPaid = invoice.payments.reduce((sum, p) => sum.add(p.amount), new Decimal(0));
+          const totalPaid = invoice.payments.reduce((sum: Decimal, p: any) => sum.add(p.amount), new Decimal(0));
           let newStatus = invoice.status;
 
           if (totalPaid.gte(newTotal)) {

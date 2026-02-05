@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma.js';
-import { Product as PrismaProduct, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { env } from '../config/env.js';
 import { productRepository, Product } from '../repositories/product.repository.js';
 import { priceHistoryRepository } from '../repositories/price-history.repository.js';
@@ -209,7 +209,7 @@ export class ProductService {
       },
     });
 
-    return history.map(item => ({
+    return history.map((item: any) => ({
       id: item.id,
       productId: item.productId,
       price: Number(item.price),
@@ -227,7 +227,7 @@ export class ProductService {
     // Group products by category
     const categoryMap: Record<string, Product[]> = {};
 
-    products.forEach(product => {
+    products.forEach((product: any) => {
       if (!categoryMap[product.category]) {
         categoryMap[product.category] = [];
       }
