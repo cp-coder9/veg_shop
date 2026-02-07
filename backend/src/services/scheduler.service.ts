@@ -27,7 +27,7 @@ export class SchedulerService {
                             where: { role: 'customer' },
                             select: { id: true }
                         });
-                        customerIds = customers.map(c => c.id);
+                        customerIds = customers.map((c: { id: string }) => c.id);
                     }
 
                     if (customerIds.length > 0) {

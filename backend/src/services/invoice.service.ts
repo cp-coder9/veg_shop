@@ -1,5 +1,4 @@
 import { prisma } from '../lib/prisma.js';
-import { Prisma } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { pdfGenerator, InvoicePDFData } from '../lib/pdf-generator.js';
 import { promises as fs } from 'fs';
@@ -300,7 +299,7 @@ export class InvoiceService {
         };
       }));
     } else {
-      const where: Prisma.InvoiceWhereInput = {};
+      const where: Record<string, unknown> = {};
 
       if (filters?.customerId) {
         where.customerId = filters.customerId;
@@ -311,13 +310,14 @@ export class InvoiceService {
       }
 
       if (filters?.startDate || filters?.endDate) {
-        where.createdAt = {};
+        const createdAtFilter: Record<string, Date> = {};
         if (filters.startDate) {
-          (where.createdAt as Prisma.DateTimeFilter).gte = filters.startDate;
+          createdAtFilter.gte = filters.startDate;
         }
         if (filters.endDate) {
-          (where.createdAt as Prisma.DateTimeFilter).lte = filters.endDate;
+          createdAtFilter.lte = filters.endDate;
         }
+        where.createdAt = createdAtFilter;
       }
 
       // Customer name filtering (case-insensitive partial match)
@@ -328,11 +328,11 @@ export class InvoiceService {
             mode: 'insensitive',
           },
         };
-        where.customer = customerFilter as Prisma.UserWhereInput;
+        where.customer = customerFilter;
       }
 
       const invoices = await prisma.invoice.findMany({
-        where,
+        where: where as any,
         include: {
           order: {
             include: {
@@ -524,25 +524,26 @@ export class InvoiceService {
     averageValue: number;
     totalRevenue: number;
   }> {
-    const where: Prisma.InvoiceWhereInput = {};
+    const where: Record<string, unknown> = {};
 
     if (filters?.customerId) {
       where.customerId = filters.customerId;
     }
 
     if (filters?.startDate || filters?.endDate) {
-      where.createdAt = {};
+      const createdAtFilter: Record<string, Date> = {};
       if (filters.startDate) {
-        (where.createdAt as Prisma.DateTimeFilter).gte = filters.startDate;
+        createdAtFilter.gte = filters.startDate;
       }
       if (filters.endDate) {
-        (where.createdAt as Prisma.DateTimeFilter).lte = filters.endDate;
+        createdAtFilter.lte = filters.endDate;
       }
+      where.createdAt = createdAtFilter;
     }
 
     // Get all invoices matching filters
     const invoices = await prisma.invoice.findMany({
-      where,
+      where: where as any,
       include: {
         payments: true,
       },

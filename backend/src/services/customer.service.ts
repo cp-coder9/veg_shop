@@ -1,5 +1,4 @@
 import { prisma } from '../lib/prisma.js';
-import { Prisma } from '@prisma/client';
 import { orderService } from './order.service.js';
 import { paymentService } from './payment.service.js';
 import { invoiceService } from './invoice.service.js';
@@ -374,7 +373,7 @@ export class CustomerService {
           date: nextOrder.deliveryDate,
           method: nextOrder.deliveryMethod,
         } : null,
-        outstandingInvoices: invoices.map(inv => ({
+        outstandingInvoices: invoices.map((inv: { id: string; total: number | string; dueDate: Date; status: string }) => ({
           id: inv.id,
           total: Number(inv.total),
           dueDate: inv.dueDate,
@@ -484,7 +483,7 @@ export class CustomerService {
       }
       return userRepository.update(id, updateData);
     } else {
-      const updateData: Prisma.UserUpdateInput = {};
+      const updateData: Record<string, unknown> = {};
 
       if (data.name !== undefined) updateData.name = data.name;
       if (data.email !== undefined) updateData.email = data.email;
@@ -499,7 +498,7 @@ export class CustomerService {
 
       return prisma.user.update({
         where: { id },
-        data: updateData,
+        data: updateData as any,
       });
     }
   }
@@ -519,4 +518,3 @@ export class CustomerService {
 }
 
 export const customerService = new CustomerService();
-

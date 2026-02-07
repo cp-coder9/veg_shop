@@ -22,6 +22,21 @@ export interface PackingList {
   items: PackingListItem[];
 }
 
+type OrderItemSnapshot = {
+  product: { name: string; unit: string };
+  quantity: number;
+};
+
+type OrderWithItemsSnapshot = {
+  id: string;
+  customer: { name: string; address: string | null };
+  deliveryAddress?: string | null;
+  deliveryDate: Date;
+  deliveryMethod: string;
+  specialInstructions: string | null;
+  items: OrderItemSnapshot[];
+};
+
 export type SortBy = 'route' | 'name';
 
 export class PackingListService {
@@ -72,6 +87,8 @@ export class PackingListService {
         throw new Error('Order not found');
       }
 
+      const items = order.items as OrderItemSnapshot[];
+
       return {
         orderId: order.id,
         customerName: order.customer.name,
@@ -79,7 +96,7 @@ export class PackingListService {
         deliveryDate: order.deliveryDate,
         deliveryMethod: order.deliveryMethod,
         specialInstructions: order.specialInstructions,
-        items: order.items.map((item) => ({
+        items: items.map((item: OrderItemSnapshot) => ({
           productName: item.product.name,
           quantity: item.quantity,
           unit: item.product.unit,
@@ -140,17 +157,17 @@ export class PackingListService {
             },
           },
         },
-      });
+      }) as OrderWithItemsSnapshot[];
 
       // Convert orders to packing lists
-      const packingLists: PackingList[] = orders.map((order) => ({
+      const packingLists: PackingList[] = orders.map((order: OrderWithItemsSnapshot) => ({
         orderId: order.id,
         customerName: order.customer.name,
         customerAddress: order.deliveryAddress || order.customer.address,
         deliveryDate: order.deliveryDate,
         deliveryMethod: order.deliveryMethod,
         specialInstructions: order.specialInstructions,
-        items: order.items.map((item) => ({
+        items: order.items.map((item: OrderItemSnapshot) => ({
           productName: item.product.name,
           quantity: item.quantity,
           unit: item.product.unit,
