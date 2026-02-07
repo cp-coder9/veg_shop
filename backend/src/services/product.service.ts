@@ -1,5 +1,4 @@
 import { prisma } from '../lib/prisma.js';
-import { Prisma } from '@prisma/client';
 import { env } from '../config/env.js';
 import { productRepository, Product } from '../repositories/product.repository.js';
 import { priceHistoryRepository } from '../repositories/price-history.repository.js';
@@ -152,7 +151,7 @@ export class ProductService {
 
       return productRepository.list(fsFilters);
     } else {
-      const where: Prisma.ProductWhereInput = {};
+      const where: Record<string, unknown> = {};
 
       if (filters?.category) {
         where.category = filters.category;
@@ -167,7 +166,7 @@ export class ProductService {
       }
 
       return prisma.product.findMany({
-        where,
+        where: where as any,
         orderBy: [
           { category: 'asc' },
           { name: 'asc' },

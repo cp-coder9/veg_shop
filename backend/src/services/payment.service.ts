@@ -1,12 +1,11 @@
 import { prisma } from '../lib/prisma.js';
-import { Credit as PrismaCredit } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { appEvents } from '../lib/events.js';
 import { yokoService } from './yoko.service.js';
 import { env } from '../config/env.js';
 import { paymentRepository } from '../repositories/payment.repository.js';
 import { invoiceRepository } from '../repositories/invoice.repository.js';
-import { creditRepository } from '../repositories/credit.repository.js';
+import { creditRepository, type Credit } from '../repositories/credit.repository.js';
 import { userRepository } from '../repositories/user.repository.js';
 import { orderRepository } from '../repositories/order.repository.js';
 import { orderItemRepository } from '../repositories/order-item.repository.js';
@@ -57,7 +56,7 @@ export interface PaymentWithDetails {
   customer?: CustomerDetails;
 }
 
-export interface CreditWithDetails extends PrismaCredit {
+export interface CreditWithDetails extends Credit {
   customer?: CustomerDetails;
 }
 
@@ -553,8 +552,8 @@ export class PaymentService {
       }
 
       // Validate short delivery items exist in order
-      const orderItemProductIds = order.items.map((item: any) => item.productId);
-      const invalidItems = data.items.filter(item => !orderItemProductIds.includes(item.productId));
+      const orderItemProductIds = order.items.map((item: { productId: string }) => item.productId);
+      const invalidItems = data.items.filter((item: { productId: string }) => !orderItemProductIds.includes(item.productId));
 
       if (invalidItems.length > 0) {
         throw new Error('Some products are not in the order');
@@ -565,7 +564,7 @@ export class PaymentService {
       const creditDetails: string[] = [];
 
       for (const shortItem of data.items) {
-        const orderItem = order.items.find(item => item.productId === shortItem.productId);
+        const orderItem = order.items.find((item: { productId: string }) => item.productId === shortItem.productId);
 
         if (!orderItem) {
           throw new Error(`Product ${shortItem.productId} not found in order`);

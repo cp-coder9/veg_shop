@@ -145,14 +145,14 @@ router.post('/product-list', authenticate, requireAdmin, asyncHandler(async (req
     const { customerIds } = sendProductListSchema.parse(req.body);
 
     // If no customer IDs provided, send to all customers
-    let targetCustomerIds = customerIds;
-    if (!targetCustomerIds || targetCustomerIds.length === 0) {
+    let targetCustomerIds: string[] = customerIds ?? [];
+    if (targetCustomerIds.length === 0) {
       const { prisma } = await import('../lib/prisma.js');
       const allCustomers = await prisma.user.findMany({
         where: { role: 'customer' },
         select: { id: true },
       });
-      targetCustomerIds = allCustomers.map((c) => c.id);
+      targetCustomerIds = allCustomers.map((c: { id: string }) => c.id);
     }
 
     await notificationService.sendProductList(targetCustomerIds);
@@ -213,14 +213,14 @@ router.post('/seasonal-poll', authenticate, requireAdmin, asyncHandler(async (re
   try {
     const { customerIds } = sendProductListSchema.parse(req.body);
 
-    let targetCustomerIds = customerIds;
-    if (!targetCustomerIds || targetCustomerIds.length === 0) {
+    let targetCustomerIds: string[] = customerIds ?? [];
+    if (targetCustomerIds.length === 0) {
       const { prisma } = await import('../lib/prisma.js');
       const allCustomers = await prisma.user.findMany({
         where: { role: 'customer' },
         select: { id: true },
       });
-      targetCustomerIds = allCustomers.map((c) => c.id);
+      targetCustomerIds = allCustomers.map((c: { id: string }) => c.id);
     }
 
     await notificationService.sendSeasonalItemsPoll(targetCustomerIds);

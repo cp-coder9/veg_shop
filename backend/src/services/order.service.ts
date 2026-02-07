@@ -1,5 +1,4 @@
 import { prisma } from '../lib/prisma.js';
-import { Prisma } from '@prisma/client';
 import { appEvents } from '../lib/events.js';
 import { notificationService } from './notification.service.js';
 import { env } from '../config/env.js';
@@ -140,14 +139,15 @@ export class OrderService {
     } else {
       // Simplify: Just check if products exist and are available
       const productIds = data.items.map(item => item.productId);
+      type ProductSnapshot = { id: string; name: string; isAvailable: boolean; price: number };
       const products = await prisma.product.findMany({
         where: {
           id: { in: productIds },
         },
-      });
+      }) as ProductSnapshot[];
 
-      const unavailableProducts = products.filter(product => !product.isAvailable).map(product => product.name);
-      const missingProducts = productIds.filter(id => !products.some(product => product.id === id));
+      const unavailableProducts = products.filter((product) => !product.isAvailable).map((product) => product.name);
+      const missingProducts = productIds.filter((id) => !products.some((product) => product.id === id));
 
       if (unavailableProducts.length > 0) {
         throw new Error(`Products not available: ${unavailableProducts.join(', ')}`);
@@ -750,7 +750,7 @@ export class OrderService {
         };
       }));
     } else {
-      const where: Prisma.OrderWhereInput = {};
+      const where: Record<string, unknown> = {};
       if (status) where.status = status;
 
       if (deliveryDate) {
@@ -759,7 +759,6 @@ export class OrderService {
 
       if (startDate || endDate) {
         where.deliveryDate = {
-          ...((where.deliveryDate as Prisma.DateTimeFilter) || {}),
           ...(startDate ? { gte: new Date(startDate) } : {}),
           ...(endDate ? { lte: new Date(endDate) } : {}),
         };
@@ -770,7 +769,7 @@ export class OrderService {
       if (driverId) where.driverId = driverId;
 
       const orders = await prisma.order.findMany({
-        where,
+        where: where as any,
         take: limit,
         orderBy: {
           deliveryDate: 'desc',
