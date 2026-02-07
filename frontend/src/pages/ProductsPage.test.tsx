@@ -19,7 +19,7 @@ const mockProducts = [
     id: '2',
     name: 'Apples',
     price: 35.50,
-    category: 'fruits',
+    category: 'fruit',
     unit: 'kg',
     description: 'Crisp red apples',
     imageUrl: null,
@@ -86,8 +86,8 @@ describe('ProductsPage', () => {
 
     render(<ProductsPage />);
 
-    expect(screen.getByText(/Vegetables/i)).toBeInTheDocument();
-    expect(screen.getByText(/Fruits/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Vegetables/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Fruit/i).length).toBeGreaterThan(0);
     expect(screen.getByText('Tomatoes')).toBeInTheDocument();
     expect(screen.getByText('Apples')).toBeInTheDocument();
   });

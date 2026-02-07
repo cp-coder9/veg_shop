@@ -70,12 +70,26 @@ export class OrderService {
       throw new Error('Delivery date must be in the future');
     }
 
+    const validDeliveryDays = [1, 3, 5];
+    if (!validDeliveryDays.includes(deliveryDate.getDay())) {
+      throw new Error('Delivery date must be Monday (1), Wednesday (3), or Friday (5)');
+    }
+
     if (env.USE_FIREBASE) {
       // Fetch products and customer
       const productIds = data.items.map(item => item.productId);
       const products = await Promise.all(productIds.map(id => productRepository.findById(id)));
 
-      if (products.some(p => !p || !p.isAvailable)) {
+      const unavailableProducts = products
+        .filter((product): product is NonNullable<typeof product> => Boolean(product && !product.isAvailable))
+        .map(product => product.name);
+      const missingProducts = products.map((product, index) => (product ? null : productIds[index])).filter(Boolean);
+
+      if (unavailableProducts.length > 0) {
+        throw new Error(`Products not available: ${unavailableProducts.join(', ')}`);
+      }
+
+      if (missingProducts.length > 0) {
         throw new Error('Some products do not exist or are not available');
       }
 
@@ -129,11 +143,17 @@ export class OrderService {
       const products = await prisma.product.findMany({
         where: {
           id: { in: productIds },
-          isAvailable: true,
         },
       });
 
-      if (products.length !== productIds.length) {
+      const unavailableProducts = products.filter(product => !product.isAvailable).map(product => product.name);
+      const missingProducts = productIds.filter(id => !products.some(product => product.id === id));
+
+      if (unavailableProducts.length > 0) {
+        throw new Error(`Products not available: ${unavailableProducts.join(', ')}`);
+      }
+
+      if (missingProducts.length > 0) {
         throw new Error('Some products do not exist or are not available');
       }
 
@@ -195,7 +215,9 @@ export class OrderService {
       });
 
       // Send confirmation asynchronously
-      void this.sendOrderConfirmation(order.id);
+      void this.sendOrderConfirmation(order.id).catch((error: unknown) => {
+        console.warn('Failed to send order confirmation:', error);
+      });
 
       return order;
     }
@@ -236,16 +258,24 @@ export class OrderService {
       const orders = await orderRepository.findByCustomer(customerId);
       return Promise.all(orders.map(async (order: any) => {
         const items = await orderItemRepository.findByOrder(order.id);
-        return { ...order, items };
+        const itemsWithProducts = await Promise.all(items.map(async (item: any) => {
+          const product = await productRepository.findById(item.productId);
+          return { ...item, product: product || undefined };
+        }));
+        return { ...order, items: itemsWithProducts };
       }));
     } else {
       const orders = await prisma.order.findMany({
         where: { customerId },
         include: {
-          items: true,
+          items: {
+            include: {
+              product: true,
+            },
+          },
         },
         orderBy: {
-          createdAt: 'desc',
+          deliveryDate: 'desc',
         },
       });
 
@@ -272,8 +302,12 @@ export class OrderService {
 
       return Promise.all(filteredOrders.map(async (order: any) => {
         const items = await orderItemRepository.findByOrder(order.id);
+        const itemsWithProducts = await Promise.all(items.map(async (item: any) => {
+          const product = await productRepository.findById(item.productId);
+          return { ...item, product: product || undefined };
+        }));
         const customer = await userRepository.findById(order.customerId);
-        return { ...order, items, customer };
+        return { ...order, items: itemsWithProducts, customer };
       }));
     } else {
       // Set to start and end of the day
@@ -294,7 +328,11 @@ export class OrderService {
           },
         },
         include: {
-          items: true,
+          items: {
+            include: {
+              product: true,
+            },
+          },
           customer: true,
         },
       });
@@ -402,6 +440,13 @@ export class OrderService {
 
       updatedOrder = await orderRepository.update(id, updateData);
     } else {
+      if (!packedItems && !userId && !role && !notes && !signature && !deliveryNotes && !coolerBagStatus) {
+        return prisma.order.update({
+          where: { id },
+          data: { status },
+        });
+      }
+
       updatedOrder = await prisma.$transaction(async (tx: any) => {
         // Fetch the order with items and product details
         const order = await tx.order.findUnique({
@@ -588,7 +633,9 @@ export class OrderService {
 
     bulkOrder.items.forEach((item: any) => {
       message += `• *${item.productName}*\n`;
-      message += `  Qty: ${item.totalQuantity} (+${item.bufferQuantity} buffer) = *${item.finalQuantity}*\n\n`;
+      message += `  Base: ${item.totalQuantity}\n`;
+      message += `  Buffer: ${item.bufferQuantity}\n`;
+      message += `  Total: ${item.finalQuantity}\n\n`;
     });
 
     message += `━━━━━━━━━━━━━━━━━━━━\n`;
@@ -603,16 +650,16 @@ export class OrderService {
   formatBulkOrderForEmail(bulkOrder: BulkOrder): string {
     let html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee;">
-        <h2 style="color: #2e7d32;">Bulk Order Consolidation</h2>
+        <h2>Bulk Order Consolidation</h2>
         <p><strong>Week starting:</strong> ${bulkOrder.weekStartDate.toLocaleDateString()}</p>
         <hr style="border: none; border-top: 1px solid #eee;">
-        <table style="width: 100%; border-collapse: collapse;">
+        <table>
           <thead>
-            <tr style="background-color: #f8f9fa;">
-              <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Product</th>
-              <th style="padding: 10px; text-align: right; border-bottom: 2px solid #dee2e6;">Order Qty</th>
-              <th style="padding: 10px; text-align: right; border-bottom: 2px solid #dee2e6;">Buffer</th>
-              <th style="padding: 10px; text-align: right; border-bottom: 2px solid #dee2e6;">Total</th>
+            <tr>
+              <th>Product</th>
+              <th>Order Qty</th>
+              <th>Buffer</th>
+              <th>Total</th>
             </tr>
           </thead>
           <tbody>
@@ -621,10 +668,10 @@ export class OrderService {
     bulkOrder.items.forEach((item: any) => {
       html += `
         <tr>
-          <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.productName}</td>
-          <td style="padding: 10px; text-align: right; border-bottom: 1px solid #eee;">${item.totalQuantity}</td>
-          <td style="padding: 10px; text-align: right; border-bottom: 1px solid #eee;">${item.bufferQuantity}</td>
-          <td style="padding: 10px; text-align: right; border-bottom: 1px solid #eee; font-weight: bold;">${item.finalQuantity}</td>
+          <td>${item.productName}</td>
+          <td>${item.totalQuantity}</td>
+          <td>${item.bufferQuantity}</td>
+          <td><strong>${item.finalQuantity}</strong></td>
         </tr>
       `;
     });

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSendCode, useDevLogin, useRegister, useLogin } from '../hooks/useAuth';
+import logo from '../assets/our-harvest-tote-logo.png';
 
 type AuthMethod = 'whatsapp' | 'email-password';
 type AuthMode = 'login' | 'register';
@@ -76,8 +77,8 @@ export default function AuthPage() {
                 name: regName,
                 email: regEmail,
                 password: regPassword,
-                phone: regPhone || undefined,
-                address: regAddress || undefined,
+                phone: regPhone,
+                address: regAddress,
                 birthday: regBirthday,
             });
             handleNavigationByRole(data.user.role);
@@ -106,15 +107,13 @@ export default function AuthPage() {
                     {/* Header */}
                     <div className="p-8 pb-6 text-center border-b border-warm-gray-200">
                         <div className="w-16 h-16 bg-organic-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <svg className="w-8 h-8 text-organic-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.131A8 8 0 008 8m0 0a8 8 0 00-8 8c0 2.472.345 4.865.99 7.131" />
-                            </svg>
+                            <img src={logo} alt="Our Harvest Tote" className="w-10 h-10" />
                         </div>
                         <h1 className="text-3xl font-display font-bold text-organic-green-900 mb-2">
-                            {mode === 'login' ? 'Welcome Back' : 'Create Account'}
+                            {mode === 'login' ? 'Great to have you here' : 'Create Account'}
                         </h1>
                         <p className="text-warm-gray-600">
-                            {mode === 'login' ? 'Sign in to your Organic Veg account' : 'Join our organic community'}
+                            {mode === 'login' ? 'Sign back into your account or register to order' : 'Join our community'}
                         </p>
                     </div>
 
@@ -206,8 +205,6 @@ export default function AuthPage() {
                                                 type="password"
                                                 value={loginPassword}
                                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLoginPassword(e.target.value)}
-...
-<<<The model's thought process or instructions to itself continued here, but weren't fully output in the tool call. I'll continue for the model.>>>
                                                 placeholder="••••••••"
                                                 className="input-field"
                                                 required
@@ -261,21 +258,23 @@ export default function AuthPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-warm-gray-700 mb-1">Phone (Optional)</label>
+                                    <label className="block text-sm font-medium text-warm-gray-700 mb-1">Phone</label>
                                     <input
                                         type="tel"
                                         value={regPhone}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegPhone(e.target.value)}
                                         className="input-field"
+                                        required
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-warm-gray-700 mb-1">Address (Optional)</label>
+                                    <label className="block text-sm font-medium text-warm-gray-700 mb-1">Address</label>
                                     <input
                                         type="text"
                                         value={regAddress}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegAddress(e.target.value)}
                                         className="input-field"
+                                        required
                                     />
                                 </div>
                                 <div>
@@ -285,9 +284,8 @@ export default function AuthPage() {
                                         value={regBirthday}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegBirthday(e.target.value)}
                                         className="input-field"
-                                        required
                                     />
-                                    <p className="text-xs text-warm-gray-500 mt-1">Required for our records.</p>
+                                    <p className="text-xs text-warm-gray-500 mt-1">We’d like to wish you on the day.</p>
                                 </div>
 
                                 {registerUser.isError && (

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import logo from '../../assets/our-harvest-tote-logo.png';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -8,25 +9,20 @@ export default function Footer() {
       { name: 'Products', path: '/products' },
       { name: 'Categories', path: '/products' },
       { name: 'Seasonal', path: '/products' },
-      { name: 'Deals', path: '/products' },
     ],
     'Customer Service': [
       { name: 'Track Order', path: '/orders' },
       { name: 'Delivery Info', path: '/profile' },
-      { name: 'Returns', path: '/profile' },
       { name: 'Contact Us', path: '/profile' },
     ],
     'About': [
       { name: 'Our Story', path: '/' },
-      { name: 'Sustainability', path: '/' },
-      { name: 'Local Farms', path: '/' },
-      { name: 'Blog', path: '/' },
+      { name: 'Our Farmers / Suppliers', path: '/' },
     ],
-    'Legal': [
+    'Terms': [
       { name: 'Privacy Policy', path: '/' },
       { name: 'Terms of Service', path: '/' },
       { name: 'Cookie Policy', path: '/' },
-      { name: 'GDPR', path: '/' },
     ],
   };
 
@@ -38,33 +34,16 @@ export default function Footer() {
           {/* Brand Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-organic-green-600 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                </svg>
-              </div>
-              <span className="text-xl font-display font-bold text-white">
-                Our Harvest Tote
-              </span>
+              <img
+                src={logo}
+                alt="Our Harvest Tote"
+                className="w-12 h-12 rounded-xl"
+              />
+              <span className="sr-only">Our Harvest Tote</span>
             </div>
             <p className="text-organic-green-200 text-sm leading-relaxed">
-              Fresh organic produce delivered straight from local farms to your door.
-              Sustainable, healthy, and always in season.
+              Curated. Harvested for you not the shelf. Farming that heals. Food that nourishes.
             </p>
-            <div className="flex items-center gap-3">
-              <a href="#" className="w-8 h-8 bg-organic-green-800 rounded-lg flex items-center justify-center hover:bg-organic-green-700 transition-colors">
-                <span className="text-xs font-semibold">f</span>
-              </a>
-              <a href="#" className="w-8 h-8 bg-organic-green-800 rounded-lg flex items-center justify-center hover:bg-organic-green-700 transition-colors">
-                <span className="text-xs font-semibold">t</span>
-              </a>
-              <a href="#" className="w-8 h-8 bg-organic-green-800 rounded-lg flex items-center justify-center hover:bg-organic-green-700 transition-colors">
-                <span className="text-xs font-semibold">i</span>
-              </a>
-              <a href="#" className="w-8 h-8 bg-organic-green-800 rounded-lg flex items-center justify-center hover:bg-organic-green-700 transition-colors">
-                <span className="text-xs font-semibold">w</span>
-              </a>
-            </div>
           </div>
 
           {/* Footer Links */}

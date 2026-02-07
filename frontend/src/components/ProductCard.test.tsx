@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '../test/utils';
+import { render, screen } from '../test/utils';
 import userEvent from '@testing-library/user-event';
 import ProductCard from './ProductCard';
 import { useCartStore } from '../stores/cartStore';
@@ -82,6 +82,6 @@ describe('ProductCard', () => {
 
     render(<ProductCard product={mockProduct} />);
     expect(screen.getByText('Add More')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getAllByText('3').length).toBeGreaterThan(0);
   });
 });

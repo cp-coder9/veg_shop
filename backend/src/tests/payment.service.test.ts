@@ -99,12 +99,15 @@ describe('PaymentService', () => {
           credit: {
             create: vi.fn(),
           },
+          user: {
+            update: vi.fn(),
+          },
         });
       });
 
 const result = await paymentService.recordPayment(paymentData);
 
-      expect(result.amount).toEqual(new Decimal(100.00));
+      expect(result.amount).toBe(100);
       expect(result.method).toBe('cash');
     });
 
@@ -173,6 +176,9 @@ const result = await paymentService.recordPayment(paymentData);
           },
           credit: {
             create: mockCreditCreate,
+          },
+          user: {
+            update: vi.fn(),
           },
         });
       });
@@ -247,6 +253,9 @@ const result = await paymentService.recordPayment(paymentData);
           },
           credit: {
             create: vi.fn(),
+          },
+          user: {
+            update: vi.fn(),
           },
         });
       });
@@ -456,14 +465,26 @@ const result = await paymentService.getCreditBalance(customerId);
         },
       };
 
+      const mockCreditCreate = vi.fn().mockResolvedValue(mockCredit);
+
       vi.mocked(prisma.order.findUnique).mockResolvedValue(mockOrder);
-      vi.mocked(prisma.credit.create).mockResolvedValue(mockCredit);
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => {
+        return callback({
+          credit: {
+            create: mockCreditCreate,
+          },
+          invoice: {
+            findUnique: vi.fn().mockResolvedValue(null),
+            update: vi.fn(),
+          },
+        });
+      });
 
       const result = await paymentService.recordShortDelivery(shortDeliveryData);
 
       expect(result.amount).toEqual(new Decimal(51.00));
       expect(result.type).toBe('short_delivery');
-      expect(prisma.credit.create).toHaveBeenCalledWith({
+      expect(mockCreditCreate).toHaveBeenCalledWith({
         data: {
           customerId: 'customer-1',
           amount: new Decimal(51.00),
@@ -555,8 +576,20 @@ const result = await paymentService.getCreditBalance(customerId);
         },
       };
 
+      const mockCreditCreate = vi.fn().mockResolvedValue(mockCredit);
+
       vi.mocked(prisma.order.findUnique).mockResolvedValue(mockOrder);
-      vi.mocked(prisma.credit.create).mockResolvedValue(mockCredit);
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => {
+        return callback({
+          credit: {
+            create: mockCreditCreate,
+          },
+          invoice: {
+            findUnique: vi.fn().mockResolvedValue(null),
+            update: vi.fn(),
+          },
+        });
+      });
 
       const result = await paymentService.recordShortDelivery(shortDeliveryData);
 
