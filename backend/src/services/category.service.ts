@@ -19,7 +19,9 @@ export interface UpdateCategoryDto {
 export class CategoryService {
   async getCategories(includeInactive = false): Promise<any[]> {
     if (env.USE_FIREBASE) {
-      const filters = includeInactive ? [] : [{ field: 'isActive', operator: '==', value: true }];
+      const filters = includeInactive
+        ? []
+        : [{ field: 'isActive', operator: '==' as const, value: true }];
       return productCategoryRepository.list(filters);
     } else {
       const where = includeInactive ? {} : { isActive: true };

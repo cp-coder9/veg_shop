@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 interface OrderItem {
-  product: {
+  product?: {
     name: string;
     unit: string;
   };
@@ -362,7 +362,7 @@ export class InvoiceService {
     if (env.USE_FIREBASE) {
       const invoices = await invoiceRepository.findByCustomer(customerId);
 
-      return Promise.all(invoices.map(async invoice => {
+      return Promise.all(invoices.map(async (invoice): Promise<InvoiceWithDetails> => {
         const order = await orderRepository.findById(invoice.orderId);
         const items = order ? await orderItemRepository.findByOrder(order.id) : [];
         return {
@@ -438,9 +438,9 @@ export class InvoiceService {
       customerName: invoice.customer.name,
       customerAddress: invoice.customer.address,
       items: invoice.order.items.map((item) => ({
-        productName: item.product.name,
+        productName: item.product?.name ?? 'Unknown product',
         quantity: item.quantity,
-        unit: item.product.unit,
+        unit: item.product?.unit ?? '',
         pricePerUnit: Number(item.priceAtOrder),
         total: Number(item.priceAtOrder) * item.quantity,
       })),
