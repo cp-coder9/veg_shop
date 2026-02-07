@@ -91,8 +91,8 @@ export class PaymentService {
       } as any);
 
       const allPayments = await paymentRepository.findByInvoice(data.invoiceId);
-      const totalPaid = allPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
-      const invoiceTotal = invoice.total;
+      const totalPaid = allPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+      const invoiceTotal = Number(invoice.total);
 
       let newStatus: string;
       if (totalPaid >= invoiceTotal) {
@@ -512,10 +512,10 @@ export class PaymentService {
           createdAt: new Date(),
         });
 
-        const newTotal = invoice.total - creditToApply;
-        const newCreditApplied = invoice.creditApplied + creditToApply;
+        const newTotal = Number(invoice.total) - creditToApply;
+        const newCreditApplied = Number(invoice.creditApplied) + creditToApply;
         const payments = await paymentRepository.findByInvoice(invoice.id);
-        const totalPaid = payments.reduce((sum: number, p: any) => sum + p.amount, 0);
+        const totalPaid = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
 
         let newStatus = invoice.status;
         if (totalPaid >= newTotal || newTotal <= 0) newStatus = 'paid';
