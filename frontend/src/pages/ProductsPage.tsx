@@ -7,41 +7,41 @@ import { CATEGORY_LABELS, Product, ProductCategory } from '../types';
 
 export default function ProductsPage() {
   const { data: products, isLoading, isError } = useProducts();
-  const totalItems = useCartStore((state: any) => state.getTotalItems());
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const totalItems = useCartStore((state) => state.getTotalItems());
+  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const categories = useMemo(() => {
     if (!products) return [];
-    const uniqueCategories = [...new Set(products.map((p: any) => p.category))];
+    const uniqueCategories = [...new Set(products.map((p) => p.category))] as ProductCategory[];
     return uniqueCategories.sort();
   }, [products]);
 
   const filteredProducts = useMemo(() => {
     if (!products) return {};
 
-    let filtered = products;
+    let filtered: Product[] = products;
 
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter((p: any) => p.category === selectedCategory);
+      filtered = filtered.filter((p) => p.category === selectedCategory);
     }
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((p: any) =>
+      filtered = filtered.filter((p) =>
         p.name.toLowerCase().includes(query) ||
         p.description?.toLowerCase().includes(query) ||
         CATEGORY_LABELS[p.category].toLowerCase().includes(query)
       );
     }
 
-    return filtered.reduce((acc: any, product: any) => {
+    return filtered.reduce((acc, product) => {
       if (!acc[product.category]) {
         acc[product.category] = [];
       }
       acc[product.category].push(product);
       return acc;
-    }, {} as Record<Product['category'], Product[]>);
+    }, {} as Record<ProductCategory, Product[]>);
   }, [products, selectedCategory, searchQuery]);
 
   if (isLoading) {

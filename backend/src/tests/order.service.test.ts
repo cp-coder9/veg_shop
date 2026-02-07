@@ -24,6 +24,9 @@ vi.mock('../lib/prisma.js', () => ({
     orderItem: {
       create: vi.fn(),
     },
+    user: {
+      findUnique: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }));
@@ -109,6 +112,10 @@ describe('OrderService', () => {
       ];
 
       vi.mocked(prisma.product.findMany).mockResolvedValue(mockProducts);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: customerId,
+        name: 'Test Customer',
+      } as any);
       vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => {
         return callback({
           order: {

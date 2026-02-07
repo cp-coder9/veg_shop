@@ -359,7 +359,40 @@ export class InvoiceService {
    * Get all invoices for a specific customer
    */
   async getCustomerInvoices(customerId: string): Promise<InvoiceWithDetails[]> {
-    return this.getAllInvoices({ customerId });
+    if (env.USE_FIREBASE) {
+      const invoices = await invoiceRepository.findByCustomer(customerId);
+
+      return Promise.all(invoices.map(async invoice => {
+        const order = await orderRepository.findById(invoice.orderId);
+        const items = order ? await orderItemRepository.findByOrder(order.id) : [];
+        return {
+          ...invoice,
+          order: order ? { ...order, items } : undefined,
+          payments: [],
+        };
+      }));
+    }
+
+    const invoices = await prisma.invoice.findMany({
+      where: { customerId },
+      include: {
+        order: {
+          include: {
+            items: {
+              include: {
+                product: true,
+              },
+            },
+          },
+        },
+        payments: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return invoices;
   }
 
   /**

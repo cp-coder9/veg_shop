@@ -241,6 +241,7 @@ export class ProductService {
       nuts_fruit: '🥜 Nuts & Dried Fruit',
       vegetables: '🥬 Vegetables',
       fruit: '🍎 Fruit',
+      fruits: '🍎 Fruits',
       local_produce: '🏞️ Local Farm Produce',
       plant_based: '🌱 Plant Based (Tabu)',
       dairy: '🥛 Dairy',
@@ -251,7 +252,7 @@ export class ProductService {
     let message = '*🌱 Weekly Product List 🌱*\n\n';
 
     // Sort categories in the desired order (matching seed data)
-    const categoryOrder = ['bakery', 'broths', 'nuts_fruit', 'vegetables', 'fruit', 'local_produce', 'plant_based', 'dairy', 'meat'];
+    const categoryOrder = ['bakery', 'broths', 'nuts_fruit', 'vegetables', 'fruit', 'fruits', 'local_produce', 'plant_based', 'dairy', 'meat'];
 
     categoryOrder.forEach(category => {
       if (categoryMap[category] && categoryMap[category].length > 0) {

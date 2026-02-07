@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import ThemeToggle from '../ThemeToggle';
 import { useState } from 'react';
+import logo from '../../assets/our-harvest-tote-logo.png';
 
 export default function AdminLayout() {
   const location = useLocation();
@@ -129,14 +130,14 @@ export default function AdminLayout() {
           <div className="p-6 border-b border-warm-gray-200 bg-gradient-to-r from-organic-green-50 to-organic-green-100 dark:from-organic-green-900/30 dark:to-organic-green-800/30 dark:border-warm-gray-700 relative">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-organic-green-600 rounded-xl flex items-center justify-center dark:bg-organic-green-500">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                  </svg>
-                </div>
+                <img
+                  src={logo}
+                  alt="Our Harvest Tote"
+                  className="w-10 h-10 rounded-xl"
+                />
                 <div>
                   <h1 className="text-xl font-display font-bold text-organic-green-900 dark:text-organic-green-400">Admin Panel</h1>
-                  <p className="text-sm text-warm-gray-600 dark:text-warm-gray-400">Our Harvest Tote</p>
+                  <p className="text-sm text-warm-gray-600 dark:text-warm-gray-400">Operations</p>
                 </div>
               </div>
             </div>
@@ -228,7 +229,7 @@ export default function AdminLayout() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <span className="font-bold text-lg text-organic-green-900 dark:text-organic-green-400">Our Harvest Tote Admin</span>
+            <span className="font-bold text-lg text-organic-green-900 dark:text-organic-green-400">Admin Portal</span>
           </div>
           <ThemeToggle />
         </div>

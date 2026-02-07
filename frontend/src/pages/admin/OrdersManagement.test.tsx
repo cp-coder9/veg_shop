@@ -124,9 +124,9 @@ describe('OrdersManagement', () => {
 
     expect(screen.getByText('Orders Management')).toBeInTheDocument();
     expect(screen.getAllByText(/order-1/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/order-2/i)).toBeInTheDocument();
-    expect(screen.getByText('delivery')).toBeInTheDocument();
-    expect(screen.getByText('collection')).toBeInTheDocument();
+    expect(screen.getAllByText(/order-2/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('delivery').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('collection').length).toBeGreaterThan(0);
   });
 
   it('filters orders by delivery date', () => {

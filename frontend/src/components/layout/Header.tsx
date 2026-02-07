@@ -1,14 +1,17 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
 import ThemeToggle from '../ThemeToggle';
 import { useState } from 'react';
+import logo from '../../assets/our-harvest-tote-logo.png';
 
 export default function Header() {
   const { user, logout } = useAuthStore();
   const totalItems = useCartStore((state) => state.getTotalItems());
   const navigate = useNavigate();
+  const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isHome = location.pathname === '/';
 
   const handleLogout = () => {
     logout();
@@ -21,15 +24,18 @@ export default function Header() {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-organic-green-600 rounded-lg flex items-center justify-center group-hover:bg-organic-green-700 transition-colors dark:bg-organic-green-500">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
-            </div>
-            <span className="text-xl font-display font-bold text-organic-green-900 group-hover:text-organic-green-700 transition-colors dark:text-organic-green-400">
-              Our Harvest Tote
-            </span>
+          <Link
+            to="/"
+            className={`flex items-center gap-3 group ${isHome ? 'opacity-0 pointer-events-none' : ''}`}
+            aria-hidden={isHome}
+            tabIndex={isHome ? -1 : 0}
+          >
+            <img
+              src={logo}
+              alt="Our Harvest Tote"
+              className="w-10 h-10 rounded-lg shadow-sm"
+            />
+            <span className="sr-only">Our Harvest Tote</span>
           </Link>
 
           <div className="flex items-center gap-4">

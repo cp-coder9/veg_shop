@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
 
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
@@ -7,13 +7,13 @@
 @layer base {
   body {
     /* Palette:
-       Primary (Green): #3A5F0B (Deep Leafy Green)
-       Secondary (Orange): #D97706 (Harvest Orange/Pumpkin)
-       Background: #FDFBF7 (Cream/Off-White)
-       Text: #2D2A26 (Dark Earth) */
+       Primary (Gold): #BF7F2E (Harvest Gold)
+       Secondary (Amber): #E7B65A (Sunlit Amber)
+       Background: #F6F1E8 (Warm Linen)
+       Text: #2B1D14 (Dark Cocoa) */
 
-    @apply bg-[#FDFBF7] text-[#2D2A26] font-sans;
-    @apply dark:bg-[#1C1917] dark:text-[#E7E5E4];
+    @apply bg-[#F6F1E8] text-[#2B1D14] font-sans;
+    @apply dark:bg-[#2A1D15] dark:text-[#F3EBDD];
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.3s ease, color 0.3s ease;
@@ -91,21 +91,35 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #efe6d8;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #c9ad8b;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #b28f6a;
 }
 
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+}
+
+@media (max-width: 768px) {
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  th,
+  td {
+    white-space: nowrap;
+  }
 }
 
 /* Selection color */
