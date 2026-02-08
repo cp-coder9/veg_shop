@@ -24,46 +24,43 @@ A comprehensive full-stack web application for managing organic vegetable orders
 
 ## 🚀 Quick Start
 
-### Using Docker (Recommended)
+### PHP Backend + Vite Frontend
 
 ```bash
-# Clone and start
+# Clone the repository
 git clone <repository-url>
 cd organic-veg-order-management
-docker-compose up
 
-# In a new terminal, seed the database
-docker-compose exec backend npm run prisma:seed
+# Start the PHP API
+cd backend-php
+composer install
+php -S localhost:3000 -t public
+```
+
+In another terminal, run the frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
 Access the application:
 - **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:3000
-- **Admin Login**: admin@organicveg.com / +27123456789
+- **Backend API**: http://localhost:3000/api/health
 
-See [QUICK_START.md](./QUICK_START.md) for detailed instructions.
-
-### Manual Setup
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for manual installation instructions.
+See [SETUP_PHP.md](./SETUP_PHP.md) for shared hosting setup.
 
 ## 📁 Project Structure
 
 ```
 .
-├── backend/                 # Express.js API server
-│   ├── src/
-│   │   ├── config/         # Environment validation
-│   │   ├── routes/         # API endpoints
-│   │   ├── services/       # Business logic
-│   │   ├── repositories/   # Data access layer
-│   │   └── middleware/     # Auth, validation, etc.
-│   ├── prisma/
-│   │   ├── schema.prisma   # Database schema
-│   │   ├── seed.ts         # Database seeding
-│   │   └── migrations/     # Database migrations
-│   ├── Dockerfile          # Backend container
-│   └── package.json
+├── backend-php/             # PHP 8.1+ REST API
+│   ├── public/             # Web root
+│   ├── src/                # Controllers, services, middleware
+│   ├── database/           # MySQL schema
+│   ├── tests/              # PHPUnit tests
+│   └── composer.json
 ├── frontend/               # React web application
 │   ├── src/
 │   │   ├── components/    # Reusable components
@@ -74,21 +71,18 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for manual installation instructions.
 │   ├── Dockerfile         # Frontend container
 │   ├── nginx.conf         # Nginx configuration
 │   └── package.json
-├── docker-compose.yml      # Development setup
-├── docker-compose.prod.yml # Production setup
 └── .env.example           # Environment template
 ```
 
 ## 🛠️ Tech Stack
 
 ### Backend
-- **Runtime**: Node.js 20 + Express.js
-- **Language**: TypeScript
-- **Database**: PostgreSQL 16 + Prisma ORM
+- **Runtime**: PHP 8.1+
+- **Database**: MySQL 5.7+/MariaDB 10.3+
 - **Authentication**: JWT with verification codes
-- **Validation**: Zod
-- **PDF Generation**: PDFKit
-- **Testing**: Vitest
+- **Validation**: Request validation utilities
+- **PDF Generation**: TCPDF (via Composer)
+- **Testing**: PHPUnit
 
 ### Frontend
 - **Framework**: React 18 + TypeScript
@@ -100,16 +94,14 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for manual installation instructions.
 - **Testing**: Vitest + React Testing Library
 
 ### Infrastructure
-- **Containerization**: Docker + Docker Compose
-- **Web Server**: Nginx (production)
+- **Web Server**: Apache/Nginx (shared hosting friendly)
 - **External APIs**: WhatsApp Business API, SendGrid
 
 ## 📚 Documentation
 
-- **[Quick Start Guide](./QUICK_START.md)** - Get running in 5 minutes
-- **[Deployment Guide](./DEPLOYMENT.md)** - Production deployment instructions
-- **[Environment Setup](./ENVIRONMENT_SETUP.md)** - Comprehensive environment configuration
-- **[Database Seeding](./backend/prisma/README.md)** - Database seed script documentation
+- **[Quick Start Guide](./QUICK_START.md)** - Local development overview
+- **[PHP Backend Guide](./backend-php/README.md)** - PHP API structure and setup
+- **[Shared Hosting Setup](./SETUP_PHP.md)** - PHP + MySQL deployment instructions
 - **[Requirements](./kiro/specs/organic-veg-order-management/requirements.md)** - System requirements
 - **[Design Document](./.kiro/specs/organic-veg-order-management/design.md)** - Architecture and design
 - **[Implementation Tasks](./.kiro/specs/organic-veg-order-management/tasks.md)** - Development task list
@@ -117,8 +109,8 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for manual installation instructions.
 ## 🔧 Development
 
 ### Prerequisites
-- Docker and Docker Compose (recommended)
-- OR Node.js 20+ and PostgreSQL 16+ (manual setup)
+- PHP 8.1+ with MySQL (for the API)
+- Node.js 20+ (for the frontend build/dev server)
 
 ### Environment Variables
 
@@ -126,8 +118,8 @@ Copy the example files and configure:
 
 ```bash
 # Backend
-cd backend
-cp .env.development .env
+cd backend-php
+cp .env.example .env
 
 # Frontend  
 cd frontend
@@ -139,31 +131,16 @@ See [ENVIRONMENT_SETUP.md](./ENVIRONMENT_SETUP.md) for all configuration options
 ### Database Setup
 
 ```bash
-# Run migrations
-cd backend
-npx prisma migrate dev
-
-# Seed initial data
-npm run prisma:seed
+cd backend-php
+mysql -u root -p veg_shop < database/schema.sql
 ```
-
-This creates:
-- 1 admin user
-- 3 sample customers  
-- 40+ products across 6 categories
 
 ### Running Development Servers
 
-**With Docker**:
-```bash
-docker-compose up
-```
-
-**Without Docker**:
 ```bash
 # Backend (terminal 1)
-cd backend
-npm run dev
+cd backend-php
+php -S localhost:3000 -t public
 
 # Frontend (terminal 2)
 cd frontend
@@ -173,20 +150,15 @@ npm run dev
 ## 📋 Available Scripts
 
 ### Root
-- `npm run dev` - Run both frontend and backend
-- `npm run build` - Build both projects
-- `npm run lint` - Lint all workspaces
+- `npm run dev` - Run the frontend
+- `npm run build` - Build the frontend
+- `npm run lint` - Lint the frontend workspace
 - `npm run format` - Format code with Prettier
 
-### Backend
-- `npm run dev` - Start development server with hot reload
-- `npm run build` - Build TypeScript for production
-- `npm run start` - Run production build
-- `npm run test` - Run tests
-- `npm run prisma:migrate` - Run database migrations
-- `npm run prisma:generate` - Generate Prisma client
-- `npm run prisma:seed` - Seed database with initial data
-- `npm run prisma:studio` - Open Prisma Studio GUI
+### Backend (PHP)
+- `composer install` - Install dependencies
+- `php -S localhost:3000 -t public` - Run the API locally
+- `vendor/bin/phpunit` - Run backend tests
 
 ### Frontend
 - `npm run dev` - Start Vite dev server
@@ -194,52 +166,21 @@ npm run dev
 - `npm run preview` - Preview production build
 - `npm run test` - Run tests
 
-### Docker
-- `docker-compose up` - Start all services (development)
-- `docker-compose up -d` - Start in background
-- `docker-compose down` - Stop all services
-- `docker-compose logs -f` - View logs
-- `docker-compose exec backend npm run prisma:seed` - Seed database
-
 ## 🧪 Testing
 
 ```bash
 # Backend tests
-cd backend
-npm run test
+cd backend-php
+vendor/bin/phpunit
 
 # Frontend tests
 cd frontend
 npm run test
-
-# Run tests in Docker
-docker-compose exec backend npm run test
-docker-compose exec frontend npm run test
 ```
 
 ## 🚢 Production Deployment
 
-### Docker Compose (Recommended)
-
-```bash
-# Set up environment
-cp .env.example .env
-# Edit .env with production values
-
-# Deploy
-docker-compose -f docker-compose.prod.yml up -d
-
-# Run migrations
-docker-compose -f docker-compose.prod.yml exec backend npx prisma migrate deploy
-```
-
-### Platform-Specific Guides
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions:
-- DigitalOcean App Platform
-- Heroku
-- AWS (EC2 + RDS)
-- Vercel (Frontend)
+See [SETUP_PHP.md](./SETUP_PHP.md) for shared hosting deployment instructions.
 
 ## 🔐 Security
 
@@ -247,7 +188,7 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions:
 - Verification code authentication (WhatsApp/Email)
 - Rate limiting on sensitive endpoints
 - Input validation with Zod
-- SQL injection prevention via Prisma ORM
+- SQL injection prevention via parameterized queries
 - CORS configuration
 - Environment variable validation
 
@@ -269,7 +210,7 @@ Private - All rights reserved
 For issues or questions:
 1. Check the [documentation](#-documentation)
 2. Review [ENVIRONMENT_SETUP.md](./ENVIRONMENT_SETUP.md)
-3. Check Docker logs: `docker-compose logs`
+3. Review server error logs
 4. Review error messages and stack traces
 
 ## 🗺️ Roadmap
