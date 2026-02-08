@@ -3,25 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "frontend",
-    "backend"
+    "frontend"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "npm run dev --workspace=backend",
+    "dev": "npm run dev --workspace=frontend",
     "dev:frontend": "npm run dev --workspace=frontend",
-    "build": "npm run build --workspaces",
-    "lint": "npm run lint --workspaces",
+    "build": "npm run build --workspace=frontend",
+    "lint": "npm run lint --workspace=frontend",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1",
     "deploy:push": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1 -Push"
   },
   "devDependencies": {
     "baseline-browser-mapping": "^2.9.11",
-    "concurrently": "^8.2.2",
     "prettier": "^3.1.1"
-  },
-  "dependencies": {
-    "@prisma/client": "^5.8.0"
   }
 }

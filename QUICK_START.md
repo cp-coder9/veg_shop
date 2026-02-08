@@ -1,11 +1,12 @@
 # Quick Start Guide
 
-Get the Organic Vegetable Order Management System running in 5 minutes.
+Get the Organic Vegetable Order Management System running locally with the PHP backend.
 
 ## Prerequisites
 
-- Docker and Docker Compose installed
-- Git installed
+- PHP 8.1+ and MySQL 5.7+ (or MariaDB 10.3+)
+- Composer
+- Node.js 20+ (for the frontend)
 
 ## Steps
 
@@ -16,36 +17,33 @@ git clone <repository-url>
 cd organic-veg-order-management
 ```
 
-### 2. Start with Docker Compose
+### 2. Set Up the Database
 
 ```bash
-docker-compose up
+cd backend-php
+mysql -u root -p veg_shop < database/schema.sql
 ```
 
-This command will:
-- Start PostgreSQL database
-- Start backend API on port 3000
-- Start frontend on port 5173
-- Automatically run database migrations
-
-### 3. Seed the Database
-
-In a new terminal:
+### 3. Start the Backend API
 
 ```bash
-docker-compose exec backend npm run prisma:seed
+cd backend-php
+composer install
+php -S localhost:3000 -t public
 ```
 
-This creates:
-- Admin user: `admin@organicveg.com` / `+27123456789`
-- 3 sample customers
-- 40+ products across all categories
+### 4. Start the Frontend
 
-### 4. Access the Application
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 5. Access the Application
 
 - **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:3000
-- **Health Check**: http://localhost:3000/health
+- **Backend API**: http://localhost:3000/api/health
 
 ### 5. Login
 
@@ -82,79 +80,31 @@ This creates:
 
 To make code changes:
 
-1. **Backend**: Edit files in `backend/src/`
-   - Changes auto-reload with hot module replacement
-   
+1. **Backend**: Edit files in `backend-php/src/`
 2. **Frontend**: Edit files in `frontend/src/`
-   - Changes auto-reload in browser
-
-3. **Database Schema**: Edit `backend/prisma/schema.prisma`
-   ```bash
-   docker-compose exec backend npx prisma migrate dev --name your_migration_name
-   ```
-
-## Stopping the Application
-
-```bash
-# Stop all services
-docker-compose down
-
-# Stop and remove volumes (clears database)
-docker-compose down -v
-```
+3. **Database Schema**: Update `backend-php/database/schema.sql` and re-import as needed
 
 ## Troubleshooting
 
 ### Port Already in Use
 
-If ports 3000 or 5173 are already in use:
-
-```bash
-# Edit docker-compose.yml and change port mappings
-# For example, change "3000:3000" to "3001:3000"
-```
-
-### Database Connection Error
-
-```bash
-# Check PostgreSQL is running
-docker-compose ps postgres
-
-# Restart PostgreSQL
-docker-compose restart postgres
-```
-
-### Seed Script Fails
-
-```bash
-# Ensure migrations are run first
-docker-compose exec backend npx prisma migrate dev
-
-# Then run seed
-docker-compose exec backend npm run prisma:seed
-```
+If ports 3000 or 5173 are already in use, stop the other process or choose another port.
 
 ## Documentation
 
-- **Full Deployment Guide**: [DEPLOYMENT.md](./DEPLOYMENT.md)
+- **Shared Hosting Setup**: [SETUP_PHP.md](./SETUP_PHP.md)
 - **Environment Configuration**: [ENVIRONMENT_SETUP.md](./ENVIRONMENT_SETUP.md)
-- **Database Seeding**: [backend/prisma/README.md](./backend/prisma/README.md)
+- **PHP Backend**: [backend-php/README.md](./backend-php/README.md)
 - **Requirements**: [.kiro/specs/organic-veg-order-management/requirements.md](.kiro/specs/organic-veg-order-management/requirements.md)
 - **Design**: [.kiro/specs/organic-veg-order-management/design.md](.kiro/specs/organic-veg-order-management/design.md)
 
 ## Need Help?
 
-1. Check the logs: `docker-compose logs`
+1. Check the PHP/Apache/Nginx logs
 2. Review the documentation above
 3. Check for error messages in the terminal
 4. Ensure all prerequisites are installed
 
 ## Production Deployment
 
-For production deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
-
-Key steps:
-1. Set up production environment variables
-2. Use managed PostgreSQL database
-3. Configure WhatsApp and SendGrid APIs
-4. Deploy with `docker-compose -f docker-compose.prod.yml up -d`
+For production deployment instructions, see [SETUP_PHP.md](./SETUP_PHP.md).
