@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import api from '../../lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Button, Input, Card, CardHeader, CardContent, Textarea } from '@/components/ui';
 
 interface UpdateProfileData {
   name: string;
@@ -42,13 +43,17 @@ export default function AdminProfile() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Admin Profile</h1>
+      {/* Page Header */}
+      <div className="mb-6">
+        <h1 className="font-display text-display-sm text-primary-dark">Admin Profile</h1>
+        <p className="font-body text-body-md text-warm-gray mt-1">Manage your account settings</p>
+      </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
-          {!isEditing && (
-            <button
+      <Card>
+        <CardHeader 
+          title="Profile Information"
+          action={!isEditing ? (
+            <Button
               onClick={() => {
                 setFormData({
                   name: user.name,
@@ -58,118 +63,115 @@ export default function AdminProfile() {
                 });
                 setIsEditing(true);
               }}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              variant="primary"
             >
               Edit Profile
-            </button>
+            </Button>
+          ) : undefined}
+        />
+        <CardContent>
+          {isEditing ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="name" className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">
+                  Name
+                </label>
+                <Input
+                  type="text"
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="email" className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">
+                  Email
+                </label>
+                <Input
+                  type="email"
+                  id="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="phone" className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">
+                  Phone
+                </label>
+                <Input
+                  type="tel"
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="address" className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">
+                  Address
+                </label>
+                <Textarea
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  rows={3}
+                />
+              </div>
+
+              {updateProfile.isError && (
+                <div className="bg-error/10 text-error px-4 py-3 rounded-lg font-body text-body-sm">
+                  Failed to update profile. Please try again.
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={updateProfile.isPending}
+                >
+                  {updateProfile.isPending ? 'Saving...' : 'Save Changes'}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  variant="secondary"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1">Name</p>
+                  <p className="font-body text-body-md text-primary-dark font-medium">{user.name}</p>
+                </div>
+                <div>
+                  <p className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1">Role</p>
+                  <p className="font-body text-body-md text-primary-dark font-medium capitalize">{user.role}</p>
+                </div>
+                <div>
+                  <p className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1">Email</p>
+                  <p className="font-body text-body-md text-primary-dark font-medium">{user.email || 'Not set'}</p>
+                </div>
+                <div>
+                  <p className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1">Phone</p>
+                  <p className="font-body text-body-md text-primary-dark font-medium">{user.phone || 'Not set'}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1">Address</p>
+                  <p className="font-body text-body-md text-primary-dark font-medium">{user.address || 'Not set'}</p>
+                </div>
+              </div>
+            </div>
           )}
-        </div>
-
-        {isEditing ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                id="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                Phone
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                Address
-              </label>
-              <textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
-
-            {updateProfile.isError && (
-              <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm">
-                Failed to update profile. Please try again.
-              </div>
-            )}
-
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                disabled={updateProfile.isPending}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
-              >
-                {updateProfile.isPending ? 'Saving...' : 'Save Changes'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)}
-                className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600">Name</p>
-                <p className="font-semibold text-gray-900">{user.name}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Role</p>
-                <p className="font-semibold text-gray-900 capitalize">{user.role}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Email</p>
-                <p className="font-semibold text-gray-900">{user.email || 'Not set'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Phone</p>
-                <p className="font-semibold text-gray-900">{user.phone || 'Not set'}</p>
-              </div>
-              <div className="col-span-2">
-                <p className="text-sm text-gray-600">Address</p>
-                <p className="font-semibold text-gray-900">{user.address || 'Not set'}</p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

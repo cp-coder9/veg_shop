@@ -12,6 +12,7 @@ export interface Product {
   isSeasonal: boolean;
   packingType: string;
   supplierId?: string | null;
+  deliveryDay?: string | null; // "Wednesday" | "Friday" - delivery day for the product
   createdAt: string;
   updatedAt: string;
 }

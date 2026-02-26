@@ -293,37 +293,35 @@ async function main() {
   ];
 
   const productCategories = [
-    { category: 'bakery', items: bakery },
-    { category: 'broths', items: broths },
-    { category: 'nuts_fruit', items: nuts_fruit },
-    { category: 'vegetables', items: vegetables },
-    { category: 'fruit', items: fruit },
-    { category: 'local_produce', items: local_produce },
-    { category: 'plant_based', items: plant_based },
-    { category: 'dairy', items: dairy },
-    { category: 'meat', items: meat },
+    { category: 'bakery', items: bakery, deliveryDay: 'Friday' },
+    { category: 'broths', items: broths, deliveryDay: 'Friday' },
+    { category: 'nuts_fruit', items: nuts_fruit, deliveryDay: 'Friday' },
+    { category: 'vegetables', items: vegetables, deliveryDay: 'Wednesday' },
+    { category: 'fruit', items: fruit, deliveryDay: 'Wednesday' },
+    { category: 'local_produce', items: local_produce, deliveryDay: 'Friday' },
+    { category: 'plant_based', items: plant_based, deliveryDay: 'Friday' },
+    { category: 'dairy', items: dairy, deliveryDay: 'Friday' },
+    { category: 'meat', items: meat, deliveryDay: 'Friday' },
   ];
 
   let totalProducts = 0;
-  for (const { category, items } of productCategories) {
+  for (const { category, items, deliveryDay } of productCategories) {
     for (const item of items as any[]) {
+      const productData = {
+        name: item.name,
+        price: item.price,
+        category,
+        unit: item.unit,
+        deliveryDay,
+        ...(item.description ? { description: item.description } : {}),
+        isAvailable: true,
+        isSeasonal: false,
+      } as any;
+      
       await prisma.product.upsert({
         where: { name: item.name },
-        update: {
-          price: item.price,
-          category,
-          unit: item.unit,
-          ...(item.description ? { description: item.description } : {}),
-        },
-        create: {
-          name: item.name,
-          price: item.price,
-          category,
-          unit: item.unit,
-          ...(item.description ? { description: item.description } : {}),
-          isAvailable: true,
-          isSeasonal: false,
-        },
+        update: productData,
+        create: productData,
       });
       totalProducts++;
     }

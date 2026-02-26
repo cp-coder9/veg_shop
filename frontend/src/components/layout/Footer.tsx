@@ -27,9 +27,9 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-organic-green-900 text-organic-green-100 mt-auto">
+    <footer className="bg-soft-black text-primary-light mt-auto">
       {/* Main Footer Content */}
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand Section */}
           <div className="space-y-4">
@@ -41,7 +41,7 @@ export default function Footer() {
               />
               <span className="sr-only">Our Harvest Tote</span>
             </div>
-            <p className="text-organic-green-200 text-sm leading-relaxed">
+            <p className="text-warm-gray text-sm leading-relaxed">
               Curated. Harvested for you not the shelf. Farming that heals. Food that nourishes.
             </p>
           </div>
@@ -57,9 +57,9 @@ export default function Footer() {
                   <li key={link.name}>
                     <Link
                       to={link.path}
-                      className="text-organic-green-200 hover:text-white text-sm transition-colors duration-200 inline-flex items-center gap-2 group"
+                      className="text-warm-gray hover:text-white text-sm transition-colors duration-200 inline-flex items-center gap-2 group"
                     >
-                      <span className="w-1 h-1 bg-organic-green-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                      <span className="w-1 h-1 bg-sage-green rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
                       {link.name}
                     </Link>
                   </li>
@@ -70,28 +70,28 @@ export default function Footer() {
         </div>
 
         {/* Divider */}
-        <div className="border-t border-organic-green-800 my-8"></div>
+        <div className="border-t border-warm-gray/30 my-8"></div>
 
         {/* Bottom Section */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-6">
-            <p className="text-sm text-organic-green-300">
+            <p className="text-sm text-warm-gray">
               © {currentYear} Our Harvest Tote. All rights reserved.
             </p>
             <div className="flex items-center gap-4 text-sm">
-              <Link to="/" className="text-organic-green-300 hover:text-organic-green-200 transition-colors">
+              <Link to="/" className="text-warm-gray hover:text-light-gray transition-colors">
                 Privacy
               </Link>
-              <Link to="/" className="text-organic-green-300 hover:text-organic-green-200 transition-colors">
+              <Link to="/" className="text-warm-gray hover:text-light-gray transition-colors">
                 Terms
               </Link>
-              <Link to="/" className="text-organic-green-300 hover:text-organic-green-200 transition-colors">
+              <Link to="/" className="text-warm-gray hover:text-light-gray transition-colors">
                 Cookies
               </Link>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-organic-green-300">
+          <div className="flex items-center gap-2 text-sm text-warm-gray">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
             </svg>

@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -64,6 +64,7 @@ model Product {
   isAvailable Boolean  @default(true)
   isSeasonal  Boolean  @default(false)
   packingType String   @default("box") // "box", "bag", "fridge", "freezer"
+  deliveryDay String?  // "Wednesday" | "Friday" - delivery day for the product
   supplierId  String?
   supplier    Supplier? @relation(fields: [supplierId], references: [id])
   createdAt   DateTime @default(now())
@@ -261,4 +262,75 @@ model AuditLog {
   @@index([resource])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// Stock Order - tracks orders placed to suppliers based on weekly collation
+model StockOrder {
+  id                String    @id @default(uuid())
+  weekStartDate     DateTime
+  supplierId        String?
+  supplierName      String?
+  status            String    @default("pending") // "pending", "partial", "received", "fulfilled"
+  totalItems        Int       @default(0)
+  totalOrdered      Decimal   @default(0)
+  totalReceived     Decimal   @default(0)
+  totalCredits      Decimal   @default(0)
+  notes             String?
+  createdById       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  items             StockOrderItem[]
+  history           WeeklyCollationHistory[]
+
+  @@index([weekStartDate])
+  @@index([status])
+  @@map("stock_orders")
+}
+
+// Individual items in a stock order
+model StockOrderItem {
+  id              String   @id @default(uuid())
+  stockOrderId    String
+  productId       String
+  productName     String
+  category        String
+  unit            String
+  orderedQuantity Int
+  receivedQuantity Int     @default(0)
+  pricePerUnit    Decimal  @default(0)
+  isShort         Boolean  @default(false)
+  shortQuantity   Int      @default(0)
+  creditAmount    Decimal  @default(0)
+  customerId      String?  // If this item is for a specific customer's order
+  orderId         String?  // Reference to the original order
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  stockOrder      StockOrder @relation(fields: [stockOrderId], references: [id], onDelete: Cascade)
+
+  @@index([stockOrderId])
+  @@index([productId])
+  @@map("stock_order_items")
+}
+
+// History of weekly collation reports
+model WeeklyCollationHistory {
+  id              String    @id @default(uuid())
+  stockOrderId    String?
+  weekStartDate   DateTime
+  weekEndDate     DateTime
+  reportData      String    // JSON string of the collation report
+  totalProducts   Int       @default(0)
+  totalOrders     Int       @default(0)
+  totalValue      Decimal   @default(0)
+  status          String    @default("generated") // "generated", "sent", "received", "fulfilled"
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  stockOrder      StockOrder? @relation(fields: [stockOrderId], references: [id])
+
+  @@index([weekStartDate])
+  @@index([status])
+  @@map("weekly_collation_history")
 }

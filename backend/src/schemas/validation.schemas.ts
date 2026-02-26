@@ -45,6 +45,8 @@ export const refreshTokenSchema = z.object({
 // Product Schemas
 // ============================================
 
+const deliveryDays = ['Wednesday', 'Friday'] as const;
+
 export const createProductSchema = z.object({
   name: z.string().min(1, 'Product name is required').max(100, 'Product name too long'),
   price: z.number().positive('Price must be positive').max(10000, 'Price too high'),
@@ -58,6 +60,8 @@ export const createProductSchema = z.object({
   imageUrl: z.string().url('Invalid image URL').optional().or(z.literal('')),
   isAvailable: z.boolean().optional(),
   isSeasonal: z.boolean().optional(),
+  packingType: z.enum(['box', 'bag', 'fridge', 'freezer']).optional(),
+  deliveryDay: z.enum(deliveryDays).optional().nullable(),
 });
 
 export const updateProductSchema = createProductSchema.partial();

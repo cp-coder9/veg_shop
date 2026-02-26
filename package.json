@@ -3,11 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "frontend"
+    "frontend",
+    "backend"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=frontend",
+    "dev": "npm run start",
     "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:backend": "npm run dev --workspace=backend",
+    "start": "npx concurrently --kill-others -n \"FRONTEND,BACKEND\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run dev:frontend\" \"npm run dev:backend\"",
     "build": "npm run build --workspace=frontend",
     "lint": "npm run lint --workspace=frontend",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
@@ -15,6 +18,7 @@
     "deploy:push": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1 -Push"
   },
   "devDependencies": {
+    "concurrently": "^8.2.2",
     "baseline-browser-mapping": "^2.9.11",
     "prettier": "^3.1.1"
   }

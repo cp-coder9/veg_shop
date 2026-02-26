@@ -3,6 +3,21 @@ import { env } from '../config/env.js';
 import { productRepository, Product } from '../repositories/product.repository.js';
 import { priceHistoryRepository } from '../repositories/price-history.repository.js';
 
+export interface AffectedOrder {
+  orderId: string;
+  customerName: string;
+  customerPhone: string;
+  orderDate: Date;
+  deliveryDate: Date;
+  orderStatus: string;
+  productQuantity: number;
+}
+
+export interface UpdateProductResult {
+  product: any;
+  affectedOrders?: AffectedOrder[];
+}
+
 export interface CreateProductDto {
   name: string;
   price: number;
@@ -12,6 +27,8 @@ export interface CreateProductDto {
   imageUrl?: string;
   isAvailable: boolean;
   isSeasonal: boolean;
+  packingType?: string;
+  deliveryDay?: string | null;
   supplierId?: string | null;
 }
 
@@ -24,6 +41,8 @@ export interface UpdateProductDto {
   imageUrl?: string;
   isAvailable?: boolean;
   isSeasonal?: boolean;
+  packingType?: string;
+  deliveryDay?: string | null;
   supplierId?: string | null;
 }
 
@@ -60,6 +79,8 @@ export class ProductService {
           imageUrl: data.imageUrl,
           isAvailable: data.isAvailable,
           isSeasonal: data.isSeasonal,
+          packingType: data.packingType,
+          deliveryDay: data.deliveryDay,
           supplierId: data.supplierId,
         },
       });
@@ -76,7 +97,74 @@ export class ProductService {
     }
   }
 
-  async updateProduct(id: string, data: UpdateProductDto): Promise<any> {
+  /**
+   * Get active orders containing a specific product
+   * Active statuses: pending, confirmed, packed (ready), out_for_delivery
+   */
+  async getActiveOrdersForProduct(productId: string): Promise<AffectedOrder[]> {
+    const activeStatuses = ['pending', 'confirmed', 'packed', 'out_for_delivery'];
+
+    if (env.USE_FIREBASE) {
+      // Firebase implementation would go here if needed
+      return [];
+    } else {
+      const orderItems = await prisma.orderItem.findMany({
+        where: {
+          productId,
+          order: {
+            status: {
+              in: activeStatuses,
+            },
+          },
+        },
+        include: {
+          order: {
+            include: {
+              customer: {
+                select: {
+                  id: true,
+                  name: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Map to AffectedOrder interface
+      const affectedOrders: AffectedOrder[] = orderItems.map((item) => ({
+        orderId: item.order.id,
+        customerName: item.order.customer.name,
+        customerPhone: item.order.customer.phone || '',
+        orderDate: item.order.createdAt,
+        deliveryDate: item.order.deliveryDate,
+        orderStatus: item.order.status,
+        productQuantity: item.quantity,
+      }));
+
+      // Remove duplicates (same order might have multiple items of same product)
+      const uniqueOrders = new Map<string, AffectedOrder>();
+      affectedOrders.forEach((order) => {
+        if (!uniqueOrders.has(order.orderId)) {
+          uniqueOrders.set(order.orderId, order);
+        }
+      });
+
+      return Array.from(uniqueOrders.values());
+    }
+  }
+
+  async updateProduct(id: string, data: UpdateProductDto): Promise<UpdateProductResult> {
+    // Check if product is being marked as unavailable
+    const isMarkingUnavailable = data.isAvailable === false;
+    let affectedOrders: AffectedOrder[] | undefined;
+
+    // If marking unavailable, find active orders containing this product
+    if (isMarkingUnavailable) {
+      affectedOrders = await this.getActiveOrdersForProduct(id);
+    }
+
     if (env.USE_FIREBASE) {
       const existingProduct = await productRepository.findById(id);
       if (!existingProduct) throw new Error('Product not found');
@@ -93,7 +181,7 @@ export class ProductService {
           effectiveDate: new Date(),
         });
       }
-      return product;
+      return { product, affectedOrders };
     } else {
       const existingProduct = await prisma.product.findUnique({
         where: { id },
@@ -118,7 +206,7 @@ export class ProductService {
         });
       }
 
-      return product;
+      return { product, affectedOrders };
     }
   }
 
@@ -138,6 +226,9 @@ export class ProductService {
     } else {
       return prisma.product.findUnique({
         where: { id },
+        include: {
+          supplier: true,
+        },
       });
     }
   }
@@ -171,6 +262,9 @@ export class ProductService {
           { category: 'asc' },
           { name: 'asc' },
         ],
+        include: {
+          supplier: true,
+        },
       });
     }
   }
@@ -191,6 +285,9 @@ export class ProductService {
           { category: 'asc' },
           { name: 'asc' },
         ],
+        include: {
+          supplier: true,
+        },
       });
     }
   }

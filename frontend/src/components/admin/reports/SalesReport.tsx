@@ -2,13 +2,6 @@ import { useState } from 'react';
 import { useSalesReport } from '../../../hooks/useReports';
 import { formatCurrency } from '../../../lib/utils';
 
-interface ProductSold {
-  productId: string;
-  productName: string;
-  quantitySold: number;
-  revenue: number;
-}
-
 export default function SalesReport() {
   // Default to last 30 days
   const [startDate, setStartDate] = useState(() => {
@@ -37,6 +30,11 @@ export default function SalesReport() {
       </div>
     );
   }
+
+  const maxRevenue = report?.productsSold.reduce(
+    (max: number, p) => Math.max(max, p.revenue),
+    0
+  ) || 1;
 
   return (
     <div className="space-y-6">
@@ -68,29 +66,29 @@ export default function SalesReport() {
 
       {report && (
         <>
-          {/* Summary Cards */}
+          {/* Summary Metrics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <p className="text-sm font-medium text-green-800 mb-1">Total Revenue</p>
-              <p className="text-3xl font-bold text-green-900">
+              <p className="text-2xl font-bold text-green-900">
                 {formatCurrency(report.totalRevenue)}
               </p>
             </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm font-medium text-blue-800 mb-1">Total Orders</p>
-              <p className="text-3xl font-bold text-blue-900">{report.totalOrders}</p>
+              <p className="text-2xl font-bold text-blue-900">{report.totalOrders}</p>
             </div>
           </div>
 
-          {/* Revenue Chart (Simple Bar Chart) */}
+          {/* Revenue by Product Chart */}
           {report.productsSold.length > 0 && (
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Revenue by Product
               </h3>
               <div className="space-y-3">
-                {report.productsSold.slice(0, 10).map((product: ProductSold) => {
-                  const percentage = (product.revenue / report.totalRevenue) * 100;
+                {report.productsSold.slice(0, 10).map((product) => {
+                  const percentage = (product.revenue / maxRevenue) * 100;
                   return (
                     <div key={product.productId}>
                       <div className="flex justify-between text-sm mb-1">
@@ -98,7 +96,7 @@ export default function SalesReport() {
                           {product.productName}
                         </span>
                         <span className="text-gray-600">
-                          {formatCurrency(product.revenue)}
+                          {formatCurrency(product.revenue)} ({product.quantitySold} sold)
                         </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
@@ -114,10 +112,10 @@ export default function SalesReport() {
             </div>
           )}
 
-          {/* Product Breakdown Table */}
+          {/* Sales Details Table */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Product Breakdown
+              Sales Details
             </h3>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -138,11 +136,11 @@ export default function SalesReport() {
                   {report.productsSold.length === 0 ? (
                     <tr>
                       <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
-                        No products sold in this period
+                        No sales in this period
                       </td>
                     </tr>
                   ) : (
-                    report.productsSold.map((product: ProductSold) => (
+                    report.productsSold.map((product) => (
                       <tr key={product.productId}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {product.productName}

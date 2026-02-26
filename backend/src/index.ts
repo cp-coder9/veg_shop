@@ -19,6 +19,7 @@ import auditRoutes from './routes/audit.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import driverRoutes from './routes/driver.routes.js';
+import stockOrderRoutes from './routes/stock-order.routes.js';
 import { schedulerService } from './services/scheduler.service.js';
 
 // Log configuration on startup
@@ -67,6 +68,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/driver', driverRoutes);
+app.use('/api/stock-orders', stockOrderRoutes);
 
 // Start server
 const server = app.listen(PORT, () => {

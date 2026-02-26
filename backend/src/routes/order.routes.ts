@@ -98,6 +98,40 @@ router.post('/', authenticate, asyncHandler(async (req: Request, res: Response) 
 }));
 
 /**
+ * GET /api/orders/collation
+ * Get collation report for procurement (admin only)
+ */
+router.get('/collation', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Start date and end date are required',
+        },
+      });
+    }
+
+    const report = await orderService.getCollationReport(
+      new Date(startDate as string),
+      new Date(endDate as string)
+    );
+
+    return res.json(report);
+  } catch (error) {
+    console.error('Get collation report error:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to fetch collation report',
+      },
+    });
+  }
+}));
+
+/**
  * GET /api/orders/:id
  * Get a single order by ID
  */
@@ -439,38 +473,6 @@ router.get('/delivery/:date/packing-list', authenticate, requireAdmin, asyncHand
   }
 }));
 
-/**
- * GET /api/orders/collation
- * Get collation report for procurement (admin only)
- */
-router.get('/collation', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const { startDate, endDate } = req.query;
-
-    if (!startDate || !endDate) {
-      return res.status(400).json({
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Start date and end date are required',
-        },
-      });
-    }
-
-    const report = await orderService.getCollationReport(
-      new Date(startDate as string),
-      new Date(endDate as string)
-    );
-
-    return res.json(report);
-  } catch (error) {
-    console.error('Get collation report error:', error);
-    return res.status(500).json({
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Failed to fetch collation report',
-      },
-    });
-  }
-}));
-
 export default router;
+
+

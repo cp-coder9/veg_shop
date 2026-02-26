@@ -16,7 +16,7 @@ async function deploy() {
         // 0. Cleanup - optional, but good for clean slate
         // await client.clearWorkingDir(); 
 
-        const remoteRoot = "/home/prepedb1/public_html/ourharvesttote.store";
+        const remoteRoot = "/";
 
         // 1. Upload Frontend
         console.log("Uploading frontend to ROOT...");

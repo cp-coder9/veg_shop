@@ -40,6 +40,11 @@ lerna-debug.log*
 
 # Prisma
 backend/prisma/migrations/
+*.db
+backend/prisma/**/*.db
+
+# Design captures
+design-captures/
 
 # Uploads
 backend/uploads/

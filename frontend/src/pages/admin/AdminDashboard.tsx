@@ -1,355 +1,195 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { 
+    Package, 
+    Users, 
+    DollarSign, 
+    ShoppingCart, 
+    TrendingUp,
+    Clock
+} from 'lucide-react';
+import { Card, CardContent, CardHeader } from '@/components/ui';
 import api from '../../lib/api';
 
-interface DashboardMetrics {
-  totalOrders: number;
-  pendingOrders: number;
-  totalRevenue: number;
-  unpaidInvoices: number;
-  activeCustomers: number;
+interface DashboardStats {
+    totalCustomers: number;
+    totalOrders: number;
+    totalRevenue: number;
+    pendingPayments: number;
+    activeProducts: number;
 }
 
-interface RecentOrder {
-  id: string;
-  customerName: string;
-  totalAmount: number;
-  status: string;
-  createdAt: string;
-}
+const AdminDashboard = () => {
+    const { data: stats, isLoading } = useQuery<{ data: DashboardStats }>({
+        queryKey: ['admin-stats'],
+        queryFn: async () => {
+            const response = await api.get('/reports/dashboard');
+            return response;
+        }
+    });
 
-export default function AdminDashboard() {
-  const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
-    queryKey: ['dashboard-metrics'],
-    queryFn: async () => {
-      const response = await api.get('/admin/dashboard/metrics');
-      return response.data;
-    },
-  });
+    const { data: recentOrders } = useQuery<{ data: unknown[] }>({
+        queryKey: ['recent-orders'],
+        queryFn: async () => {
+            const response = await api.get('/orders?limit=5&status=pending');
+            return response;
+        }
+    });
 
-  const { data: recentOrders, isLoading: ordersLoading } = useQuery<RecentOrder[]>({
-    queryKey: ['recent-orders'],
-    queryFn: async () => {
-      const response = await api.get('/admin/orders?limit=5');
-      // The backend returns { orders: [...] }
-      return response.data.orders || [];
-    },
-  });
+    const statCards = [
+        {
+            title: 'Total Customers',
+            value: stats?.data?.totalCustomers ?? 0,
+            icon: Users,
+            color: 'bg-terracotta/10 text-terracotta'
+        },
+        {
+            title: 'Total Orders',
+            value: stats?.data?.totalOrders ?? 0,
+            icon: ShoppingCart,
+            color: 'bg-sage-green/10 text-sage-green'
+        },
+        {
+            title: 'Total Revenue',
+            value: `R${((stats?.data?.totalRevenue ?? 0) / 100).toFixed(2)}`,
+            icon: DollarSign,
+            color: 'bg-info/10 text-info'
+        },
+        {
+            title: 'Pending Payments',
+            value: stats?.data?.pendingPayments ?? 0,
+            icon: Clock,
+            color: 'bg-warning/10 text-warning'
+        },
+        {
+            title: 'Active Products',
+            value: stats?.data?.activeProducts ?? 0,
+            icon: Package,
+            color: 'bg-primary/10 text-primary'
+        }
+    ];
 
-  if (metricsLoading) {
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-terracotta"></div>
+            </div>
+        );
+    }
+
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="loading-spinner h-12 w-12"></div>
-      </div>
-    );
-  }
-
-  const metricCards = [
-    {
-      title: 'Total Orders',
-      value: metrics?.totalOrders || 0,
-      change: '+12%',
-      icon: '📦',
-      color: 'bg-blue-500',
-      changeColor: 'text-blue-600',
-    },
-    {
-      title: 'Pending Orders',
-      value: metrics?.pendingOrders || 0,
-      change: '3 new',
-      icon: '⏳',
-      color: 'bg-amber-500',
-      changeColor: 'text-amber-600',
-    },
-    {
-      title: 'Total Revenue',
-      value: `R ${(metrics?.totalRevenue || 0).toFixed(2)}`,
-      change: '+8.2%',
-      icon: '💰',
-      color: 'bg-green-500',
-      changeColor: 'text-green-600',
-    },
-    {
-      title: 'Unpaid Invoices',
-      value: metrics?.unpaidInvoices || 0,
-      change: '2 overdue',
-      icon: '📄',
-      color: 'bg-red-500',
-      changeColor: 'text-red-600',
-    },
-    {
-      title: 'Active Customers',
-      value: metrics?.activeCustomers || 0,
-      change: '+5',
-      icon: '👥',
-      color: 'bg-purple-500',
-      changeColor: 'text-purple-600',
-    },
-  ];
-
-  const quickActions = [
-    {
-      name: 'Manage Products',
-      path: '/admin/products',
-      icon: '📦',
-      description: 'Add, edit, or remove products',
-      color: 'hover:border-blue-500 hover:bg-blue-50',
-    },
-    {
-      name: 'View Orders',
-      path: '/admin/orders',
-      icon: '📋',
-      description: 'Process and manage orders',
-      color: 'hover:border-amber-500 hover:bg-amber-50',
-    },
-    {
-      name: 'Manage Invoices',
-      path: '/admin/invoices',
-      icon: '💰',
-      description: 'Generate and track invoices',
-      color: 'hover:border-green-500 hover:bg-green-50',
-    },
-    {
-      name: 'Manage Customers',
-      path: '/admin/customers',
-      icon: '👥',
-      description: 'View customer information',
-      color: 'hover:border-purple-500 hover:bg-purple-50',
-    },
-    {
-      name: 'System Reports',
-      path: '/admin/reports',
-      icon: '📊',
-      description: 'Sales and analytics reports',
-      color: 'hover:border-indigo-500 hover:bg-indigo-50',
-    },
-    {
-      name: 'Packing Lists',
-      path: '/admin/packing-lists',
-      icon: '📦',
-      description: 'Generate warehouse lists',
-      color: 'hover:border-orange-500 hover:bg-orange-50',
-    },
-    {
-      name: 'Audit Logs',
-      path: '/admin/audit',
-      icon: '🔍',
-      description: 'Track system activity',
-      color: 'hover:border-rose-500 hover:bg-rose-50',
-    },
-  ];
-
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-display font-bold text-organic-green-900">
-            Dashboard
-          </h1>
-          <p className="text-warm-gray-600 mt-1">
-            Welcome back! Here's what's happening with your store today.
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-sm text-warm-gray-500">Today's Date</p>
-            <p className="font-semibold text-organic-green-900">
-              {new Date().toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-        {metricCards.map((metric) => (
-          <div
-            key={metric.title}
-            className="card group hover:shadow-card-hover transition-all duration-300"
-          >
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className={`w-12 h-12 ${metric.color} rounded-xl flex items-center justify-center text-2xl`}>
-                  {metric.icon}
-                </div>
-                <span className={`text-sm font-semibold ${metric.changeColor}`}>
-                  {metric.change}
-                </span>
-              </div>
-
-              <h3 className="text-sm font-medium text-warm-gray-600 mb-1">
-                {metric.title}
-              </h3>
-              <p className="text-3xl font-display font-bold text-organic-green-900">
-                {metric.value}
-              </p>
+        <div className="space-y-6">
+            {/* Page Header */}
+            <div className="mb-6">
+                <h1 className="font-display text-display-md text-primary-dark">Admin Dashboard</h1>
+                <p className="font-body text-body-md text-warm-gray mt-1">Welcome back! Here's what's happening with your store.</p>
             </div>
-          </div>
-        ))}
-      </div>
 
-      {/* Quick Actions */}
-      <div className="card">
-        <div className="p-6 border-b border-warm-gray-200">
-          <h2 className="text-2xl font-display font-semibold text-organic-green-900">
-            Quick Actions
-          </h2>
-          <p className="text-warm-gray-600 mt-1">
-            Common tasks to manage your store efficiently
-          </p>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickActions.map((action) => (
-              <Link
-                key={action.name}
-                to={action.path}
-                className={`group block p-6 border-2 border-warm-gray-200 rounded-xl transition-all duration-200 ${action.color} hover:shadow-card`}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="text-3xl transform group-hover:scale-110 transition-transform">
-                    {action.icon}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-display font-semibold text-organic-green-900 mb-1">
-                      {action.name}
-                    </h3>
-                    <p className="text-sm text-warm-gray-600">
-                      {action.description}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center text-sm font-medium text-organic-green-600 group-hover:text-organic-green-700">
-                  Go to {action.name}
-                  <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Orders */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <div className="p-6 border-b border-warm-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-display font-semibold text-organic-green-900">
-                  Recent Orders
-                </h2>
-                <p className="text-warm-gray-600 mt-1">
-                  Latest orders from customers
-                </p>
-              </div>
-              <Link
-                to="/admin/orders"
-                className="text-sm font-medium text-organic-green-600 hover:text-organic-green-700"
-              >
-                View All
-              </Link>
-            </div>
-          </div>
-          <div className="p-6">
-            {ordersLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="loading-spinner h-8 w-8"></div>
-              </div>
-            ) : recentOrders && recentOrders.length > 0 ? (
-              <div className="space-y-3">
-                {recentOrders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="flex items-center justify-between p-4 bg-warm-gray-50 rounded-lg hover:bg-warm-gray-100 transition-colors"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium text-organic-green-900">
-                        {order.customerName}
-                      </p>
-                      <p className="text-sm text-warm-gray-600">
-                        Order #{order.id.slice(0, 8)}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-organic-green-900">
-                        R{order.totalAmount.toFixed(2)}
-                      </p>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${order.status === 'pending' ? 'bg-amber-100 text-amber-800' :
-                        order.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                          order.status === 'packed' ? 'bg-purple-100 text-purple-800' :
-                            order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                              order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                'bg-gray-100 text-gray-800'
-                        }`}>
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      </span>
-                    </div>
-                  </div>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                {statCards.map((stat, index) => (
+                    <Card key={index} className="hover:shadow-md transition-shadow">
+                        <CardContent className="flex items-center gap-4">
+                            <div className={`p-3 rounded-lg ${stat.color}`}>
+                                <stat.icon size={24} />
+                            </div>
+                            <div>
+                                <p className="font-accent text-caption text-warm-gray uppercase tracking-wide">
+                                    {stat.title}
+                                </p>
+                                <p className="font-display text-body-xl text-primary-dark">
+                                    {stat.value}
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
                 ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-warm-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
-                <p className="text-warm-gray-600">No recent orders found</p>
-              </div>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* System Status */}
-        <div className="card">
-          <div className="p-6 border-b border-warm-gray-200">
-            <h2 className="text-xl font-display font-semibold text-organic-green-900">
-              System Status
-            </h2>
-            <p className="text-warm-gray-600 mt-1">
-              Health and performance overview
-            </p>
-          </div>
-          <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="font-medium text-organic-green-900">Database</span>
-              </div>
-              <span className="text-sm font-medium text-green-700">Operational</span>
+            {/* Recent Orders */}
+            <Card>
+                <CardHeader 
+                    title="Recent Orders" 
+                    subtitle="Latest pending orders requiring attention"
+                />
+                <CardContent>
+                    {recentOrders?.data?.length === 0 ? (
+                        <div className="text-center py-8">
+                            <ShoppingCart className="mx-auto h-12 w-12 text-light-gray mb-4" />
+                            <p className="font-body text-body-md text-warm-gray">No pending orders</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {(recentOrders?.data ?? []).slice(0, 5).map((order: unknown) => {
+                                const o = order as { id?: string; customerName?: string; total?: number; status?: string; createdAt?: string };
+                                return (
+                                    <div 
+                                        key={o.id} 
+                                        className="flex items-center justify-between p-4 bg-cream/30 rounded-lg hover:bg-cream/50 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-2 bg-sage-green/10 rounded-lg">
+                                                <ShoppingCart size={20} className="text-sage-green" />
+                                            </div>
+                                            <div>
+                                                <p className="font-body text-body-md font-medium text-primary-dark">
+                                                    Order #{o.id?.slice(-6) ?? 'N/A'}
+                                                </p>
+                                                <p className="font-body text-body-sm text-warm-gray">
+                                                    {o.customerName ?? 'Unknown Customer'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-body text-body-md font-medium text-primary-dark">
+                                                R{((o.total ?? 0) / 100).toFixed(2)}
+                                            </p>
+                                            <p className="font-accent text-caption text-warning uppercase">
+                                                {o.status ?? 'pending'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a 
+                    href="/admin/orders" 
+                    className="flex items-center gap-4 p-6 bg-terracotta text-white rounded-lg hover:bg-terracotta/90 transition-colors"
+                >
+                    <ShoppingCart size={28} />
+                    <div>
+                        <p className="font-body text-body-lg font-medium">Manage Orders</p>
+                        <p className="font-accent text-caption opacity-80">View and process orders</p>
+                    </div>
+                </a>
+                <a 
+                    href="/admin/products" 
+                    className="flex items-center gap-4 p-6 bg-sage-green text-white rounded-lg hover:bg-sage-green/90 transition-colors"
+                >
+                    <Package size={28} />
+                    <div>
+                        <p className="font-body text-body-lg font-medium">Manage Products</p>
+                        <p className="font-accent text-caption opacity-80">Update your catalog</p>
+                    </div>
+                </a>
+                <a 
+                    href="/admin/reports" 
+                    className="flex items-center gap-4 p-6 bg-info text-white rounded-lg hover:bg-info/90 transition-colors"
+                >
+                    <TrendingUp size={28} />
+                    <div>
+                        <p className="font-body text-body-lg font-medium">View Reports</p>
+                        <p className="font-accent text-caption opacity-80">Sales analytics</p>
+                    </div>
+                </a>
             </div>
-            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="font-medium text-organic-green-900">API Server</span>
-              </div>
-              <span className="text-sm font-medium text-green-700">Operational</span>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="font-medium text-organic-green-900">WhatsApp API</span>
-              </div>
-              <span className="text-sm font-medium text-green-700">Connected</span>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-amber-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-amber-500 rounded-full animate-pulse"></div>
-                <span className="font-medium text-organic-green-900">Email Service</span>
-              </div>
-              <span className="text-sm font-medium text-amber-700">Rate Limited</span>
-            </div>
-          </div>
         </div>
-      </div>
-    </div>
-  );
-}
+    );
+};
+
+export default AdminDashboard;

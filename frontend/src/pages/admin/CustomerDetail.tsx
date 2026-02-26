@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAdminCustomer, useUpdateAdminCustomer, CustomerProfile } from '../../hooks/useAdminCustomers';
+import { Button, Input, Card, CardContent, Badge, Select, Textarea } from '@/components/ui';
+import { ArrowLeft, User, Package, DollarSign, CreditCard, Gift } from 'lucide-react';
 
 type TabType = 'info' | 'orders' | 'invoices' | 'payments' | 'credits';
 
@@ -14,7 +16,7 @@ export default function CustomerDetail() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-terracotta"></div>
       </div>
     );
   }
@@ -22,10 +24,10 @@ export default function CustomerDetail() {
   if (!customer) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Customer not found</p>
+        <p className="font-body text-body-md text-warm-gray">Customer not found</p>
         <button
           onClick={() => navigate('/admin/customers')}
-          className="mt-4 text-green-600 hover:text-green-700"
+          className="mt-4 text-terracotta hover:text-terracotta/80 font-body font-medium transition-colors"
         >
           Back to Customers
         </button>
@@ -36,11 +38,11 @@ export default function CustomerDetail() {
   const customerProfile = customer as CustomerProfile;
 
   const tabs = [
-    { id: 'info' as TabType, label: 'Info', icon: '👤' },
-    { id: 'orders' as TabType, label: 'Orders', icon: '📦', count: customerProfile.orderHistory?.length },
-    { id: 'invoices' as TabType, label: 'Invoices', icon: '💰', count: customerProfile.invoices?.length },
-    { id: 'payments' as TabType, label: 'Payments', icon: '💳', count: customerProfile.paymentHistory?.length },
-    { id: 'credits' as TabType, label: 'Credits', icon: '🎁' },
+    { id: 'info' as TabType, label: 'Info', icon: User, count: undefined },
+    { id: 'orders' as TabType, label: 'Orders', icon: Package, count: customerProfile.orderHistory?.length },
+    { id: 'invoices' as TabType, label: 'Invoices', icon: DollarSign, count: customerProfile.invoices?.length },
+    { id: 'payments' as TabType, label: 'Payments', icon: CreditCard, count: customerProfile.paymentHistory?.length },
+    { id: 'credits' as TabType, label: 'Credits', icon: Gift, count: undefined },
   ];
 
   return (
@@ -49,51 +51,52 @@ export default function CustomerDetail() {
       <div className="mb-6">
         <button
           onClick={() => navigate('/admin/customers')}
-          className="text-green-600 hover:text-green-700 mb-4 flex items-center"
+          className="text-terracotta hover:text-terracotta/80 mb-4 flex items-center gap-2 font-body text-body-md transition-colors"
         >
-          ← Back to Customers
+          <ArrowLeft size={18} />
+          Back to Customers
         </button>
         
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{customerProfile.name}</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="font-display text-display-sm text-primary-dark">{customerProfile.name}</h1>
+            <p className="font-body text-body-md text-warm-gray mt-1">
               {customerProfile.phone || customerProfile.email}
             </p>
           </div>
           
           {/* Credit Balance Badge */}
-          <div className="bg-green-50 border-2 border-green-500 rounded-lg p-4 text-center">
-            <div className="text-sm text-gray-600 mb-1">Credit Balance</div>
-            <div className="text-2xl font-bold text-green-600">
-              R {customerProfile.creditBalance?.toFixed(2) || '0.00'}
-            </div>
-          </div>
+          <Card className="bg-sage-green/10 border-2 border-sage-green">
+            <CardContent className="p-4 text-center">
+              <div className="font-accent text-caption text-warm-gray uppercase mb-1">Credit Balance</div>
+              <div className="font-display text-display-sm text-sage-green">
+                R {customerProfile.creditBalance?.toFixed(2) || '0.00'}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6">
+      <div className="border-b border-light-gray mb-6">
         <nav className="-mb-px flex space-x-8">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`
-                py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2
+                py-4 px-1 border-b-2 font-accent text-caption uppercase tracking-wide flex items-center gap-2 transition-colors
                 ${
                   activeTab === tab.id
-                    ? 'border-green-500 text-green-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-terracotta text-terracotta'
+                    : 'border-transparent text-warm-gray hover:text-primary-dark hover:border-light-gray'
                 }
               `}
             >
-              <span>{tab.icon}</span>
+              <tab.icon size={18} />
               <span>{tab.label}</span>
               {tab.count !== undefined && (
-                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs">
-                  {tab.count}
-                </span>
+                <Badge variant="default">{tab.count}</Badge>
               )}
             </button>
           ))}
@@ -146,143 +149,143 @@ function InfoTab({ customer }: InfoTabProps) {
 
   if (isEditing) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Edit Customer Info</h2>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-            />
-          </div>
+      <Card>
+        <CardContent className="p-6">
+          <h2 className="font-display text-body-lg text-primary-dark mb-4">Edit Customer Info</h2>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">
+                Name *
+              </label>
+              <Input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone
-            </label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-            />
-          </div>
+            <div>
+              <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">
+                Phone
+              </label>
+              <Input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-            />
-          </div>
+            <div>
+              <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">
+                Email
+              </label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Address
-            </label>
-            <textarea
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-            />
-          </div>
+            <div>
+              <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">
+                Address
+              </label>
+              <Textarea
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                rows={3}
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Delivery Preference
-            </label>
-            <select
-              value={formData.deliveryPreference}
-              onChange={(e) => setFormData({ ...formData, deliveryPreference: e.target.value as 'delivery' | 'collection' })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-            >
-              <option value="delivery">Delivery</option>
-              <option value="collection">Collection</option>
-            </select>
-          </div>
+            <div>
+              <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">
+                Delivery Preference
+              </label>
+              <Select
+                value={formData.deliveryPreference}
+                onChange={(e) => setFormData({ ...formData, deliveryPreference: e.target.value as 'delivery' | 'collection' })}
+                options={[
+                  { value: 'delivery', label: 'Delivery' },
+                  { value: 'collection', label: 'Collection' }
+                ]}
+              />
+            </div>
 
-          <div className="flex justify-end gap-3 pt-4">
-            <button
-              type="button"
-              onClick={() => setIsEditing(false)}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={updateCustomer.isPending}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-            >
-              {updateCustomer.isPending ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </form>
-      </div>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                variant="secondary"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={updateCustomer.isPending}
+              >
+                {updateCustomer.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">Customer Information</h2>
-        <button
-          onClick={() => setIsEditing(true)}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-        >
-          Edit Info
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-500 mb-1">Name</label>
-          <p className="text-gray-900">{customer.name}</p>
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="font-display text-body-lg text-primary-dark">Customer Information</h2>
+          <Button
+            onClick={() => setIsEditing(true)}
+            variant="primary"
+          >
+            Edit Info
+          </Button>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-500 mb-1">Phone</label>
-          <p className="text-gray-900">{customer.phone || '-'}</p>
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1 block">Name</label>
+            <p className="font-body text-body-md text-primary-dark">{customer.name}</p>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
-          <p className="text-gray-900">{customer.email || '-'}</p>
-        </div>
+          <div>
+            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1 block">Phone</label>
+            <p className="font-body text-body-md text-primary-dark">{customer.phone || '-'}</p>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-500 mb-1">Delivery Preference</label>
-          <p className="text-gray-900 capitalize">{customer.deliveryPreference}</p>
-        </div>
+          <div>
+            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1 block">Email</label>
+            <p className="font-body text-body-md text-primary-dark">{customer.email || '-'}</p>
+          </div>
 
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-500 mb-1">Address</label>
-          <p className="text-gray-900">{customer.address || '-'}</p>
-        </div>
+          <div>
+            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1 block">Delivery Preference</label>
+            <p className="font-body text-body-md text-primary-dark capitalize">{customer.deliveryPreference}</p>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-500 mb-1">Customer Since</label>
-          <p className="text-gray-900">{new Date(customer.createdAt).toLocaleDateString()}</p>
-        </div>
+          <div className="md:col-span-2">
+            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1 block">Address</label>
+            <p className="font-body text-body-md text-primary-dark">{customer.address || '-'}</p>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-500 mb-1">Last Updated</label>
-          <p className="text-gray-900">{new Date(customer.updatedAt).toLocaleDateString()}</p>
+          <div>
+            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1 block">Customer Since</label>
+            <p className="font-body text-body-md text-primary-dark">{new Date(customer.createdAt).toLocaleDateString()}</p>
+          </div>
+
+          <div>
+            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1 block">Last Updated</label>
+            <p className="font-body text-body-md text-primary-dark">{new Date(customer.updatedAt).toLocaleDateString()}</p>
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -310,63 +313,72 @@ interface OrdersTabProps {
 function OrdersTab({ orders }: OrdersTabProps) {
   if (!orders || orders.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-500">
-        No orders found
-      </div>
+      <Card>
+        <CardContent className="p-6 text-center">
+          <p className="font-body text-body-md text-warm-gray">No orders found</p>
+        </CardContent>
+      </Card>
     );
   }
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'delivered':
+        return <Badge variant="success">{status}</Badge>;
+      case 'packed':
+        return <Badge variant="info">{status}</Badge>;
+      case 'confirmed':
+        return <Badge variant="warning">{status}</Badge>;
+      case 'cancelled':
+        return <Badge variant="error">{status}</Badge>;
+      default:
+        return <Badge variant="default">{status}</Badge>;
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Order History</h2>
-      </div>
+    <Card padding="none">
+      <CardContent className="p-6">
+        <h2 className="font-display text-body-lg text-primary-dark mb-4">Order History</h2>
+      </CardContent>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-light-gray">
+          <thead className="bg-cream">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left font-accent text-caption text-warm-gray uppercase tracking-wide">
                 Order Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left font-accent text-caption text-warm-gray uppercase tracking-wide">
                 Delivery Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left font-accent text-caption text-warm-gray uppercase tracking-wide">
                 Items
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left font-accent text-caption text-warm-gray uppercase tracking-wide">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left font-accent text-caption text-warm-gray uppercase tracking-wide">
                 Delivery Method
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-light-gray">
             {orders.map((order) => (
-              <tr key={order.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <tr key={order.id} className="hover:bg-cream/50 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap font-body text-body-sm text-primary-dark">
                   {new Date(order.createdAt).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap font-body text-body-sm text-primary-dark">
                   {new Date(order.deliveryDate).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap font-body text-body-sm text-primary-dark">
                   {order.items?.length || 0} items
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                    order.status === 'packed' ? 'bg-blue-100 text-blue-800' :
-                    order.status === 'confirmed' ? 'bg-yellow-100 text-yellow-800' :
-                    order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {order.status}
-                  </span>
+                  {getStatusBadge(order.status)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                <td className="px-6 py-4 whitespace-nowrap font-body text-body-sm text-primary-dark capitalize">
                   {order.deliveryMethod}
                 </td>
               </tr>
@@ -374,7 +386,7 @@ function OrdersTab({ orders }: OrdersTabProps) {
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -382,9 +394,9 @@ function OrdersTab({ orders }: OrdersTabProps) {
 interface InvoiceData {
   id: string;
   orderId: string;
-  subtotal: number;
-  creditApplied: number;
-  total: number;
+  subtotal: number | string;
+  creditApplied: number | string;
+  total: number | string;
   status: string;
   dueDate: string;
   createdAt: string;
@@ -397,67 +409,80 @@ interface InvoicesTabProps {
 function InvoicesTab({ invoices }: InvoicesTabProps) {
   if (!invoices || invoices.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-500">
-        No invoices found
-      </div>
+      <Card>
+        <CardContent className="p-6 text-center">
+          <p className="font-body text-body-md text-warm-gray">No invoices found</p>
+        </CardContent>
+      </Card>
     );
   }
 
+  // Helper to safely convert to number
+  const toNum = (val: number | string): number => {
+    if (typeof val === 'number') return val;
+    return parseFloat(val) || 0;
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return <Badge variant="success">{status}</Badge>;
+      case 'partial':
+        return <Badge variant="warning">{status}</Badge>;
+      default:
+        return <Badge variant="error">{status}</Badge>;
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Invoices</h2>
-      </div>
+    <Card padding="none">
+      <CardContent className="p-6">
+        <h2 className="font-display text-body-lg text-primary-dark mb-4">Invoices</h2>
+      </CardContent>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-light-gray">
+          <thead className="bg-cream">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left font-accent text-caption text-warm-gray uppercase tracking-wide">
                 Invoice Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left font-accent text-caption text-warm-gray uppercase tracking-wide">
                 Subtotal
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left font-accent text-caption text-warm-gray uppercase tracking-wide">
                 Credit Applied
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left font-accent text-caption text-warm-gray uppercase tracking-wide">
                 Total
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left font-accent text-caption text-warm-gray uppercase tracking-wide">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left font-accent text-caption text-warm-gray uppercase tracking-wide">
                 Due Date
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-light-gray">
             {invoices.map((invoice) => (
-              <tr key={invoice.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <tr key={invoice.id} className="hover:bg-cream/50 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap font-body text-body-sm text-primary-dark">
                   {new Date(invoice.createdAt).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  R {invoice.subtotal.toFixed(2)}
+                <td className="px-6 py-4 whitespace-nowrap font-body text-body-sm text-primary-dark">
+                  R {toNum(invoice.subtotal).toFixed(2)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                  {invoice.creditApplied > 0 ? `-R ${invoice.creditApplied.toFixed(2)}` : '-'}
+                <td className="px-6 py-4 whitespace-nowrap font-body text-body-sm text-sage-green">
+                  {toNum(invoice.creditApplied) > 0 ? `-R ${toNum(invoice.creditApplied).toFixed(2)}` : '-'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                  R {invoice.total.toFixed(2)}
+                <td className="px-6 py-4 whitespace-nowrap font-body text-body-sm font-semibold text-primary-dark">
+                  R {toNum(invoice.total).toFixed(2)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
-                    invoice.status === 'partial' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {invoice.status}
-                  </span>
+                  {getStatusBadge(invoice.status)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap font-body text-body-sm text-primary-dark">
                   {new Date(invoice.dueDate).toLocaleDateString()}
                 </td>
               </tr>
@@ -465,7 +490,7 @@ function InvoicesTab({ invoices }: InvoicesTabProps) {
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -486,9 +511,11 @@ interface PaymentsTabProps {
 function PaymentsTab({ payments }: PaymentsTabProps) {
   if (!payments || payments.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-500">
-        No payments found
-      </div>
+      <Card>
+        <CardContent className="p-6 text-center">
+          <p className="font-body text-body-md text-warm-gray">No payments found</p>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -505,51 +532,51 @@ function PaymentsTab({ payments }: PaymentsTabProps) {
     });
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Payment History</h2>
-        <p className="text-sm text-gray-600">
-          Total Paid: <span className="font-semibold text-green-600">R {runningBalance.toFixed(2)}</span>
+    <Card padding="none">
+      <CardContent className="p-6">
+        <h2 className="font-display text-body-lg text-primary-dark mb-4">Payment History</h2>
+        <p className="font-body text-body-sm text-warm-gray">
+          Total Paid: <span className="font-semibold text-sage-green">R {runningBalance.toFixed(2)}</span>
         </p>
-      </div>
+      </CardContent>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-light-gray">
+          <thead className="bg-cream">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left font-accent text-caption text-warm-gray uppercase tracking-wide">
                 Payment Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left font-accent text-caption text-warm-gray uppercase tracking-wide">
                 Amount
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left font-accent text-caption text-warm-gray uppercase tracking-wide">
                 Method
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left font-accent text-caption text-warm-gray uppercase tracking-wide">
                 Running Balance
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left font-accent text-caption text-warm-gray uppercase tracking-wide">
                 Notes
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-light-gray">
             {paymentsWithBalance.map((payment) => (
-              <tr key={payment.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <tr key={payment.id} className="hover:bg-cream/50 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap font-body text-body-sm text-primary-dark">
                   {new Date(payment.paymentDate).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                <td className="px-6 py-4 whitespace-nowrap font-body text-body-sm font-semibold text-sage-green">
                   R {payment.amount.toFixed(2)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 uppercase">
+                <td className="px-6 py-4 whitespace-nowrap font-body text-body-sm text-primary-dark uppercase">
                   {payment.method}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap font-body text-body-sm font-semibold text-primary-dark">
                   R {payment.runningBalance.toFixed(2)}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
+                <td className="px-6 py-4 font-body text-body-sm text-warm-gray">
                   {payment.notes || '-'}
                 </td>
               </tr>
@@ -557,7 +584,7 @@ function PaymentsTab({ payments }: PaymentsTabProps) {
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -572,40 +599,44 @@ function CreditsTab({ creditBalance }: CreditsTabProps) {
   return (
     <div className="space-y-6">
       {/* Current Credit Balance */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Current Credit Balance</h2>
-        <div className="bg-green-50 border-2 border-green-500 rounded-lg p-6 text-center">
-          <div className="text-3xl font-bold text-green-600">
-            R {creditBalance.toFixed(2)}
+      <Card>
+        <CardContent className="p-6">
+          <h2 className="font-display text-body-lg text-primary-dark mb-4">Current Credit Balance</h2>
+          <div className="bg-sage-green/10 border-2 border-sage-green rounded-lg p-6 text-center">
+            <div className="font-display text-display-sm text-sage-green">
+              R {creditBalance.toFixed(2)}
+            </div>
+            <p className="font-body text-body-sm text-warm-gray mt-2">
+              Available credit to apply to future invoices
+            </p>
           </div>
-          <p className="text-sm text-gray-600 mt-2">
-            Available credit to apply to future invoices
-          </p>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Credit Information */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">About Credits</h2>
-        <div className="space-y-3 text-sm text-gray-600">
-          <p>
-            <strong>Overpayments:</strong> When a customer pays more than the invoice amount, 
-            the excess is automatically added to their credit balance.
-          </p>
-          <p>
-            <strong>Short Deliveries:</strong> When products are not delivered as ordered, 
-            credits are issued for the missing items.
-          </p>
-          <p>
-            <strong>Automatic Application:</strong> Credits are automatically applied to new 
-            invoices, reducing the amount due.
-          </p>
-        </div>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <h2 className="font-display text-body-lg text-primary-dark mb-4">About Credits</h2>
+          <div className="space-y-3 font-body text-body-sm text-warm-gray">
+            <p>
+              <strong className="text-primary-dark">Overpayments:</strong> When a customer pays more than the invoice amount, 
+              the excess is automatically added to their credit balance.
+            </p>
+            <p>
+              <strong className="text-primary-dark">Short Deliveries:</strong> When products are not delivered as ordered, 
+              credits are issued for the missing items.
+            </p>
+            <p>
+              <strong className="text-primary-dark">Automatic Application:</strong> Credits are automatically applied to new 
+              invoices, reducing the amount due.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Credit History Note */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-sm text-blue-800">
+      <div className="bg-info/10 border border-info/30 rounded-lg p-4">
+        <p className="font-body text-body-sm text-primary-dark">
           💡 <strong>Tip:</strong> View the Payments and Invoices tabs to see how credits 
           have been applied and earned over time.
         </p>

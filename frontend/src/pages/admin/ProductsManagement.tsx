@@ -1,903 +1,937 @@
-import { useState, useMemo, useRef } from 'react';
-import { Product, CATEGORY_LABELS, UNIT_LABELS, ProductUnit } from '../../types';
-import {
-  useAdminProducts,
-  useCreateProduct,
-  useUpdateProduct,
-  useDeleteProduct,
-  useWhatsAppProductList,
-  UpdateProductDto,
-} from '../../hooks/useAdminProducts';
-import { useCategories, useCreateCategory } from '../../hooks/useCategories';
-import { useUploadImage } from '../../hooks/useUpload';
-import { useSuppliers } from '../../hooks/useSuppliers';
-import { toNumber } from '../../lib/utils';
-import SupplierModal from '../../components/admin/SupplierModal';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
+import { Package, Plus, Edit2, Trash2, Search, Grid, List, Check, X, AlertTriangle } from 'lucide-react';
 import api from '../../lib/api';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Button, Input, Card, CardContent, Badge, Modal, Select, Textarea } from '@/components/ui';
 
-export default function ProductsManagement() {
-  const [categoryFilter, setCategoryFilter] = useState<string>('');
-  const [availabilityFilter, setAvailabilityFilter] = useState<string>('');
-  const [showProductModal, setShowProductModal] = useState(false);
-  const [showSupplierModal, setShowSupplierModal] = useState(false);
-  const [showWhatsAppList, setShowWhatsAppList] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [editingSupplier, setEditingSupplier] = useState<{ id: string; name: string; contactInfo: string | null; isAvailable: boolean } | null>(null);
-  const [targetSupplierId, setTargetSupplierId] = useState<string | null>(null); // For pre-filling supplier in Add Product
+interface Product {
+    id: string;
+    name: string;
+    category: string;
+    price: number;
+    unit: string;
+    isAvailable: boolean;
+    imageUrl?: string;
+    deliveryDay?: 'Wednesday' | 'Friday';
+    description?: string | null;
+    supplierId?: string | null;
+    supplier?: {
+        id: string;
+        name: string;
+    } | null;
+}
 
-  const filters = {
-    category: categoryFilter || undefined,
-    isAvailable: availabilityFilter ? availabilityFilter === 'true' : undefined,
-  };
+interface Supplier {
+    id: string;
+    name: string;
+}
 
-  const { data: products, isLoading: productsLoading } = useAdminProducts(filters);
-  const { data: categories } = useCategories();
-  const { data: suppliers, isLoading: suppliersLoading } = useSuppliers();
+interface Order {
+    id: string;
+    customer: {
+        name: string;
+    };
+    deliveryDate: string;
+    status: string;
+}
 
-  const createProduct = useCreateProduct();
-  const updateProduct = useUpdateProduct();
-  const deleteProduct = useDeleteProduct();
-  const { data: whatsappList, refetch: fetchWhatsAppList } = useWhatsAppProductList();
-  const queryClient = useQueryClient();
+interface AffectedOrder {
+    orderId: string;
+    customerName: string;
+    customerPhone: string;
+    orderDate: string;
+    deliveryDate: string;
+    orderStatus: string;
+    productQuantity: number;
+    productName?: string;
+}
 
-  // Merge default and API categories
-  const allCategories = useMemo(() => {
-    const merged: Record<string, string> = { ...CATEGORY_LABELS };
-    categories?.forEach(cat => {
-      merged[cat.key] = cat.label;
+interface ProductFormData {
+    name: string;
+    category: string;
+    price: number;
+    unit: string;
+    isAvailable: boolean;
+    deliveryDay?: 'Wednesday' | 'Friday';
+    description?: string;
+    supplierId?: string;
+}
+
+const ProductsManagement = () => {
+    const queryClient = useQueryClient();
+    const [searchTerm, setSearchTerm] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('all');
+    const [supplierFilter, setSupplierFilter] = useState('all');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+    const [showOrdersPopup, setShowOrdersPopup] = useState(false);
+    const [ordersForProduct, setOrdersForProduct] = useState<Order[]>([]);
+    const [productToToggle, setProductToToggle] = useState<{ id: string; isAvailable: boolean } | null>(null);
+    const [bulkAffectedOrders, setBulkAffectedOrders] = useState<AffectedOrder[]>([]);
+    const [showBulkOrdersPopup, setShowBulkOrdersPopup] = useState(false);
+    const [pendingBulkIds, setPendingBulkIds] = useState<string[]>([]);
+    
+    const [formData, setFormData] = useState<ProductFormData>({
+        name: '',
+        category: '',
+        price: 0,
+        unit: 'kg',
+        isAvailable: true,
+        deliveryDay: undefined,
+        description: '',
+        supplierId: ''
     });
-    return merged;
-  }, [categories]);
 
-  // Group products by supplier
-  const groupedProducts = useMemo(() => {
-    if (!products) return {};
-    const groups: Record<string, Product[]> = {};
-
-    // Initialize groups for all available suppliers
-    suppliers?.forEach(supplier => {
-      groups[supplier.id] = [];
-    });
-    // Add "In-house / No Supplier" group
-    groups['null'] = [];
-
-    products.forEach(product => {
-      const supplierId = product.supplierId || 'null';
-      if (!groups[supplierId]) {
-        groups[supplierId] = []; // Should be initialized, but just in case
-      }
-      groups[supplierId].push(product);
+    const { data: products, isLoading } = useQuery<{ data: Product[] }>({
+        queryKey: ['products'],
+        queryFn: async () => {
+            const response = await api.get('/products');
+            return response;
+        }
     });
 
-    return groups;
-  }, [products, suppliers]);
+    const { data: categories } = useQuery<{ data: { key: string; label: string }[] }>({
+        queryKey: ['categories'],
+        queryFn: async () => {
+            const response = await api.get('/categories');
+            return response;
+        }
+    });
 
-  const handleOpenProductModal = (product?: Product, supplierId?: string) => {
-    setEditingProduct(product || null);
-    if (supplierId && !product) {
-      // Pre-fill supplier if adding new to a group
-      setTargetSupplierId(supplierId);
-    } else {
-      setTargetSupplierId(null);
-    }
-    setShowProductModal(true);
-  };
+    const { data: suppliers } = useQuery<Supplier[]>({
+        queryKey: ['admin', 'suppliers'],
+        queryFn: async () => {
+            const response = await api.get('/admin/suppliers');
+            return response.data;
+        }
+    });
 
-  const handleCloseProductModal = () => {
-    setShowProductModal(false);
-    setEditingProduct(null);
-    setTargetSupplierId(null);
-  };
+    // Fetch orders - kept for potential future use
+    // Currently using API response for affected orders instead
 
-  const handleDeleteProduct = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      await deleteProduct.mutateAsync(id);
-    }
-  };
+    const createMutation = useMutation({
+        mutationFn: (data: ProductFormData) => api.post('/products', data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            toast.success('Product created successfully');
+            handleCloseModal();
+        },
+        onError: (error: unknown) => {
+            const err = error as { response?: { data?: { error?: { message?: string } } } };
+            toast.error(err.response?.data?.error?.message || 'Failed to create product');
+        }
+    });
 
-  const handleShowWhatsAppList = async () => {
-    await fetchWhatsAppList();
-    setShowWhatsAppList(true);
-  };
+    const updateMutation = useMutation({
+        mutationFn: (data: { id: string; data: Partial<ProductFormData> }) =>
+            api.patch(`/products/${data.id}`, data.data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            toast.success('Product updated successfully');
+            handleCloseModal();
+        },
+        onError: (error: unknown) => {
+            const err = error as { response?: { data?: { error?: { message?: string } } } };
+            toast.error(err.response?.data?.error?.message || 'Failed to update product');
+        }
+    });
 
-  // Supplier Modal Handlers
-  const handleEditSupplier = (supplier: { id: string; name: string; contactInfo: string | null; isAvailable: boolean }) => {
-    setEditingSupplier(supplier);
-    setShowSupplierModal(true);
-  };
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => api.delete(`/products/${id}`),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            toast.success('Product deleted successfully');
+        },
+        onError: (error: unknown) => {
+            const err = error as { response?: { data?: { error?: { message?: string } } } };
+            toast.error(err.response?.data?.error?.message || 'Failed to delete product');
+        }
+    });
 
-  const handleAddSupplier = () => {
-    setEditingSupplier(null);
-    setShowSupplierModal(true);
-  };
+    const toggleAvailabilityMutation = useMutation({
+        mutationFn: (data: { id: string; isAvailable: boolean }) =>
+            api.put(`/products/${data.id}`, { isAvailable: data.isAvailable }),
+        onSuccess: (response) => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            
+            // Check if there are affected orders in the response
+            const responseData = response as any;
+            const affectedOrders = responseData?.data?.affectedOrders || [];
+            if (affectedOrders.length > 0) {
+                // Show the popup with affected orders
+                setOrdersForProduct(affectedOrders.map((order: AffectedOrder) => ({
+                    id: order.orderId,
+                    customer: { name: order.customerName },
+                    deliveryDate: order.deliveryDate,
+                    status: order.orderStatus
+                })));
+                setShowOrdersPopup(true);
+            } else {
+                toast.success('Product availability updated');
+            }
+            setProductToToggle(null);
+        },
+        onError: (error: unknown) => {
+            const err = error as { response?: { data?: { error?: { message?: string } } } };
+            toast.error(err.response?.data?.error?.message || 'Failed to update availability');
+            setShowOrdersPopup(false);
+            setOrdersForProduct([]);
+            setProductToToggle(null);
+        }
+    });
 
-  const createSupplierMutation = useMutation({
-    mutationFn: async (data: { name: string; contactInfo: string }) => {
-      await api.post('/admin/suppliers', data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] });
-      setShowSupplierModal(false);
-    },
-  });
+    const bulkUpdateMutation = useMutation({
+        mutationFn: async (data: { ids: string[]; isAvailable: boolean }) => {
+            if (!data.isAvailable) {
+                // For bulk unavailable, we need to check each product for affected orders first
+                const allAffectedOrders: AffectedOrder[] = [];
+                const productsList = Array.isArray(products) ? products : (products as unknown as { data: Product[] })?.data || [];
+                
+                for (const id of data.ids) {
+                    const product = productsList.find((p: Product) => p.id === id);
+                    if (product && product.isAvailable) {
+                        try {
+                            const response = await api.put(`/products/${id}`, { isAvailable: false }) as any;
+                            const responseData = response?.data;
+                            if (responseData?.affectedOrders && responseData.affectedOrders.length > 0) {
+                                // Add product name to each affected order
+                                const ordersWithProduct = responseData.affectedOrders.map((order: AffectedOrder) => ({
+                                    ...order,
+                                    productName: product.name
+                                }));
+                                allAffectedOrders.push(...ordersWithProduct);
+                            }
+                        } catch (error) {
+                            console.error(`Error updating product ${id}:`, error);
+                        }
+                    }
+                }
+                
+                // If there are affected orders, show popup and don't complete the update yet
+                if (allAffectedOrders.length > 0) {
+                    setBulkAffectedOrders(allAffectedOrders);
+                    setShowBulkOrdersPopup(true);
+                    setPendingBulkIds(data.ids);
+                    throw new Error('AFFECTED_ORDERS_FOUND');
+                }
+                
+                // No affected orders, proceed with bulk update
+                return Promise.all(data.ids.map(id => api.put(`/products/${id}`, { isAvailable: false })));
+            } else {
+                // For making available, just update directly
+                return Promise.all(data.ids.map(id => api.put(`/products/${id}`, { isAvailable: true })));
+            }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            toast.success(`Updated ${selectedProducts.size} products`);
+            setSelectedProducts(new Set());
+        },
+        onError: (error: unknown) => {
+            // Don't show error toast if we found affected orders (handled separately)
+            if (error instanceof Error && error.message === 'AFFECTED_ORDERS_FOUND') {
+                return;
+            }
+            const err = error as { response?: { data?: { error?: { message?: string } } } };
+            toast.error(err.response?.data?.error?.message || 'Failed to update products');
+        }
+    });
 
-  const updateSupplierMutation = useMutation({
-    mutationFn: async (data: { id: string; name: string; contactInfo: string }) => {
-      await api.put(`/admin/suppliers/${data.id}`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] });
-      setShowSupplierModal(false);
-      setEditingSupplier(null);
-    },
-  });
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (editingProduct) {
+            updateMutation.mutate({ id: editingProduct.id, data: formData });
+        } else {
+            createMutation.mutate(formData);
+        }
+    };
 
-  if (productsLoading || suppliersLoading) {
+    const handleEdit = (product: Product) => {
+        setEditingProduct(product);
+        setFormData({
+            name: product.name,
+            category: product.category,
+            price: product.price,
+            unit: product.unit,
+            isAvailable: product.isAvailable,
+            deliveryDay: product.deliveryDay,
+            description: product.description || '',
+            supplierId: product.supplierId || ''
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setEditingProduct(null);
+        setFormData({
+            name: '',
+            category: '',
+            price: 0,
+            unit: 'kg',
+            isAvailable: true,
+            deliveryDay: undefined,
+            description: '',
+            supplierId: ''
+        });
+    };
+
+    // Toggle single product availability with check for active orders
+    // Note: Now using API response for affected orders instead of local filtering
+    const handleToggleAvailability = (product: Product) => {
+        if (!product.isAvailable) {
+            // Making available - no need to check orders
+            toggleAvailabilityMutation.mutate({ id: product.id, isAvailable: true });
+        } else {
+            // Making unavailable - the API will return affected orders
+            toggleAvailabilityMutation.mutate({ id: product.id, isAvailable: false });
+        }
+    };
+
+    const confirmToggleWithOrders = () => {
+        if (productToToggle) {
+            toggleAvailabilityMutation.mutate(productToToggle);
+        }
+    };
+
+    // Handle bulk unavailable with confirmation
+    const confirmBulkUnavailable = async () => {
+        setShowBulkOrdersPopup(false);
+        
+        // Now perform the actual bulk update
+        const productsList = Array.isArray(products) ? products : (products as unknown as { data: Product[] })?.data || [];
+        
+        for (const id of pendingBulkIds) {
+            const product = productsList.find((p: Product) => p.id === id);
+            if (product && product.isAvailable) {
+                try {
+                    await api.put(`/products/${id}`, { isAvailable: false });
+                } catch (error) {
+                    console.error(`Error updating product ${id}:`, error);
+                }
+            }
+        }
+        
+        queryClient.invalidateQueries({ queryKey: ['products'] });
+        toast.success(`Updated ${pendingBulkIds.length} products`);
+        setSelectedProducts(new Set());
+        setBulkAffectedOrders([]);
+        setPendingBulkIds([]);
+    };
+
+    const cancelBulkUnavailable = () => {
+        setShowBulkOrdersPopup(false);
+        setBulkAffectedOrders([]);
+        setPendingBulkIds([]);
+    };
+    const toggleSelectAll = () => {
+        if (selectedProducts.size === filteredProducts.length) {
+            setSelectedProducts(new Set());
+        } else {
+            setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
+        }
+    };
+
+    const toggleSelectProduct = (id: string) => {
+        const newSelected = new Set(selectedProducts);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedProducts(newSelected);
+    };
+
+    // Bulk actions
+    const handleBulkMakeAvailable = () => {
+        bulkUpdateMutation.mutate({ ids: Array.from(selectedProducts), isAvailable: true });
+    };
+
+    const handleBulkMakeUnavailable = () => {
+        bulkUpdateMutation.mutate({ ids: Array.from(selectedProducts), isAvailable: false });
+    };
+
+    const productsList = Array.isArray(products) ? products : (products as unknown as { data: Product[] })?.data || [];
+    
+    const filteredProducts = productsList.filter((product: Product) => {
+        const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
+        const matchesSupplier = supplierFilter === 'all' || product.supplierId === supplierFilter;
+        return matchesSearch && matchesCategory && matchesSupplier;
+    });
+
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-      </div>
-    );
-  }
+        <div className="space-y-6">
+            {/* Page Header */}
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="font-display text-display-sm text-primary-dark">Products Management</h1>
+                    <p className="font-body text-body-md text-warm-gray mt-1">Manage your product catalog</p>
+                </div>
+                <Button
+                    onClick={() => setIsModalOpen(true)}
+                    variant="primary"
+                    className="flex items-center gap-2"
+                >
+                    <Plus size={20} />
+                    Add Product
+                </Button>
+            </div>
 
-  return (
-    <div>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Products Management</h1>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <button
-            onClick={handleShowWhatsAppList}
-            className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Generate WhatsApp List
-          </button>
-          <button
-            onClick={handleAddSupplier}
-            className="w-full sm:w-auto px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-          >
-            Add Supplier
-          </button>
-          <button
-            onClick={() => handleOpenProductModal()}
-            className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          >
-            Add Product (General)
-          </button>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="category-filter" className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
-            <select
-              id="category-filter"
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="">All Categories</option>
-              {Object.entries(allCategories).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="availability-filter" className="block text-sm font-medium text-gray-700 mb-2">
-              Availability
-            </label>
-            <select
-              id="availability-filter"
-              value={availabilityFilter}
-              onChange={(e) => setAvailabilityFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="">All</option>
-              <option value="true">Available</option>
-              <option value="false">Unavailable</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-8">
-        {/* Render In-house products first */}
-        <SupplierSection
-          title="In-house / No Supplier"
-          products={groupedProducts['null'] || []}
-          allCategories={allCategories}
-          onEditProduct={handleOpenProductModal}
-          onDeleteProduct={handleDeleteProduct}
-          onAddProduct={() => handleOpenProductModal(undefined, undefined)}
-          isAvailable={true}
-        />
-
-        {/* Render Supplier Groups */}
-        {suppliers?.map(supplier => (
-          <SupplierSection
-            key={supplier.id}
-            title={supplier.name}
-            supplier={supplier}
-            products={groupedProducts[supplier.id] || []}
-            allCategories={allCategories}
-            onEditProduct={handleOpenProductModal}
-            onDeleteProduct={handleDeleteProduct}
-            onAddProduct={() => handleOpenProductModal(undefined, supplier.id)}
-            isAvailable={supplier.isAvailable}
-            onEditSupplier={() => handleEditSupplier(supplier)}
-          />
-        ))}
-      </div>
-
-      {/* Product Modal */}
-      {showProductModal && (
-        <ProductModal
-          product={editingProduct}
-          initialSupplierId={targetSupplierId} // Use separate prop for default
-          onClose={handleCloseProductModal}
-          onSave={async (data) => {
-            if (editingProduct) {
-              const updateData = {
-                ...data,
-                price: data.price !== undefined ? toNumber(data.price) : undefined,
-              };
-              await updateProduct.mutateAsync({ id: editingProduct.id, data: updateData });
-            } else {
-              const createData = {
-                name: data.name!,
-                price: toNumber(data.price!),
-                category: data.category!,
-                unit: data.unit!,
-                description: data.description,
-                imageUrl: data.imageUrl,
-                isAvailable: data.isAvailable!,
-                isSeasonal: data.isSeasonal!,
-                packingType: data.packingType!,
-                supplierId: data.supplierId, // Should be passed from form
-              };
-              await createProduct.mutateAsync(createData);
-            }
-            handleCloseProductModal();
-          }}
-        />
-      )}
-
-      {/* Supplier Modal */}
-      {showSupplierModal && (
-        <SupplierModal
-          supplier={editingSupplier}
-          onClose={() => setShowSupplierModal(false)}
-          onSave={async (data) => {
-            if (editingSupplier) {
-              await updateSupplierMutation.mutateAsync({ ...data, id: editingSupplier.id });
-            } else {
-              await createSupplierMutation.mutateAsync(data);
-            }
-          }}
-        />
-      )}
-
-      {/* WhatsApp List Modal */}
-      {showWhatsAppList && (
-        <WhatsAppListModal
-          content={whatsappList || ''}
-          onClose={() => setShowWhatsAppList(false)}
-        />
-      )}
-    </div>
-  );
-}
-
-// Sub-component for rendering a supplier section
-function SupplierSection({
-  title,
-  supplier,
-  products,
-  allCategories,
-  onEditProduct,
-  onDeleteProduct,
-  onAddProduct,
-  isAvailable,
-  onEditSupplier
-}: {
-  title: string,
-  supplier?: { id: string; name: string; contactInfo: string | null; isAvailable: boolean },
-  products: Product[],
-  allCategories: Record<string, string>,
-  onEditProduct: (p: Product) => void,
-  onDeleteProduct: (id: string) => void,
-  onAddProduct: () => void,
-  isAvailable: boolean
-  onEditSupplier?: () => void
-}) {
-  return (
-    <div className={`bg-white rounded-lg shadow-md overflow-hidden border-t-4 ${isAvailable ? 'border-t-green-500' : 'border-t-red-500'}`}>
-      <div className="bg-gray-50 px-6 py-4 flex flex-col sm:flex-row justify-between items-center border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold text-gray-800">{title}</h2>
-          {!isAvailable && <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">Inactive Supplier</span>}
-          {supplier && (
-            <button onClick={onEditSupplier} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-              Edit Supplier
-            </button>
-          )}
-        </div>
-        <button
-          onClick={onAddProduct}
-          className="mt-2 sm:mt-0 px-3 py-1.5 bg-green-100 text-green-700 rounded-md hover:bg-green-200 text-sm font-medium flex items-center gap-1"
-        >
-          + Add Product here
-        </button>
-      </div>
-
-      {/* Desktop Table */}
-      <div className="hidden md:block">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Packing</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {products.map((product) => (
-              <tr key={product.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                      {product.isSeasonal && <span className="text-xs text-orange-600">Seasonal</span>}
+            {/* Filters and View Toggle */}
+            <Card>
+                <CardContent className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-gray" size={20} />
+                            <Input
+                                type="text"
+                                placeholder="Search products..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10"
+                            />
+                        </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {allCategories[product.category] || product.category}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  R {toNumber(product.price).toFixed(2)} / {product.unit}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
-                  {product.packingType || 'box'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {product.isAvailable ? 'Available' : 'Unavailable'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button onClick={() => onEditProduct(product)} className="text-blue-600 hover:text-blue-900 mr-4">Edit</button>
-                  <button onClick={() => onDeleteProduct(product.id)} className="text-red-600 hover:text-red-900">Delete</button>
-                </td>
-              </tr>
-            ))}
-            {products.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500 italic">
-                  No products listed for this supplier using current filters.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                    <Select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        options={[
+                            { value: 'all', label: 'All Categories' },
+                            ...(categories?.data?.map((c: { key: string; label: string }) => ({ value: c.key, label: c.label })) || [])
+                        ]}
+                        className="w-full md:w-48"
+                    />
+                    <Select
+                        value={supplierFilter}
+                        onChange={(e) => setSupplierFilter(e.target.value)}
+                        options={[
+                            { value: 'all', label: 'All Suppliers' },
+                            ...(suppliers?.map((s: Supplier) => ({ value: s.id, label: s.name })) || [])
+                        ]}
+                        className="w-full md:w-48"
+                    />
+                    <div className="flex gap-1 border border-light-gray rounded-lg p-1">
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`p-2 rounded ${viewMode === 'grid' ? 'bg-terracotta text-white' : 'text-warm-gray hover:bg-cream'}`}
+                            title="Grid View"
+                        >
+                            <Grid size={20} />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`p-2 rounded ${viewMode === 'list' ? 'bg-terracotta text-white' : 'text-warm-gray hover:bg-cream'}`}
+                            title="List View"
+                        >
+                            <List size={20} />
+                        </button>
+                    </div>
+                </CardContent>
+            </Card>
 
-      {/* Mobile Cards */}
-      <div className="md:hidden p-4 space-y-4">
-        {products.map((product) => (
-          <div key={product.id} className="bg-gray-50 p-4 rounded-lg border border-gray-100 space-y-3">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-bold text-gray-900">{product.name}</p>
-                {product.isSeasonal && <span className="text-xs text-orange-600 font-medium">Seasonal</span>}
-              </div>
-              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${product.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                {product.isAvailable ? 'Available' : 'Unavailable'}
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div><span className="text-gray-500">Price:</span> R {toNumber(product.price).toFixed(2)} / {product.unit}</div>
-              <div><span className="text-gray-500">Category:</span> {allCategories[product.category] || product.category}</div>
-            </div>
-            <div className="pt-2 border-t border-gray-200 flex justify-end gap-3">
-              <button onClick={() => onEditProduct(product)} className="text-blue-600 font-medium text-sm">Edit</button>
-              <button onClick={() => onDeleteProduct(product.id)} className="text-red-600 font-medium text-sm">Delete</button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-interface ProductModalProps {
-  product: Product | null;
-  initialSupplierId?: string | null;
-  onClose: () => void;
-  onSave: (data: UpdateProductDto) => Promise<void>;
-}
-
-function ProductModal({ product, initialSupplierId, onClose, onSave }: ProductModalProps) {
-  const [formData, setFormData] = useState({
-    name: product?.name || '',
-    price: product?.price ? toNumber(product.price) : 0,
-    category: (product?.category || 'vegetables') as Product['category'],
-    unit: (product?.unit || 'kg') as Product['unit'],
-    description: product?.description || '',
-    imageUrl: product?.imageUrl || '',
-    isAvailable: product?.isAvailable ?? true,
-    isSeasonal: product?.isSeasonal ?? false,
-    packingType: product?.packingType || 'box',
-    supplierId: product?.supplierId || initialSupplierId || null,
-  });
-
-  const [showAddCategory, setShowAddCategory] = useState(false);
-  const [newCategoryKey, setNewCategoryKey] = useState('');
-  const [newCategoryLabel, setNewCategoryLabel] = useState('');
-  const [newCategoryDescription, setNewCategoryDescription] = useState('');
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const { data: categories } = useCategories();
-  const { data: suppliers } = useSuppliers();
-  const createCategory = useCreateCategory();
-  const uploadImage = useUploadImage();
-
-  const allCategories = useMemo(() => {
-    const merged: Record<string, string> = { ...CATEGORY_LABELS };
-    categories?.forEach(cat => {
-      merged[cat.key] = cat.label;
-    });
-    return merged;
-  }, [categories]);
-
-  const handleAddCategory = async () => {
-    if (!newCategoryKey || !newCategoryLabel) {
-      alert('Please enter both category key and label');
-      return;
-    }
-
-    if (!/^[a-z_]+$/.test(newCategoryKey)) {
-      alert('Category key must be lowercase letters and underscores only');
-      return;
-    }
-
-    if (allCategories[newCategoryKey]) {
-      alert('Category key already exists');
-      return;
-    }
-
-    try {
-      await createCategory.mutateAsync({
-        key: newCategoryKey,
-        label: newCategoryLabel,
-        description: newCategoryDescription || undefined,
-      });
-
-      setFormData({ ...formData, category: newCategoryKey as Product['category'] });
-
-      setNewCategoryKey('');
-      setNewCategoryLabel('');
-      setNewCategoryDescription('');
-      setShowAddCategory(false);
-    } catch (error) {
-      console.error('Failed to create category:', error);
-      alert('Failed to create category. Please try again.');
-    }
-  };
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
-      return;
-    }
-
-    try {
-      setUploadingImage(true);
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-
-      const result = await uploadImage.mutateAsync(file);
-
-      setFormData({ ...formData, imageUrl: result.url });
-    } catch (error) {
-      console.error('Failed to upload image:', error);
-      alert('Failed to upload image. Please try again.');
-      setImagePreview(formData.imageUrl || null);
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
-  const handleRemoveImage = () => {
-    setFormData({ ...formData, imageUrl: '' });
-    setImagePreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await onSave(formData);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-full mx-4 md:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          {product ? 'Edit Product' : 'Add Product'}
-        </h2>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Price *
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                required
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Unit *
-              </label>
-              <select
-                value={formData.unit}
-                onChange={(e) => setFormData({ ...formData, unit: e.target.value as ProductUnit })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                {Object.entries(UNIT_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category *
-            </label>
-            <div className="flex gap-2">
-              <select
-                value={formData.category}
-                onChange={(e) => {
-                  if (e.target.value === '__add_new__') {
-                    setShowAddCategory(true);
-                  } else {
-                    setFormData({ ...formData, category: e.target.value as Product['category'] });
-                  }
-                }}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                {Object.entries(allCategories).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-                <option value="__add_new__" className="text-green-600 font-semibold">
-                  + Add New Category
-                </option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Supplier (Optional)
-            </label>
-            <select
-              value={formData.supplierId || ''}
-              onChange={(e) => setFormData({ ...formData, supplierId: e.target.value || null })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="">-- None (In-house) --</option>
-              {suppliers?.map((supplier) => (
-                <option key={supplier.id} value={supplier.id}>
-                  {supplier.name} {!supplier.isAvailable ? '(Unavailable)' : ''}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              If a supplier is marked unavailable, this product will be hidden.
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Product Image
-            </label>
-
-            {/* Image Preview */}
-            {imagePreview && (
-              <div className="mb-3 relative inline-block">
-                <img
-                  src={imagePreview.startsWith('/uploads') ? `http://localhost:3000${imagePreview}` : imagePreview}
-                  alt="Preview"
-                  className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300"
-                />
-                <button
-                  type="button"
-                  onClick={handleRemoveImage}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
-                >
-                  ×
-                </button>
-              </div>
+            {/* Bulk Actions Bar */}
+            {selectedProducts.size > 0 && (
+                <Card className="bg-terracotta/10 border-terracotta/30">
+                    <CardContent className="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="font-body text-body-md text-primary-dark">
+                                {selectedProducts.size} product(s) selected
+                            </span>
+                            <button
+                                onClick={toggleSelectAll}
+                                className="font-body text-body-sm text-terracotta hover:underline"
+                            >
+                                {selectedProducts.size === filteredProducts.length ? 'Deselect All' : 'Select All'}
+                            </button>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                onClick={handleBulkMakeAvailable}
+                                variant="primary"
+                                size="sm"
+                                className="flex items-center gap-1"
+                            >
+                                <Check size={16} />
+                                Make Available
+                            </Button>
+                            <Button
+                                onClick={handleBulkMakeUnavailable}
+                                variant="secondary"
+                                size="sm"
+                                className="flex items-center gap-1"
+                            >
+                                <X size={16} />
+                                Make Unavailable
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
             )}
 
-            {/* Upload Button */}
-            <div className="flex gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingImage}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-              >
-                {uploadingImage ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Uploading...
-                  </>
+            {/* Products Display */}
+            <Card padding="none">
+                {isLoading ? (
+                    <div className="p-8 text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-terracotta mx-auto"></div>
+                        <p className="font-body text-body-md text-warm-gray mt-4">Loading products...</p>
+                    </div>
+                ) : filteredProducts.length === 0 ? (
+                    <div className="p-12 text-center">
+                        <Package className="mx-auto h-12 w-12 text-light-gray mb-4" />
+                        <h3 className="font-display text-body-lg text-primary-dark">No products found</h3>
+                        <p className="font-body text-body-md text-warm-gray mt-1">Get started by adding a new product.</p>
+                    </div>
+                ) : viewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
+                        {filteredProducts.map((product: Product) => (
+                            <div 
+                                key={product.id} 
+                                className={`border border-light-gray rounded-lg overflow-hidden hover:shadow-md transition-shadow ${
+                                    selectedProducts.has(product.id) ? 'ring-2 ring-terracotta' : ''
+                                }`}
+                            >
+                                <div className="h-32 bg-cream flex items-center justify-center relative">
+                                    <button
+                                        onClick={() => toggleSelectProduct(product.id)}
+                                        className={`absolute top-2 left-2 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                                            selectedProducts.has(product.id)
+                                                ? 'bg-terracotta border-terracotta text-white'
+                                                : 'border-gray-300 bg-white hover:border-terracotta'
+                                        }`}
+                                    >
+                                        {selectedProducts.has(product.id) && <Check size={14} />}
+                                    </button>
+                                    {product.imageUrl ? (
+                                        <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                                    ) : (
+                                        <Package className="h-12 w-12 text-light-gray" />
+                                    )}
+                                </div>
+                                <div className="p-4">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                            <h3 className="font-body text-body-md font-medium text-primary-dark">{product.name}</h3>
+                                            <p className="font-accent text-caption text-warm-gray">{product.category}</p>
+                                            {product.supplier && (
+                                                <p className="font-accent text-caption text-warm-gray mt-1">
+                                                    Supplier: {product.supplier.name}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <Badge variant={product.isAvailable ? 'success' : 'default'}>
+                                            {product.isAvailable ? 'Available' : 'Unavailable'}
+                                        </Badge>
+                                    </div>
+                                    <div className="mt-4 flex items-center justify-between">
+                                        <p className="font-display text-body-lg text-primary-dark">
+                                            R{(product.price / 100).toFixed(2)}/{product.unit}
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleToggleAvailability(product)}
+                                                className={`p-2 rounded-lg transition-colors ${
+                                                    product.isAvailable
+                                                        ? 'text-red-600 hover:bg-red-50'
+                                                        : 'text-green-600 hover:bg-green-50'
+                                                }`}
+                                                title={product.isAvailable ? 'Make Unavailable' : 'Make Available'}
+                                            >
+                                                {product.isAvailable ? <X size={16} /> : <Check size={16} />}
+                                            </button>
+                                            <button
+                                                onClick={() => handleEdit(product)}
+                                                className="p-2 text-warm-gray hover:text-terracotta hover:bg-terracotta/10 rounded-lg transition-colors"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm('Are you sure you want to delete this product?')) {
+                                                        deleteMutation.mutate(product.id);
+                                                    }
+                                                }}
+                                                className="p-2 text-warm-gray hover:text-error hover:bg-error/10 rounded-lg transition-colors"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Upload Image
-                  </>
+                    /* List View */
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left">
+                                        <button
+                                            onClick={toggleSelectAll}
+                                            className="w-6 h-6 rounded border-2 flex items-center justify-center transition-colors"
+                                        >
+                                            {selectedProducts.size === filteredProducts.length && filteredProducts.length > 0 && <Check size={14} />}
+                                        </button>
+                                    </th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {filteredProducts.map((product: Product) => (
+                                    <tr key={product.id} className={selectedProducts.has(product.id) ? 'bg-terracotta/5' : ''}>
+                                        <td className="px-4 py-4">
+                                            <button
+                                                onClick={() => toggleSelectProduct(product.id)}
+                                                className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                                                    selectedProducts.has(product.id)
+                                                        ? 'bg-terracotta border-terracotta text-white'
+                                                        : 'border-gray-300 hover:border-terracotta'
+                                                }`}
+                                            >
+                                                {selectedProducts.has(product.id) && <Check size={14} />}
+                                            </button>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-cream rounded flex items-center justify-center">
+                                                    {product.imageUrl ? (
+                                                        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover rounded" />
+                                                    ) : (
+                                                        <Package className="w-5 h-5 text-light-gray" />
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <p className="font-body text-body-sm font-medium text-primary-dark">{product.name}</p>
+                                                    {product.description && (
+                                                        <p className="font-accent text-caption text-warm-gray truncate max-w-xs">
+                                                            {product.description}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-4 text-body-sm text-gray-500">{product.category}</td>
+                                        <td className="px-4 py-4 text-body-sm text-gray-500">
+                                            {product.supplier?.name || '-'}
+                                        </td>
+                                        <td className="px-4 py-4 text-body-sm font-medium text-primary-dark">
+                                            R{(product.price / 100).toFixed(2)}/{product.unit}
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <button
+                                                onClick={() => handleToggleAvailability(product)}
+                                                className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
+                                                    product.isAvailable
+                                                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                {product.isAvailable ? <><Check size={12} /> Available</> : <><X size={12} /> Unavailable</>}
+                                            </button>
+                                        </td>
+                                        <td className="px-4 py-4 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    onClick={() => handleEdit(product)}
+                                                    className="p-2 text-warm-gray hover:text-terracotta hover:bg-terracotta/10 rounded-lg transition-colors"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        if (confirm('Are you sure you want to delete this product?')) {
+                                                            deleteMutation.mutate(product.id);
+                                                        }
+                                                    }}
+                                                    className="p-2 text-warm-gray hover:text-error hover:bg-error/10 rounded-lg transition-colors"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Max file size: 5MB. Supported formats: JPEG, PNG, GIF, WebP
-            </p>
+            </Card>
 
-            {/* Or use URL */}
-            <div className="mt-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Or enter image URL
-              </label>
-              <input
-                type="url"
-                value={formData.imageUrl}
-                onChange={(e) => {
-                  setFormData({ ...formData, imageUrl: e.target.value });
-                  setImagePreview(e.target.value || null);
+            {/* Create/Edit Modal */}
+            <Modal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                title={editingProduct ? 'Edit Product' : 'Add New Product'}
+                size="lg"
+            >
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Product Name</label>
+                        <Input
+                            type="text"
+                            required
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            placeholder="Organic Tomatoes"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Description</label>
+                        <Textarea
+                            value={formData.description || ''}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            placeholder="Describe the product..."
+                            rows={3}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Category</label>
+                            <Select
+                                value={formData.category}
+                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                required
+                                options={[
+                                    { value: '', label: 'Select category' },
+                                    ...(categories?.data?.map((c: { key: string; label: string }) => ({ value: c.key, label: c.label })) || [])
+                                ]}
+                            />
+                        </div>
+                        <div>
+                            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Supplier</label>
+                            <Select
+                                value={formData.supplierId || ''}
+                                onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
+                                options={[
+                                    { value: '', label: 'Select supplier' },
+                                    ...(suppliers?.map((s: Supplier) => ({ value: s.id, label: s.name })) || [])
+                                ]}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Unit</label>
+                            <Select
+                                value={formData.unit}
+                                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                                options={[
+                                    { value: 'kg', label: 'kg' },
+                                    { value: 'piece', label: 'piece' },
+                                    { value: 'bunch', label: 'bunch' },
+                                    { value: 'bag', label: 'bag' },
+                                    { value: 'box', label: 'box' }
+                                ]}
+                            />
+                        </div>
+                        <div>
+                            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Price (cents)</label>
+                            <Input
+                                type="number"
+                                required
+                                min="0"
+                                value={formData.price}
+                                onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
+                                placeholder="5000"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Status</label>
+                            <Select
+                                value={formData.isAvailable ? 'available' : 'unavailable'}
+                                onChange={(e) => setFormData({ ...formData, isAvailable: e.target.value === 'available' })}
+                                options={[
+                                    { value: 'available', label: 'Available' },
+                                    { value: 'unavailable', label: 'Unavailable' }
+                                ]}
+                            />
+                        </div>
+                        <div>
+                            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Delivery Day</label>
+                            <Select
+                                value={formData.deliveryDay || ''}
+                                onChange={(e) => setFormData({ ...formData, deliveryDay: (e.target.value as 'Wednesday' | 'Friday') || undefined })}
+                                options={[
+                                    { value: '', label: 'Select delivery day' },
+                                    { value: 'Wednesday', label: 'Wednesday' },
+                                    { value: 'Friday', label: 'Friday' }
+                                ]}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 mt-6">
+                        <Button type="button" onClick={handleCloseModal} variant="secondary">
+                            Cancel
+                        </Button>
+                        <Button type="submit" variant="primary">
+                            {editingProduct ? 'Update Product' : 'Create Product'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Active Orders Popup for Single Product */}
+            <Modal
+                isOpen={showOrdersPopup}
+                onClose={() => {
+                    setShowOrdersPopup(false);
+                    setOrdersForProduct([]);
+                    setProductToToggle(null);
                 }}
-                placeholder="https://example.com/image.jpg"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-6">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.isAvailable}
-                onChange={(e) => setFormData({ ...formData, isAvailable: e.target.checked })}
-                className="mr-2"
-              />
-              <span className="text-sm font-medium text-gray-700">Available</span>
-            </label>
-
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.isSeasonal}
-                onChange={(e) => setFormData({ ...formData, isSeasonal: e.target.checked })}
-                className="mr-2"
-              />
-              <span className="text-sm font-medium text-gray-700">Seasonal</span>
-            </label>
-          </div>
-
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full sm:w-auto px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                title="Active Orders Found"
+                size="md"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                <div className="space-y-4">
+                    <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                        <AlertTriangle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
+                        <div>
+                            <p className="font-body text-body-md text-primary-dark">
+                                This product has {ordersForProduct.length} active order(s).
+                            </p>
+                            <p className="font-accent text-caption text-warm-gray mt-1">
+                                The item will be delivered with the next batch (Wednesday or Friday). Customers will be notified.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="max-h-60 overflow-y-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Order ID</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Customer</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Date</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {ordersForProduct.map((order) => (
+                                    <tr key={order.id}>
+                                        <td className="px-3 py-2 text-body-sm text-gray-900">{order.id.slice(0, 8)}</td>
+                                        <td className="px-3 py-2 text-body-sm text-gray-500">{order.customer?.name}</td>
+                                        <td className="px-3 py-2 text-body-sm text-gray-500">
+                                            {new Date(order.deliveryDate).toLocaleDateString()}
+                                        </td>
+                                        <td className="px-3 py-2">
+                                            <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800">
+                                                {order.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4">
+                        <Button 
+                            variant="secondary" 
+                            onClick={() => {
+                                setShowOrdersPopup(false);
+                                setOrdersForProduct([]);
+                                setProductToToggle(null);
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            variant="primary" 
+                            onClick={confirmToggleWithOrders}
+                        >
+                            Make Unavailable Anyway
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Bulk Active Orders Popup */}
+            <Modal
+                isOpen={showBulkOrdersPopup}
+                onClose={cancelBulkUnavailable}
+                title="Active Orders Will Be Affected"
+                size="lg"
             >
-              {product ? 'Update' : 'Create'}
-            </button>
-          </div>
-        </form>
+                <div className="space-y-4">
+                    <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                        <AlertTriangle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
+                        <div>
+                            <p className="font-body text-body-md text-primary-dark">
+                                {bulkAffectedOrders.length} active order(s) will be affected across {pendingBulkIds.length} product(s).
+                            </p>
+                            <p className="font-accent text-caption text-warm-gray mt-1">
+                                The items will be delivered with the next batch (Wednesday or Friday). Affected customers need to be notified.
+                            </p>
+                        </div>
+                    </div>
 
-        {/* Add Category Modal */}
-        {showAddCategory && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 w-full max-w-full mx-4 md:max-w-md">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Add New Category</h3>
+                    <div className="max-h-80 overflow-y-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Customer</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Phone</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Product</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Qty</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Delivery</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {bulkAffectedOrders.map((order, index) => (
+                                    <tr key={`${order.orderId}-${order.productName}-${index}`}>
+                                        <td className="px-3 py-2 text-body-sm text-gray-900">{order.customerName}</td>
+                                        <td className="px-3 py-2 text-body-sm text-gray-500">{order.customerPhone}</td>
+                                        <td className="px-3 py-2 text-body-sm text-gray-500">{order.productName}</td>
+                                        <td className="px-3 py-2 text-body-sm text-gray-500">{order.productQuantity}</td>
+                                        <td className="px-3 py-2 text-body-sm text-gray-500">
+                                            {new Date(order.deliveryDate).toLocaleDateString()}
+                                        </td>
+                                        <td className="px-3 py-2">
+                                            <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800">
+                                                {order.orderStatus}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category Key *
-                  </label>
-                  <input
-                    type="text"
-                    value={newCategoryKey}
-                    onChange={(e) => setNewCategoryKey(e.target.value.toLowerCase().replace(/[^a-z_]/g, ''))}
-                    placeholder="e.g., herbs_spices"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Lowercase letters and underscores only
-                  </p>
+                    <div className="flex justify-end gap-3 pt-4">
+                        <Button 
+                            variant="secondary" 
+                            onClick={cancelBulkUnavailable}
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            variant="primary" 
+                            onClick={confirmBulkUnavailable}
+                        >
+                            Make Unavailable Anyway
+                        </Button>
+                    </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category Label *
-                  </label>
-                  <input
-                    type="text"
-                    value={newCategoryLabel}
-                    onChange={(e) => setNewCategoryLabel(e.target.value)}
-                    placeholder="e.g., Herbs & Spices"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Display name for the category
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description (Optional)
-                  </label>
-                  <textarea
-                    value={newCategoryDescription}
-                    onChange={(e) => setNewCategoryDescription(e.target.value)}
-                    placeholder="Brief description of this category"
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div className="bg-green-50 p-3 rounded-lg">
-                  <p className="text-sm text-green-800">
-                    <strong>✓ Synced:</strong> This category will be saved to the database and available to all admins across all devices.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddCategory(false);
-                    setNewCategoryKey('');
-                    setNewCategoryLabel('');
-                  }}
-                  className="w-full sm:w-auto px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleAddCategory}
-                  disabled={createCategory.isPending}
-                  className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-                >
-                  {createCategory.isPending ? 'Creating...' : 'Add Category'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-interface WhatsAppListModalProps {
-  content: string;
-  onClose: () => void;
-}
-
-function WhatsAppListModal({ content, onClose }: WhatsAppListModalProps) {
-  const handleCopy = () => {
-    navigator.clipboard.writeText(content);
-    alert('Copied to clipboard!');
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-full mx-4 md:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          WhatsApp Product List
-        </h2>
-
-        <div className="bg-gray-50 p-4 rounded-lg mb-4 whitespace-pre-wrap font-mono text-sm text-gray-800">
-          {typeof content === 'string' ? content : JSON.stringify(content, null, 2)}
+            </Modal>
         </div>
+    );
+};
 
-        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="w-full sm:w-auto px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-          >
-            Close
-          </button>
-          <button
-            onClick={handleCopy}
-            className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          >
-            Copy to Clipboard
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+export default ProductsManagement;

@@ -13,6 +13,26 @@ const dateRangeSchema = z.object({
 });
 
 /**
+ * GET /api/reports/dashboard
+ * Get dashboard metrics for admin overview (admin only)
+ */
+router.get('/dashboard', authenticate, requireAdmin, asyncHandler(async (_req: Request, res: Response) => {
+  try {
+    const metrics = await reportService.getDashboardMetrics();
+
+    return res.json(metrics);
+  } catch (error) {
+    console.error('Get dashboard metrics error:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to fetch dashboard metrics',
+      },
+    });
+  }
+}));
+
+/**
  * GET /api/reports/sales
  * Generate sales report (admin only)
  * Query params: startDate, endDate

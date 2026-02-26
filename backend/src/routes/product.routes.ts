@@ -9,6 +9,8 @@ import { PRODUCT_CATEGORIES, PRODUCT_UNITS } from '../constants/enums.js';
 const router = Router();
 
 // Validation schemas
+const deliveryDays = ['Wednesday', 'Friday'] as const;
+
 const createProductSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   price: z.number().positive('Price must be positive'),
@@ -19,6 +21,7 @@ const createProductSchema = z.object({
   isAvailable: z.boolean().optional(),
   isSeasonal: z.boolean().optional(),
   packingType: z.enum(['box', 'bag', 'fridge', 'freezer']).optional(),
+  deliveryDay: z.enum(deliveryDays).optional().nullable(),
   supplierId: z.string().nullable().optional(),
 });
 
@@ -32,6 +35,7 @@ const updateProductSchema = z.object({
   isAvailable: z.boolean().optional(),
   isSeasonal: z.boolean().optional(),
   packingType: z.enum(['box', 'bag', 'fridge', 'freezer']).optional(),
+  deliveryDay: z.enum(deliveryDays).optional().nullable(),
   supplierId: z.string().nullable().optional(),
 });
 
@@ -162,17 +166,83 @@ router.post('/', authenticate, requireAdmin, auditLog('CREATE', 'product'), asyn
 }));
 
 /**
+ * PATCH /api/products/:id
+ * Update a product partially (admin only)
+ * Returns affected orders when marking product unavailable
+ */
+router.patch('/:id', authenticate, requireAdmin, auditLog('UPDATE', 'product'), asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const data = updateProductSchema.parse(req.body);
+
+    const result = await productService.updateProduct(id, data);
+
+    // Return the product and any affected orders
+    const response: any = {
+      product: result.product,
+    };
+
+    // Include affected orders if product is being marked unavailable
+    if (result.affectedOrders && result.affectedOrders.length > 0) {
+      response.affectedOrders = result.affectedOrders;
+      response.message = `Product marked unavailable. ${result.affectedOrders.length} active order(s) affected.`;
+    }
+
+    return res.json(response);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid request data',
+          details: error.errors,
+        },
+      });
+    }
+
+    if (error instanceof Error && error.message === 'Product not found') {
+      return res.status(404).json({
+        error: {
+          code: 'NOT_FOUND',
+          message: error.message,
+        },
+      });
+    }
+
+    console.error('Update product error:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to update product',
+      },
+    });
+  }
+}));
+
+/**
  * PUT /api/products/:id
  * Update a product (admin only)
+ * Returns affected orders when marking product unavailable
  */
 router.put('/:id', authenticate, requireAdmin, auditLog('UPDATE', 'product'), asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = updateProductSchema.parse(req.body);
 
-    const product = await productService.updateProduct(id, data);
+    const result = await productService.updateProduct(id, data);
 
-    return res.json(product);
+    // Return the product and any affected orders
+    const response: any = {
+      product: result.product,
+    };
+
+    // Include affected orders if product is being marked unavailable
+    if (result.affectedOrders && result.affectedOrders.length > 0) {
+      response.affectedOrders = result.affectedOrders;
+      response.message = `Product marked unavailable. ${result.affectedOrders.length} active order(s) affected.`;
+    }
+
+    return res.json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({

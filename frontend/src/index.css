@@ -1,19 +1,22 @@
+/* Never.Regular.Studio Design System Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap');
+
+/* Legacy fonts for backward compatibility */
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
 
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   body {
-    /* Palette:
-       Primary (Gold): #BF7F2E (Harvest Gold)
-       Secondary (Amber): #E7B65A (Sunlit Amber)
-       Background: #F6F1E8 (Warm Linen)
-       Text: #2B1D14 (Dark Cocoa) */
+    /* Design System Colors:
+       Primary Dark: #1A1A1A
+       Cream: #F5F0E8
+       Soft Black: #2D2926
+       See DESIGN_SYSTEM.md for full palette */
 
-    @apply bg-[#F6F1E8] text-[#2B1D14] font-sans;
-    @apply dark:bg-[#2A1D15] dark:text-[#F3EBDD];
+    @apply bg-cream text-soft-black font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.3s ease, color 0.3s ease;
@@ -30,57 +33,73 @@
 }
 
 @layer components {
+  /* Primary Button - Never.Regular.Studio Design System */
   .btn-primary {
-    @apply bg-organic-green-600 hover:bg-organic-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-card hover:shadow-card-hover;
-    @apply dark:bg-organic-green-500 dark:hover:bg-organic-green-600;
+    @apply bg-primary-dark text-white px-6 py-3 rounded-md font-medium text-sm tracking-wide hover:bg-soft-black transition-all duration-200;
   }
 
+  /* Secondary Button */
   .btn-secondary {
-    @apply bg-warm-gray-200 hover:bg-warm-gray-300 text-warm-gray-800 font-semibold px-6 py-3 rounded-lg transition-all duration-200;
-    @apply dark:bg-warm-gray-700 dark:hover:bg-warm-gray-600 dark:text-warm-gray-200;
+    @apply bg-transparent text-primary-dark px-6 py-3 rounded-md border border-light-gray font-medium text-sm hover:bg-cream transition-all duration-200;
   }
 
+  /* Ghost Button */
+  .btn-ghost {
+    @apply bg-transparent text-primary-dark px-6 py-3 rounded-md font-medium text-sm hover:bg-black/5 transition-all duration-200;
+  }
+
+  /* Card Styles */
   .card {
-    @apply bg-white rounded-xl shadow-card hover:shadow-card-hover transition-all duration-300;
-    @apply dark:bg-warm-gray-800 dark:shadow-none dark:border dark:border-warm-gray-700;
+    @apply bg-white rounded-lg p-5 shadow-sm hover:shadow-md transition-all duration-200;
   }
 
   .card-hover {
-    @apply hover:shadow-card-hover transform hover:-translate-y-1 transition-all duration-300;
+    @apply hover:shadow-md hover:-translate-y-0.5 transition-all duration-200;
   }
 
+  /* Input Field */
   .input-field {
-    @apply w-full px-4 py-3 border border-warm-gray-300 rounded-lg focus:ring-2 focus:ring-organic-green-500 focus:border-organic-green-500 transition-colors bg-white;
-    @apply dark:bg-warm-gray-800 dark:border-warm-gray-600 dark:text-warm-gray-100 dark:focus:border-organic-green-400;
+    @apply w-full bg-white border border-light-gray rounded-md px-4 py-3.5 font-body text-body-md text-primary-dark focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary-dark/10 placeholder:text-warm-gray transition-all duration-200;
   }
 
+  .input-error {
+    @apply border-error bg-red-50 focus:border-error focus:ring-error/20;
+  }
+
+  /* Badge Styles */
   .badge {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    @apply inline-flex items-center px-3 py-1 rounded-full text-caption font-medium;
   }
 
   .badge-success {
-    @apply badge bg-organic-green-100 text-organic-green-800;
-    @apply dark:bg-organic-green-900/50 dark:text-organic-green-300;
+    @apply badge bg-success/20 text-success;
   }
 
   .badge-warning {
-    @apply badge bg-amber-100 text-amber-800;
-    @apply dark:bg-amber-900/50 dark:text-amber-300;
+    @apply badge bg-warning/20 text-warning;
   }
 
   .badge-error {
-    @apply badge bg-red-100 text-red-800;
-    @apply dark:bg-red-900/50 dark:text-red-300;
+    @apply badge bg-error/20 text-error;
   }
 
+  .badge-info {
+    @apply badge bg-info/20 text-info;
+  }
+
+  /* Loading Spinner */
   .loading-spinner {
-    @apply animate-spin rounded-full border-2 border-organic-green-300 border-t-organic-green-600;
-    @apply dark:border-organic-green-700 dark:border-t-organic-green-400;
+    @apply animate-spin rounded-full border-2 border-light-gray border-t-primary-dark;
   }
 
+  /* Glass Effect */
   .glass-effect {
     @apply bg-white/80 backdrop-blur-sm border border-white/20;
-    @apply dark:bg-warm-gray-900/80 dark:border-warm-gray-700/50;
+  }
+
+  /* Legacy support - maps old classes to new design tokens */
+  .btn-organic {
+    @apply btn-primary;
   }
 }
 
@@ -91,16 +110,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #efe6d8;
+  background: theme('colors.cream');
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c9ad8b;
+  background: theme('colors.warm-gray');
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #b28f6a;
+  background: theme('colors.soft-black');
 }
 
 /* Smooth scrolling */
@@ -124,6 +143,6 @@ html {
 
 /* Selection color */
 ::selection {
-  background-color: theme('colors.organic-green.200');
-  color: theme('colors.organic-green.900');
+  background-color: theme('colors.sage-green');
+  color: theme('colors.primary-light');
 }

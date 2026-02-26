@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Modal, Button, Input, Textarea } from '@/components/ui';
 
 interface Supplier {
     id: string;
@@ -43,56 +44,53 @@ export default function SupplierModal({
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                <h2 className="text-xl font-bold mb-4">
-                    {supplier ? 'Edit Supplier' : 'Add Supplier'}
-                </h2>
+        <Modal
+            isOpen={true}
+            onClose={onClose}
+            title={supplier ? 'Edit Supplier' : 'Add Supplier'}
+            size="md"
+        >
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                    <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">
+                        Name
+                    </label>
+                    <Input
+                        type="text"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                    />
+                </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Name
-                        </label>
-                        <input
-                            type="text"
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        />
-                    </div>
+                <div>
+                    <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">
+                        Contact Info (Optional)
+                    </label>
+                    <Textarea
+                        value={contactInfo}
+                        onChange={(e) => setContactInfo(e.target.value)}
+                        rows={3}
+                    />
+                </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Contact Info (Optional)
-                        </label>
-                        <textarea
-                            value={contactInfo}
-                            onChange={(e) => setContactInfo(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            rows={3}
-                        />
-                    </div>
-
-                    <div className="flex justify-end gap-3 pt-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isSaving}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                        >
-                            {isSaving ? 'Saving...' : 'Save'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                <div className="flex justify-end gap-3 pt-4">
+                    <Button
+                        type="button"
+                        onClick={onClose}
+                        variant="secondary"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        type="submit"
+                        variant="primary"
+                        disabled={isSaving}
+                    >
+                        {isSaving ? 'Saving...' : 'Save'}
+                    </Button>
+                </div>
+            </form>
+        </Modal>
     );
 }
