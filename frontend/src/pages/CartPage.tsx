@@ -6,7 +6,7 @@ import { useProducts } from '../hooks/useProducts';
 import { useCreateOrder } from '../hooks/useOrders';
 import { formatPrice } from '../lib/utils';
 import { toast } from 'react-hot-toast';
-import { Button, Input, Select, Card, CardHeader, CardContent } from '../components/ui';
+import { Button, Input, Select, Card, CardHeader } from '../components/ui';
 
 // Delivery options
 const deliveryOptions = [

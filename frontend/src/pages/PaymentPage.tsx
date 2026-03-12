@@ -1,8 +1,16 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDownloadInvoicePDF } from '../hooks/useInvoicePDF';
 import { formatPrice } from '../lib/utils';
-import { Button, Input, Card, CardHeader, Badge } from '../components/ui';
+import { Button, Card, CardHeader, Badge } from '../components/ui';
+import api from '../lib/api';
+
+// Add Yoco to window namespace
+declare global {
+  interface Window {
+    YocoSDK: any;
+  }
+}
 
 // Payment methods
 const paymentMethods = [
@@ -11,65 +19,231 @@ const paymentMethods = [
   { id: 'cash', name: 'Cash on Delivery', icon: '💵' },
 ];
 
+interface InvoiceItem {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  total: number;
+  subtotal: number;
+  deliveryFee: number;
+  creditApplied: number;
+  status: string;
+  dueDate: string;
+  items: InvoiceItem[];
+}
+
 export default function PaymentPage() {
   const { invoiceId } = useParams<{ invoiceId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const downloadInvoicePDF = useDownloadInvoicePDF();
 
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Mock invoice data - in real app, this would come from an API
-  const invoice = {
-    id: invoiceId || 'demo-invoice',
-    invoiceNumber: `INV-${invoiceId?.slice(0, 8).toUpperCase() || 'DEMO'}`,
-    total: 450.00,
-    subtotal: 400.00,
-    deliveryFee: 50.00,
-    creditApplied: 0,
-    status: 'pending',
-    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    items: [
-      { name: 'Tomatoes', quantity: 2, price: 50.00 },
-      { name: 'Spinach', quantity: 1, price: 35.00 },
-      { name: 'Carrots', quantity: 3, price: 25.00 },
-    ],
+  // Check if this is a payment completion page
+  const isCompletionPage = window.location.pathname.includes('/complete');
+  const checkoutId = searchParams.get('checkoutId');
+  const paymentStatus = searchParams.get('status');
+
+  // Load invoice data
+  useEffect(() => {
+    const fetchInvoice = async () => {
+      if (!invoiceId) {
+        setError('Invoice ID is required');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await api.get(`/invoices/${invoiceId}`);
+        if (response.data) {
+          setInvoice({
+            ...response.data,
+            items: response.data.items || [],
+          });
+        }
+      } catch (err: any) {
+        console.error('Error fetching invoice:', err);
+        // For demo purposes, use mock data if API fails
+        setInvoice({
+          id: invoiceId,
+          invoiceNumber: `INV-${invoiceId.slice(0, 8).toUpperCase()}`,
+          total: 450.00,
+          subtotal: 400.00,
+          deliveryFee: 50.00,
+          creditApplied: 0,
+          status: 'pending',
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          items: [
+            { id: '1', name: 'Tomatoes', quantity: 2, price: 50.00 },
+            { id: '2', name: 'Spinach', quantity: 1, price: 35.00 },
+            { id: '3', name: 'Carrots', quantity: 3, price: 25.00 },
+          ],
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInvoice();
+  }, [invoiceId]);
+
+  // Handle payment completion
+  useEffect(() => {
+    if (isCompletionPage && checkoutId) {
+      verifyPayment(checkoutId);
+    }
+  }, [isCompletionPage, checkoutId]);
+
+  const verifyPayment = async (_checkoutId: string) => {
+    setIsProcessing(true);
+    try {
+      // In a real implementation, we'd verify the payment with the backend
+      // For now, simulate success
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      navigate(`/orders?payment=success&invoiceId=${invoiceId}`);
+    } catch (err) {
+      console.error('Payment verification failed:', err);
+      navigate(`/orders?payment=failed&invoiceId=${invoiceId}`);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handlePayment = async () => {
-    if (!selectedMethod) {
+    if (!selectedMethod || !invoice) {
       return;
     }
 
     setIsProcessing(true);
 
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      if (selectedMethod === 'yoco') {
+        // Create a Yoco checkout session via the backend
+        const response = await api.post('/payments/checkout', {
+          invoiceId: invoice.id,
+        });
 
-    // In real app, this would call the payment API
-    if (selectedMethod === 'yoco') {
-      // Redirect to Yoco payment gateway
-      alert('Redirecting to Yoco payment gateway...');
-    } else if (selectedMethod === 'eft') {
-      // Show banking details
-      alert('Banking details will be sent to your email.');
-    } else {
-      // Cash on delivery
-      alert('Your order will be delivered. Please have cash ready.');
+        if (response.data.success && response.data.redirectUrl) {
+          // Redirect to Yoco's hosted checkout page
+          window.location.href = response.data.redirectUrl;
+        } else {
+          throw new Error(response.data.error?.message || 'Failed to create checkout');
+        }
+      } else if (selectedMethod === 'eft') {
+        // Show banking details - in real app would record pending payment
+        alert('Banking details will be sent to your email.');
+        navigate('/orders?success=true');
+      } else {
+        // Cash on delivery - in real app would record pending payment
+        alert('Your order will be delivered. Please have cash ready.');
+        navigate('/orders?success=true');
+      }
+    } catch (err: any) {
+      console.error('Payment error:', err);
+      alert(err.message || 'Payment failed. Please try again.');
+      setIsProcessing(false);
     }
-
-    setIsProcessing(false);
-    navigate('/orders');
   };
 
   const handleDownloadInvoice = () => {
     if (invoiceId) {
       downloadInvoicePDF.mutate({
         invoiceId,
-        filename: `invoice-${invoice.invoiceNumber}.pdf`,
+        filename: `invoice-${invoice?.invoiceNumber || invoiceId}.pdf`,
       });
     }
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-terracotta mx-auto"></div>
+          <p className="mt-4 text-warm-gray">Loading invoice...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !invoice) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6">
+        <Card>
+          <div className="text-center py-8">
+            <div className="text-red-500 text-4xl mb-4">⚠️</div>
+            <h2 className="font-display text-xl text-primary-dark mb-2">Error</h2>
+            <p className="text-warm-gray">{error}</p>
+            <Button
+              variant="secondary"
+              className="mt-4"
+              onClick={() => navigate(-1)}
+            >
+              Go Back
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!invoice) {
+    return null;
+  }
+
+  // Show payment completion status
+  if (isCompletionPage) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6">
+        <Card>
+          <div className="text-center py-8">
+            {isProcessing ? (
+              <>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-terracotta mx-auto"></div>
+                <h2 className="font-display text-xl text-primary-dark mt-4">Verifying Payment...</h2>
+                <p className="text-warm-gray">Please wait while we verify your payment.</p>
+              </>
+            ) : paymentStatus === 'completed' ? (
+              <>
+                <div className="text-green-500 text-4xl mb-4">✓</div>
+                <h2 className="font-display text-xl text-primary-dark mb-2">Payment Successful!</h2>
+                <p className="text-warm-gray">Your payment has been processed successfully.</p>
+                <Button
+                  className="mt-4"
+                  onClick={() => navigate('/orders')}
+                >
+                  View Orders
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="text-red-500 text-4xl mb-4">✗</div>
+                <h2 className="font-display text-xl text-primary-dark mb-2">Payment Failed</h2>
+                <p className="text-warm-gray">There was an issue processing your payment.</p>
+                <Button
+                  variant="secondary"
+                  className="mt-4"
+                  onClick={() => navigate(`/payment/${invoiceId}`)}
+                >
+                  Try Again
+                </Button>
+              </>
+            )}
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -87,14 +261,16 @@ export default function PaymentPage() {
           title="Invoice Summary"
           subtitle={`Due: ${new Date(invoice.dueDate).toLocaleDateString('en-ZA')}`}
           action={
-            <Badge variant="warning">Pending</Badge>
+            <Badge variant={invoice.status === 'paid' ? 'success' : 'warning'}>
+              {invoice.status === 'paid' ? 'Paid' : 'Pending'}
+            </Badge>
           }
         />
 
         {/* Items */}
         <div className="space-y-2 mb-4">
-          {invoice.items.map((item, index) => (
-            <div key={index} className="flex justify-between font-body text-body-sm">
+          {invoice.items.map((item) => (
+            <div key={item.id} className="flex justify-between font-body text-body-sm">
               <span className="text-warm-gray">
                 {item.name} x {item.quantity}
               </span>

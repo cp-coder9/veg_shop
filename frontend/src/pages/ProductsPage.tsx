@@ -26,7 +26,7 @@ export default function ProductsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Group products by category - ensure products is an array
-  const groupedProducts: Record<string, typeof products> = Array.isArray(products)
+  const groupedProducts: Record<string, Product[]> = Array.isArray(products)
     ? products.reduce((acc, product) => {
         const category = product.category || 'other';
         if (!acc[category]) {
@@ -34,7 +34,7 @@ export default function ProductsPage() {
         }
         acc[category].push(product);
         return acc;
-      }, {} as Record<string, typeof products>)
+      }, {} as Record<string, Product[]>)
     : {};
 
   // Filter products based on search and category
@@ -48,10 +48,10 @@ export default function ProductsPage() {
           acc[category] = filtered;
         }
         return acc;
-      }, {} as Record<string, typeof products>);
+      }, {} as Record<string, Product[]>);
 
-  // Get unique categories for filter
-  const categories = products
+  // Get unique categories for filter - defensive check for array
+  const categories = Array.isArray(products)
     ? [...new Set(products.map((p) => p.category || 'other'))]
     : [];
 

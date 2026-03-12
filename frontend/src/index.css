@@ -33,6 +33,7 @@
 }
 
 @layer components {
+
   /* Primary Button - Never.Regular.Studio Design System */
   .btn-primary {
     @apply bg-primary-dark text-white px-6 py-3 rounded-md font-medium text-sm tracking-wide hover:bg-soft-black transition-all duration-200;

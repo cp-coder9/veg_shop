@@ -1,13 +1,18 @@
 import { useState } from 'react';
-import { useCustomerProfile, useUpdateCustomer, useCustomerInvoices } from '../hooks/useCustomer';
+import { useNavigate } from 'react-router-dom';
+import { useCustomerProfile, useUpdateCustomer, useCustomerInvoices, useCustomerPayments } from '../hooks/useCustomer';
 import { formatPrice } from '../lib/utils';
 import { toast } from 'react-hot-toast';
 import { Button, Input, Card, CardHeader, Badge } from '../components/ui';
+import { PaymentStatusBadge, type PaymentStatus } from '../components/payments/PaymentStatusBadge';
+import { PaymentMethodBadge, type PaymentMethod } from '../components/payments/PaymentMethodBadge';
 
 export default function ProfilePage() {
   const { data: profile, isLoading } = useCustomerProfile();
   const { data: invoices } = useCustomerInvoices();
+  const { data: payments } = useCustomerPayments();
   const updateCustomer = useUpdateCustomer();
+  const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -227,6 +232,124 @@ export default function ProfilePage() {
           </div>
         )}
       </Card>
+
+      {/* Payment History */}
+      <Card>
+        <CardHeader
+          title="My Payments"
+          subtitle="Your payment history and method breakdown"
+        />
+
+        {!payments || payments.length === 0 ? (
+          <div className="text-center py-8">
+            <svg className="w-12 h-12 mx-auto text-warm-gray mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+            <p className="font-body text-body-md text-warm-gray">No payments yet</p>
+            <p className="font-body text-body-sm text-warm-gray mt-1">
+              Your payment history will appear here after you make your first payment
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Payment Method Summary */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="bg-cream/50 rounded-lg p-4 text-center">
+                <span className="text-2xl mb-2 block">💳</span>
+                <p className="font-accent text-caption text-warm-gray uppercase tracking-wider">Yoco</p>
+                <p className="font-display text-body-lg font-bold text-primary-dark">
+                  R{formatPrice(payments.filter((p: any) => p.method === 'yoco').reduce((sum: number, p: any) => sum + p.amount, 0))}
+                </p>
+              </div>
+              <div className="bg-cream/50 rounded-lg p-4 text-center">
+                <span className="text-2xl mb-2 block">💵</span>
+                <p className="font-accent text-caption text-warm-gray uppercase tracking-wider">Cash</p>
+                <p className="font-display text-body-lg font-bold text-primary-dark">
+                  R{formatPrice(payments.filter((p: any) => p.method === 'cash').reduce((sum: number, p: any) => sum + p.amount, 0))}
+                </p>
+              </div>
+              <div className="bg-cream/50 rounded-lg p-4 text-center">
+                <span className="text-2xl mb-2 block">🏦</span>
+                <p className="font-accent text-caption text-warm-gray uppercase tracking-wider">EFT</p>
+                <p className="font-display text-body-lg font-bold text-primary-dark">
+                  R{formatPrice(payments.filter((p: any) => p.method === 'eft').reduce((sum: number, p: any) => sum + p.amount, 0))}
+                </p>
+              </div>
+            </div>
+
+            {/* Payment List */}
+            <div className="divide-y divide-light-gray">
+              {payments.map((payment: any) => (
+                <div key={payment.id} className="py-4 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="font-body text-body-md font-bold text-primary-dark">
+                      Payment #{payment.id.slice(0, 8)}
+                    </p>
+                    <p className="font-accent text-caption text-warm-gray">
+                      {new Date(payment.paymentDate).toLocaleDateString('en-ZA')}
+                      {payment.invoice && ` • Invoice #${payment.invoice.orderId?.slice(0, 8) || payment.invoiceId.slice(0, 8)}`}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="font-body text-body-md font-bold text-primary-dark">
+                        R{formatPrice(payment.amount)}
+                      </p>
+                      {payment.notes && (
+                        <p className="font-accent text-caption text-warm-gray truncate max-w-[150px]">
+                          {payment.notes}
+                        </p>
+                      )}
+                    </div>
+                    <PaymentMethodBadge method={payment.method as PaymentMethod} showIcon />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </Card>
+
+      {/* Outstanding Invoices */}
+      {invoices && invoices.some((inv: any) => inv.status !== 'paid') && (
+        <Card className="border-error/20 bg-error/5">
+          <CardHeader
+            title="Outstanding Invoices"
+            subtitle="Invoices that need payment"
+          />
+          <div className="space-y-3">
+            {invoices
+              .filter((inv: any) => inv.status !== 'paid')
+              .map((invoice: any) => (
+                <div key={invoice.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-error/10">
+                  <div>
+                    <p className="font-body text-body-md font-bold text-primary-dark">
+                      Invoice #{invoice.id.slice(0, 8)}
+                    </p>
+                    <p className="font-accent text-caption text-warm-gray">
+                      Due: {new Date(invoice.dueDate).toLocaleDateString('en-ZA')}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="font-body text-body-md font-bold text-error">
+                        R{formatPrice(Number(invoice.total) - Number(invoice.creditApplied))}
+                      </p>
+                      <PaymentStatusBadge status={invoice.status as PaymentStatus} size="sm" />
+                    </div>
+                    <Button 
+                      size="sm" 
+                      onClick={() => navigate(`/payment/${invoice.id}`)}
+                    >
+                      Pay Now
+                    </Button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

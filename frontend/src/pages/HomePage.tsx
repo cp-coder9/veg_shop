@@ -1,10 +1,11 @@
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { Button } from '../components/ui';
+import { Button, UserIcon, CartIcon } from '../components/ui';
 import logo from '../assets/our-harvest-tote-logo.png';
 
 export default function HomePage() {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
 
   // Redirect admins to admin panel
   if (user?.role === 'admin') {
@@ -12,112 +13,132 @@ export default function HomePage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-cream">
-      {/* Logo - Desktop */}
-      <div className="absolute top-0 left-6 z-10 hidden md:block">
-        <img
-          src={logo}
-          alt="Our Harvest Tote"
-          className="w-72 lg:w-80 drop-shadow-xl"
-        />
-      </div>
+    <div className="min-h-screen bg-cream font-sans">
+      {/* Top Header Section */}
+      <div className="relative pt-6 flex flex-col items-center">
+        <div className="mb-8 px-6 w-full flex justify-end gap-6 items-center">
+          <button
+            onClick={() => navigate(user ? '/profile' : '/login')}
+            className="text-black/80 hover:text-black transition-colors"
+            title={user ? "Profile" : "Login"}
+          >
+            <UserIcon strokeWidth={1.2} />
+          </button>
+          <button
+            onClick={() => navigate(user ? '/cart' : '/login')}
+            className="text-black/80 hover:text-black transition-colors"
+            title="Cart"
+          >
+            <CartIcon strokeWidth={1.2} />
+          </button>
+        </div>
 
-      {/* Content */}
-      <div className="relative z-10 text-center px-5 max-w-4xl mx-auto pt-0 md:pt-0">
-        <div className="animate-fade-in">
-          {/* Mobile Logo */}
-          <div className="md:hidden flex justify-center mb-1">
+        {/* Grey Line below Login */}
+        <div className="w-full border-b border-gray-300" />
+
+        {/* Logo Section with Grey Backing */}
+        <div className="w-full bg-[#F2F2F7] py-12 flex flex-col items-center border-b border-gray-300">
+          <div className="mb-6">
             <img
               src={logo}
               alt="Our Harvest Tote"
-              className="w-64 drop-shadow-xl"
+              className="w-48 drop-shadow-sm"
             />
           </div>
 
-          {/* Hero badge */}
-          <div className="inline-flex flex-col items-center gap-1 bg-transparent px-10 py-4 border-2 border-muted-gold mb-10">
-            <span className="font-body text-body-md tracking-wider text-center text-primary-dark">
-              Curated. Harvested for you not the shelf.
-            </span>
-            <span className="font-body text-body-md tracking-wider text-center text-primary-dark">
-              Farming that heals. Food that nourishes.
-            </span>
-          </div>
-
-          {/* Pre-order button */}
-          <div className="flex justify-center mb-10">
-            <Link to="/products">
-              <Button
-                size="lg"
-                className="text-[22px] gap-3 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 whitespace-nowrap bg-terracotta hover:bg-terracotta/90"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
-                Pre-order next weeks harvest
-              </Button>
-            </Link>
-          </div>
-
-          {user && (
-            <p className="font-body text-body-md text-primary-dark mb-3 tracking-wide">
-              Welcome back, {user.name}
+          <div className="max-w-xl text-center px-6">
+            <p className="font-sans text-xl text-gray-800 leading-relaxed font-medium mb-1">
+              Fresh from regenerative farms straight to your door
             </p>
-          )}
+            <p className="font-sans text-xl text-gray-800 leading-relaxed font-medium">
+              Farming that heals. food that nourishes.
+            </p>
+          </div>
+        </div>
+      </div>
 
-          {/* Features */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto animate-slide-up">
-            <div className="p-6 text-left border-2 border-muted-gold bg-transparent">
-              <h3 className="font-display text-body-lg mb-3 uppercase text-primary-dark">THE BETTER WAY TO BUY PRODUCE</h3>
-              <p className="font-body text-body-md text-primary-dark mb-4">
-                Instead of produce sitting in a warehouse or on a shelf for days, we work directly with small farmers and harvest only what has already been ordered.
-              </p>
-              <ul className="font-body text-body-sm text-primary-dark space-y-1">
-                <li>• Fresher food</li>
-                <li>• Less waste</li>
-                <li>• Fairer returns for farmers</li>
-                <li>• Better soil & eco system</li>
-                <li>• Higher nutrient value</li>
-              </ul>
-            </div>
+      {/* Pre-order Section */}
+      <div className="py-16 flex flex-col items-center bg-cream border-b border-gray-300">
+        <Link to="/products" className="w-full max-w-sm px-6">
+          <Button
+            variant="harvest"
+            size="lg"
+            leftIcon={<CartIcon className="w-5 h-5 text-white" strokeWidth={2} />}
+            className="w-full py-4 font-sans text-xl normal-case tracking-normal"
+          >
+            Pre-order next weeks harvest
+          </Button>
+        </Link>
+      </div>
 
-            <div className="p-6 text-left border-2 border-muted-gold bg-transparent">
-              <h3 className="font-display text-body-lg mb-3 uppercase text-primary-dark">HOW IT WORKS</h3>
-              <div className="space-y-4 font-body text-body-sm text-primary-dark">
-                <div>
-                  <p className="text-primary-dark uppercase font-medium">SEE WHATS AVAILABLE</p>
-                  <p>Each week we share what our partner farms are harvesting</p>
-                </div>
-                <div>
-                  <p className="text-primary-dark uppercase font-medium">PRE-ORDER</p>
-                  <p>Place your order within the week prior to delivery so the farmers harvest exactly what's needed</p>
-                </div>
-                <div>
-                  <p className="text-primary-dark uppercase font-medium">HARVEST & PACK</p>
-                  <p>Produce is harvested at peak freshness and often harvested on the same day. Packed with minimal packaging and choosing reusable where possible.</p>
-                </div>
-                <div>
-                  <p className="text-primary-dark uppercase font-medium">COLLECTION OR DELIVERY</p>
-                  <p>WhatsApp messages will be sent out once your order has been packed for either collection or delivery.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 text-left border-2 border-muted-gold bg-transparent">
-              <h3 className="font-display text-body-lg mb-3 uppercase text-primary-dark">ABOUT THE PRODUCE</h3>
-              <p className="font-body text-body-md text-primary-dark mb-4">Food grown the right way, we focus on produce that is:</p>
-              <ul className="font-body text-body-sm text-primary-dark space-y-1">
-                <li>• Organic or chemical free</li>
-                <li>• Grown using regenerative farming methods</li>
-                <li>• From biodiverse farms, not monocultures</li>
-                <li>• Seasonal and naturally ripened</li>
-                <li>• Carefully selected for flavor and quality</li>
-              </ul>
-              <p className="font-body text-body-sm text-primary-dark mt-4">
-                Better farming practices lead to healthier soil, stronger farms and better food for everyone.
-              </p>
+      {/* How it Works Section */}
+      <div className="py-12 bg-cream flex justify-center px-6">
+        <div className="border border-gray-300 max-w-lg w-full p-8 space-y-10">
+          <div className="flex gap-4">
+            <div className="bg-[#0B3004] text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-sans font-bold text-xs">1</div>
+            <div>
+              <h3 className="font-sans font-bold text-lg text-black uppercase tracking-tight mb-1">Whats growing</h3>
+              <p className="font-sans text-gray-800 leading-relaxed text-lg">Each week we share what our partner farms are harvesting</p>
             </div>
           </div>
+
+          <div className="flex gap-4">
+            <div className="bg-[#0B3004] text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-sans font-bold text-xs">2</div>
+            <div>
+              <h3 className="font-sans font-bold text-lg text-black uppercase tracking-tight mb-1">Pre-order</h3>
+              <p className="font-sans text-gray-800 leading-relaxed text-lg">Place your order within the week prior to delivery so the farmers harvest exactly whats needed</p>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <div className="bg-[#0B3004] text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-sans font-bold text-xs">3</div>
+            <div>
+              <h3 className="font-sans font-bold text-lg text-black uppercase tracking-tight mb-1">Harvest & pack</h3>
+              <p className="font-sans text-gray-800 leading-relaxed text-lg">Produce is harvested at peak freshness and often on the same day. Packed with minimal packaging and reusable where possible</p>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <div className="bg-[#0B3004] text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-sans font-bold text-xs">4</div>
+            <div>
+              <h3 className="font-sans font-bold text-lg text-black uppercase tracking-tight mb-1">Collection or Delivery</h3>
+              <p className="font-sans text-gray-800 leading-relaxed text-lg">WhatsApp messages will be sent out once your order has been packed for collection or delivery</p>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <div className="bg-[#0B3004] text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-sans font-bold text-xs">5</div>
+            <div>
+              <h3 className="font-sans font-bold text-lg text-black uppercase tracking-tight mb-1">PROCESSING</h3>
+              <p className="font-sans text-gray-800 leading-relaxed text-lg">If produce is unavailable post-ordering, a credit will be allocated to your account - login to your profile to view</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mustard Section */}
+      <div className="bg-[#FFCC00] py-16 px-8 relative overflow-hidden border-t border-gray-300">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="font-sans font-bold text-2xl mb-8 uppercase tracking-tight text-black">A BETTER WAY TO BUY PRODUCE</h2>
+          <p className="font-sans text-gray-800 text-xl mb-8 leading-relaxed font-medium">
+            Instead of produce sitting in a warehouse or on a shelf for days, we work directly with a small farmers and harvest only what has already been ordered
+          </p>
+          <ul className="space-y-3 text-gray-800 text-xl font-sans leading-relaxed font-medium">
+            <li>• Fresher food</li>
+            <li>• Less waste</li>
+            <li>• Fair trade</li>
+            <li>• Better soil & eco system</li>
+            <li>• Higher nutrient value</li>
+          </ul>
+        </div>
+
+        {/* Floating icon at bottom right */}
+        <div className="absolute bottom-8 right-8 bg-[#FFFF99] p-4 rounded-3xl shadow-lg cursor-pointer">
+          <svg className="w-8 h-8 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M4 8V4h4m8 0h4v4m0 8v4h-4M8 20H4v-4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M7 9h10v6H7z" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M7 12h10" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </div>
       </div>
     </div>

@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { Button, Input, Card, CardHeader, CardContent } from '@/components/ui';
 
 export default function SettingsPage() {
-    const [yokoPublicKey, setYokoPublicKey] = useState(localStorage.getItem('YOKO_PUBLIC_KEY') || '');
-    const [yokoSecretKey, setYokoSecretKey] = useState(localStorage.getItem('YOKO_SECRET_KEY') || '');
+    const [yocoPublicKey, setYocoPublicKey] = useState(localStorage.getItem('YOCO_PUBLIC_KEY') || '');
+    const [yocoSecretKey, setYocoSecretKey] = useState(localStorage.getItem('YOCO_SECRET_KEY') || '');
     const [isSaved, setIsSaved] = useState(false);
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
-        localStorage.setItem('YOKO_PUBLIC_KEY', yokoPublicKey);
-        localStorage.setItem('YOKO_SECRET_KEY', yokoSecretKey);
+        localStorage.setItem('YOCO_PUBLIC_KEY', yocoPublicKey);
+        localStorage.setItem('YOCO_SECRET_KEY', yocoSecretKey);
         setIsSaved(true);
         setTimeout(() => setIsSaved(false), 3000);
     };
@@ -23,11 +23,11 @@ export default function SettingsPage() {
             </div>
 
             <div className="space-y-8">
-                {/* Yoko Payment Settings */}
+                {/* Yoco Payment Settings */}
                 <Card>
-                    <CardHeader 
-                        title="Yoko Payment Gateway"
-                        subtitle="Configure your Yoko account keys to enable online payments."
+                    <CardHeader
+                        title="Yoco Payment Gateway"
+                        subtitle="Configure your Yoco account keys to enable online payments."
                     />
                     <CardContent>
                         <form onSubmit={handleSave} className="space-y-6">
@@ -36,8 +36,8 @@ export default function SettingsPage() {
                                     <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Public Key</label>
                                     <Input
                                         type="text"
-                                        value={yokoPublicKey}
-                                        onChange={(e) => setYokoPublicKey(e.target.value)}
+                                        value={yocoPublicKey}
+                                        onChange={(e) => setYocoPublicKey(e.target.value)}
                                         placeholder="pk_test_..."
                                     />
                                 </div>
@@ -45,8 +45,8 @@ export default function SettingsPage() {
                                     <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Secret Key</label>
                                     <Input
                                         type="password"
-                                        value={yokoSecretKey}
-                                        onChange={(e) => setYokoSecretKey(e.target.value)}
+                                        value={yocoSecretKey}
+                                        onChange={(e) => setYocoSecretKey(e.target.value)}
                                         placeholder="sk_test_..."
                                     />
                                 </div>
@@ -55,7 +55,7 @@ export default function SettingsPage() {
                             <div className="flex items-center justify-between pt-4">
                                 <div className="text-sm">
                                     <a href="https://yoco.com" target="_blank" rel="noopener noreferrer" className="text-terracotta hover:text-terracotta/80 font-body font-medium transition-colors">
-                                        Don't have a Yoko account? Get one here &rarr;
+                                        Don't have a Yoco account? Get one here &rarr;
                                     </a>
                                 </div>
                                 <Button type="submit" variant="primary">

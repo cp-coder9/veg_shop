@@ -17,8 +17,6 @@ import {
   useCreateStockOrder,
   useUpdateReceivedQuantities,
   useFulfillStockOrder,
-  StockOrder,
-  StockOrderItem,
 } from '../../hooks/useStockOrders';
 
 export default function OrdersManagement() {
@@ -33,7 +31,7 @@ export default function OrdersManagement() {
   const [showStockOrderListModal, setShowStockOrderListModal] = useState(false);
   const [selectedStockOrderId, setSelectedStockOrderId] = useState<string | null>(null);
   const [currentCollationReport, setCurrentCollationReport] = useState<CollationItem[] | null>(null);
-  const [currentCollationDates, setCurrentCollationDates] = useState<{startDate: string; endDate: string} | null>(null);
+  const [currentCollationDates, setCurrentCollationDates] = useState<{ startDate: string; endDate: string } | null>(null);
 
   const { data: orders, isLoading } = useAdminOrders({
     deliveryDate: deliveryDateFilter || undefined,
@@ -340,8 +338,8 @@ export default function OrdersManagement() {
 
       {/* Collation Modal */}
       {showCollationModal && (
-        <CollationModal 
-          onClose={() => setShowCollationModal(false)} 
+        <CollationModal
+          onClose={() => setShowCollationModal(false)}
           onCreateStockOrder={(report, dates) => {
             setCurrentCollationReport(report);
             setCurrentCollationDates(dates);
@@ -390,7 +388,7 @@ export default function OrdersManagement() {
 
 interface CollationModalProps {
   onClose: () => void;
-  onCreateStockOrder?: (report: CollationItem[], dates: {startDate: string; endDate: string}) => void;
+  onCreateStockOrder?: (report: CollationItem[], dates: { startDate: string; endDate: string }) => void;
 }
 
 function CollationModal({ onClose, onCreateStockOrder }: CollationModalProps) {
@@ -882,8 +880,8 @@ function StockOrderListModal({ onClose, onViewStockOrder }: StockOrderListModalP
         ) : (
           <div className="space-y-4">
             {stockOrders.map((order) => (
-              <div 
-                key={order.id} 
+              <div
+                key={order.id}
                 className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
                 onClick={() => onViewStockOrder(order.id)}
               >

@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCustomerOrders } from '../hooks/useOrders';
+import { useCustomerInvoices } from '../hooks/useCustomer';
 import { formatPrice } from '../lib/utils';
-import { Card, CardHeader, Badge, Button } from '../components/ui';
+import { Card, Badge, Button } from '../components/ui';
+import { PaymentStatusBadge, type PaymentStatus } from '../components/payments/PaymentStatusBadge';
 
 // Status badge variant mapping
 const statusVariants: Record<string, 'success' | 'warning' | 'info' | 'error'> = {
@@ -24,8 +26,21 @@ const statusNames: Record<string, string> = {
 
 export default function OrdersPage() {
   const { data: orders, isLoading, isError } = useCustomerOrders();
+  const { data: invoices } = useCustomerInvoices();
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  // Create a map of orderId -> invoice for quick lookup
+  const invoiceMap = useMemo(() => {
+    const map = new Map<string, any>();
+    if (invoices) {
+      invoices.forEach((inv: any) => {
+        map.set(inv.orderId, inv);
+      });
+    }
+    return map;
+  }, [invoices]);
 
   // Check for success message from order placement
   const orderSuccess = searchParams.get('success');
@@ -98,6 +113,10 @@ export default function OrdersPage() {
             (sum, item) => sum + Number(item.priceAtOrder) * item.quantity,
             0
           );
+          
+          // Get invoice for this order
+          const invoice = invoiceMap.get(order.id);
+          const paymentStatus = invoice?.status || 'unpaid';
 
           return (
             <Card
@@ -128,9 +147,12 @@ export default function OrdersPage() {
                     <p className="font-body text-body-md font-bold text-primary-dark">
                       R{formatPrice(orderTotal)}
                     </p>
-                    <Badge variant={statusVariants[order.status] || 'info'}>
-                      {statusNames[order.status] || order.status}
-                    </Badge>
+                    <div className="flex items-center gap-2 justify-end">
+                      <PaymentStatusBadge status={paymentStatus as PaymentStatus} size="sm" showIcon />
+                      <Badge variant={statusVariants[order.status] || 'info'}>
+                        {statusNames[order.status] || order.status}
+                      </Badge>
+                    </div>
                   </div>
                   <svg
                     className={`w-5 h-5 text-warm-gray transition-transform ${isExpanded ? 'rotate-180' : ''}`}
@@ -147,6 +169,44 @@ export default function OrdersPage() {
               {isExpanded && (
                 <div className="border-t border-light-gray p-4 bg-cream/30">
                   <h3 className="font-display text-body-lg text-primary-dark mb-4">Order Details</h3>
+
+                  {/* Payment Info */}
+                  {invoice && (
+                    <div className="mb-4 p-3 bg-white rounded-lg border border-light-gray">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-accent text-caption text-warm-gray uppercase tracking-wider">Payment</span>
+                        <PaymentStatusBadge status={paymentStatus as PaymentStatus} />
+                      </div>
+                      <div className="flex justify-between font-body text-body-sm mb-1">
+                        <span className="text-warm-gray">Invoice Total</span>
+                        <span className="text-primary-dark font-medium">R{formatPrice(Number(invoice.total))}</span>
+                      </div>
+                      {invoice.creditApplied > 0 && (
+                        <div className="flex justify-between font-body text-body-sm mb-1">
+                          <span className="text-warm-gray">Credit Applied</span>
+                          <span className="text-sage-green">-R{formatPrice(Number(invoice.creditApplied))}</span>
+                        </div>
+                      )}
+                      {paymentStatus !== 'paid' && (
+                        <div className="mt-3 pt-3 border-t border-light-gray">
+                          <div className="flex justify-between font-body text-body-sm mb-2">
+                            <span className="text-warm-gray">Amount Due</span>
+                            <span className="text-error font-bold">R{formatPrice(Number(invoice.total) - Number(invoice.creditApplied))}</span>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            className="w-full"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/payment/${invoice.id}`);
+                            }}
+                          >
+                            Pay Now
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Items */}
                   <div className="space-y-2 mb-4">

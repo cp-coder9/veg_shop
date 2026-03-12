@@ -6,46 +6,11 @@ import { asyncHandler } from '../utils/async-handler.js';
 import { prisma } from '../lib/prisma.js';
 import { z } from 'zod';
 
-import { yokoService } from '../services/yoko.service.js';
+import { yocoService, YocoPaymentStatus } from '../services/yoco.service.js';
 import { notificationService } from '../services/notification.service.js';
 
 const router = Router();
 
-/**
- * POST /api/payments/webhook/yoko
- * Webhook for Yoko payment capture
- */
-interface YokoWebhookPayload {
-  id: string;
-  status: string;
-  amount: number;
-  metadata?: { invoiceId?: string };
-}
-
-router.post('/webhook/yoko', asyncHandler(async (req: Request, res: Response) => {
-  const { id, status, amount, metadata } = req.body as YokoWebhookPayload;
-
-  // Yoko payload usually includes status and metadata we passed in checkout
-  if (status === 'SUCCESSFUL' && metadata?.invoiceId) {
-    const invoice = await prisma.invoice.findUnique({
-      where: { id: metadata.invoiceId },
-    });
-
-    if (invoice) {
-      await paymentService.recordPayment({
-        invoiceId: invoice.id,
-        customerId: invoice.customerId,
-        amount: amount / 100, // Convert from cents
-        method: 'yoco',
-        paymentDate: new Date(),
-        notes: `Automated capture from Yoko (Ref: ${id})`,
-      });
-      console.log(`Payment captured for invoice ${invoice.id} via webhook`);
-    }
-  }
-
-  return res.json({ received: true });
-}));
 // Validation schemas
 const recordPaymentSchema = z.object({
   invoiceId: z.string().uuid(),
@@ -56,9 +21,190 @@ const recordPaymentSchema = z.object({
   notes: z.string().optional(),
 });
 
+/**
+ * POST /api/payments/checkout
+ * Create a Yoco checkout session for an invoice
+ */
+interface CreateCheckoutBody {
+  invoiceId: string;
+}
 
+router.post('/checkout', asyncHandler(async (req: Request, res: Response) => {
+  const { invoiceId } = req.body as CreateCheckoutBody;
 
-// Send payment link
+  if (!invoiceId) {
+    return res.status(400).json({
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Invoice ID is required',
+      },
+    });
+  }
+
+  // Get invoice with customer details
+  const invoice = await prisma.invoice.findUnique({
+    where: { id: invoiceId },
+    include: {
+      customer: true,
+    },
+  });
+
+  if (!invoice) {
+    return res.status(404).json({
+      error: {
+        code: 'NOT_FOUND',
+        message: 'Invoice not found',
+      },
+    });
+  }
+
+  // Calculate amount due
+  const totalPaid = await prisma.payment.aggregate({
+    where: { invoiceId },
+    _sum: { amount: true },
+  });
+  
+  const amountDue = Number(invoice.total) - Number(totalPaid._sum.amount || 0);
+  
+  if (amountDue <= 0) {
+    return res.status(400).json({
+      error: {
+        code: 'ALREADY_PAID',
+        message: 'Invoice is already fully paid',
+      },
+    });
+  }
+
+  // Get frontend URL for redirect
+  const frontendUrl = process.env.CORS_ORIGIN || 'http://localhost:5173';
+  const redirectUrl = `${frontendUrl}/payment/${invoiceId}/complete`;
+  const cancelUrl = `${frontendUrl}/payment/${invoiceId}`;
+
+  // Create Yoco checkout session
+  const result = await yocoService.createCheckoutSession({
+    amount: Math.round(amountDue * 100), // Convert to cents
+    currency: 'ZAR',
+    invoiceId: invoice.id,
+    customerId: invoice.customerId,
+    redirectUrl,
+    cancelUrl,
+  });
+
+  if (!result.success || !result.redirectUrl) {
+    return res.status(400).json({
+      error: {
+        code: 'CHECKOUT_ERROR',
+        message: result.errorMessage || 'Failed to create checkout session',
+      },
+    });
+  }
+
+  return res.json({
+    success: true,
+    checkoutId: result.checkoutId,
+    redirectUrl: result.redirectUrl,
+    amount: amountDue,
+  });
+}));
+
+/**
+ * GET /api/payments/verify/:paymentId
+ * Verify payment status via Yoco Realtime API
+ */
+router.get('/verify/:paymentId', asyncHandler(async (req: Request, res: Response) => {
+  const { paymentId } = req.params;
+
+  if (!paymentId) {
+    return res.status(400).json({
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Payment ID is required',
+      },
+    });
+  }
+
+  const result = await yocoService.verifyPayment(paymentId);
+
+  if (!result.success) {
+    return res.status(400).json({
+      error: {
+        code: 'VERIFICATION_FAILED',
+        message: result.errorMessage || 'Failed to verify payment',
+      },
+    });
+  }
+
+  return res.json({
+    success: true,
+    payment: result.payment,
+  });
+}));
+
+/**
+ * POST /api/payments/webhook/yoco
+ * Webhook for Yoco payment status updates
+ */
+interface YocoWebhookPayload {
+  type: string;
+  id: string;
+  createdDate: string;
+  payload: {
+    id: string;
+    type: string;
+    status: string;
+    amount: number;
+    currency: string;
+    metadata?: { invoiceId?: string; customerId?: string };
+  }
+}
+
+router.post('/webhook/yoco', asyncHandler(async (req: Request, res: Response) => {
+  // Get signature from headers
+  const signature = req.headers['x-yoco-signature'] as string;
+  const rawBody = JSON.stringify(req.body);
+
+  // Verify webhook signature
+  const verificationResult = yocoService.handleWebhook(rawBody, signature || '');
+
+  if (!verificationResult.valid) {
+    console.error('Invalid Yoco webhook signature');
+    return res.status(400).json({ error: 'Invalid signature' });
+  }
+
+  const payment = verificationResult.payload;
+
+  if (!payment) {
+    return res.json({ received: true });
+  }
+
+  // Handle different payment statuses
+  if (payment.status === 'succeeded' && payment.metadata?.invoiceId) {
+    const invoice = await prisma.invoice.findUnique({
+      where: { id: payment.metadata.invoiceId },
+    });
+
+    if (invoice) {
+      await paymentService.recordPayment({
+        invoiceId: invoice.id,
+        customerId: invoice.customerId,
+        amount: payment.amount / 100, // Convert from cents
+        method: 'yoco',
+        paymentDate: new Date(payment.createdAt),
+        notes: `Automated capture from Yoco (Ref: ${payment.id})`,
+      });
+      console.log(`Payment captured for invoice ${invoice.id} via webhook`);
+    }
+  } else if (payment.status === 'failed') {
+    console.log(`Payment failed for invoice ${payment.metadata?.invoiceId}: ${payment.id}`);
+  }
+
+  return res.json({ received: true });
+}));
+
+/**
+ * POST /api/payments/send-link
+ * Send payment link
+ */
 interface SendLinkPayload {
   invoiceId: string;
   method: 'email' | 'whatsapp';
@@ -89,7 +235,7 @@ router.post('/send-link', authenticate, requireAdmin, asyncHandler(async (req: R
     });
   }
 
-  const link = yokoService.getPaymentPageUrl(invoice.id, Number(invoice.total));
+  const link = yocoService.getPaymentPageUrl(invoice.id, Number(invoice.total));
   await notificationService.sendPaymentLink(invoice.id, link, Number(invoice.total), method);
 
   return res.json({ success: true, message: `Payment link sent via ${method}` });
@@ -194,39 +340,100 @@ router.post('/', authenticate, requireAdmin, auditLog('CREATE', 'payment'), asyn
 }));
 
 /**
- * GET /api/payments/:id
- * Get payment details
+ * GET /api/payments/stats
+ * Get payment statistics by method (cash/yoco/eft)
+ * NOTE: Must be BEFORE /:id to avoid being caught by catch-all
  */
-router.get('/:id', authenticate, asyncHandler(async (req: Request, res: Response) => {
+router.get('/stats', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const payment = await paymentService.getPayment(id);
-
-    if (!payment) {
-      return res.status(404).json({
-        error: {
-          code: 'NOT_FOUND',
-          message: 'Payment not found',
-        },
-      });
-    }
-
-    // Check authorization - customers can only view their own payments
-    if (req.user?.role !== 'admin' && payment.customerId !== req.user?.userId) {
-      return res.status(403).json({
-        error: {
-          code: 'FORBIDDEN',
-          message: 'Access denied',
-        },
-      });
-    }
-
-    return res.json(payment);
+    const stats = await paymentService.getPaymentStatsByMethod();
+    return res.json(stats);
   } catch (error) {
     return res.status(500).json({
       error: {
         code: 'SERVER_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to retrieve payment',
+        message: error instanceof Error ? error.message : 'Failed to retrieve payment stats',
+      },
+    });
+  }
+}));
+
+/**
+ * GET /api/payments/stats/yoco
+ * Get Yoco-specific payment statistics
+ * NOTE: Must be BEFORE /:id to avoid being caught by catch-all
+ */
+router.get('/stats/yoco', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const stats = await paymentService.getPaymentStatsByMethod();
+    const recentTransactions = await paymentService.getRecentYocoTransactions(10);
+    
+    // Calculate Yoco-specific metrics
+    const yocoToday = stats.today.yoco;
+    const yocoWeek = stats.week.yoco;
+    const yocoMonth = stats.month.yoco;
+    
+    const yocoSuccessCount = recentTransactions.length;
+    const yocoFailedCount = 0;
+    
+    const averageTransaction = yocoToday > 0 && stats.today.count > 0 
+      ? yocoToday / stats.today.count 
+      : 0;
+
+    return res.json({
+      today: {
+        total: yocoToday,
+        count: stats.today.count,
+        yoco: yocoToday,
+        cash: stats.today.cash,
+        eft: stats.today.eft,
+      },
+      week: {
+        total: yocoWeek,
+        count: stats.week.count,
+        yoco: yocoWeek,
+        cash: stats.week.cash,
+        eft: stats.week.eft,
+      },
+      month: {
+        total: yocoMonth,
+        count: stats.month.count,
+        yoco: yocoMonth,
+        cash: stats.month.cash,
+        eft: stats.month.eft,
+      },
+      recentTransactions,
+      metrics: {
+        successCount: yocoSuccessCount,
+        failedCount: yocoFailedCount,
+        averageTransactionValue: averageTransaction,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: {
+        code: 'SERVER_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to retrieve Yoco payment stats',
+      },
+    });
+  }
+}));
+
+/**
+ * GET /api/payments/recent
+ * Get recent payments for admin view
+ * NOTE: Must be BEFORE /:id to avoid being caught by catch-all
+ */
+router.get('/recent', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    const payments = await paymentService.getRecentPayments(limit);
+    return res.json(payments);
+  } catch (error) {
+    return res.status(500).json({
+      error: {
+        code: 'SERVER_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to retrieve recent payments',
       },
     });
   }
@@ -316,6 +523,44 @@ router.get('/invoice/:invoiceId', authenticate, asyncHandler(async (req: Request
   }
 }));
 
-// Credit routes moved to credits.routes.ts
+/**
+ * GET /api/payments/:id
+ * Get payment details
+ * NOTE: This must be LAST as it's a catch-all for single-segment paths
+ */
+router.get('/:id', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const payment = await paymentService.getPayment(id);
+
+    if (!payment) {
+      return res.status(404).json({
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Payment not found',
+        },
+      });
+    }
+
+    // Check authorization - customers can only view their own payments
+    if (req.user?.role !== 'admin' && payment.customerId !== req.user?.userId) {
+      return res.status(403).json({
+        error: {
+          code: 'FORBIDDEN',
+          message: 'Access denied',
+        },
+      });
+    }
+
+    return res.json(payment);
+  } catch (error) {
+    return res.status(500).json({
+      error: {
+        code: 'SERVER_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to retrieve payment',
+      },
+    });
+  }
+}));
 
 export default router;

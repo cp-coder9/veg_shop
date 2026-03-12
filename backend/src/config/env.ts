@@ -41,6 +41,11 @@ const envSchema = z.object({
   FIREBASE_CLIENT_EMAIL: z.string().optional(),
   FIREBASE_PRIVATE_KEY: z.string().optional(),
   USE_FIREBASE: z.string().default('false').transform((val: string) => val === 'true'),
+
+  // Yoco Payment Gateway
+  YOCO_SECRET_KEY: z.string().optional(),
+  YOCO_PUBLIC_KEY: z.string().optional(),
+  YOCO_WEBHOOK_SECRET: z.string().optional(),
 });
 
 // Validate environment variables
@@ -76,5 +81,6 @@ export function logConfig(): void {
   console.log(`  - Database: ${env.DATABASE_URL ? '✓ Configured' : '✗ Not configured'}`);
   console.log(`  - WhatsApp: ${env.WHATSAPP_API_URL ? '✓ Configured' : '✗ Not configured'}`);
   console.log(`  - SendGrid: ${env.SENDGRID_API_KEY ? '✓ Configured' : '✗ Not configured'}`);
+  console.log(`  - Yoco: ${env.YOCO_SECRET_KEY ? '✓ Configured' : '✗ Not configured'}`);
   console.log('');
 }

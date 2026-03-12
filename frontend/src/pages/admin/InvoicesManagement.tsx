@@ -2,11 +2,13 @@ import { useState } from 'react';
 import {
   useAdminInvoices,
   useInvoice,
+  useInvoicePayments,
   useDownloadInvoicePDF,
   useSendPaymentLink,
 } from '../../hooks/useAdminInvoices';
 import { toNumber } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
+import { CreditCard, Banknote, Building } from 'lucide-react';
 
 export default function InvoicesManagement() {
   const [statusFilter, setStatusFilter] = useState('');
@@ -110,6 +112,9 @@ export default function InvoicesManagement() {
                 Status
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Payment
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Due Date
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -119,62 +124,13 @@ export default function InvoicesManagement() {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {invoices?.map((invoice) => (
-              <tr key={invoice.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {invoice.id.slice(0, 8)}...
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {invoice.customer?.name || invoice.customerId.slice(0, 8)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  R {toNumber(invoice.subtotal).toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                  {toNumber(invoice.creditApplied) > 0 ? `-R ${toNumber(invoice.creditApplied).toFixed(2)}` : '-'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                  R {toNumber(invoice.total).toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${invoice.status === 'paid'
-                      ? 'bg-green-100 text-green-800'
-                      : invoice.status === 'partial'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
-                      }`}
-                  >
-                    {invoice.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(invoice.dueDate).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                  <button
-                    onClick={() => setSelectedInvoiceId(invoice.id)}
-                    className="text-blue-600 hover:text-blue-900"
-                  >
-                    View
-                  </button>
-                  {invoice.pdfUrl && (
-                    <button
-                      onClick={() => handleDownloadPDF(invoice.id)}
-                      className="text-green-600 hover:text-green-900"
-                    >
-                      PDF
-                    </button>
-                  )}
-                  {invoice.status !== 'paid' && (
-                    <button
-                      onClick={() => setPaymentLinkModal({ open: true, invoiceId: invoice.id })}
-                      className="text-indigo-600 hover:text-indigo-900"
-                    >
-                      Link
-                    </button>
-                  )}
-                </td>
-              </tr>
+              <InvoiceRow 
+                key={invoice.id} 
+                invoice={invoice} 
+                onView={() => setSelectedInvoiceId(invoice.id)}
+                onDownloadPDF={() => handleDownloadPDF(invoice.id)}
+                onSendLink={() => setPaymentLinkModal({ open: true, invoiceId: invoice.id })}
+              />
             ))}
           </tbody>
         </table>
@@ -183,60 +139,13 @@ export default function InvoicesManagement() {
       {/* Invoices List - Mobile Cards */}
       <div className="md:hidden space-y-4">
         {invoices?.map((invoice) => (
-          <div key={invoice.id} className="bg-white p-4 rounded-lg shadow space-y-3">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-sm font-bold text-gray-900">#{invoice.id.slice(0, 8)}...</h3>
-                <p className="text-sm text-gray-600">{invoice.customer?.name || invoice.customerId.slice(0, 8)}</p>
-              </div>
-              <span
-                className={`px-2 py-1 text-xs font-semibold rounded-full ${invoice.status === 'paid'
-                  ? 'bg-green-100 text-green-800'
-                  : invoice.status === 'partial'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-red-100 text-red-800'
-                  }`}
-              >
-                {invoice.status}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="text-gray-500">Total:</span>
-                <span className="ml-1 font-semibold text-gray-900">R {toNumber(invoice.total).toFixed(2)}</span>
-              </div>
-              <div>
-                <span className="text-gray-500">Due:</span>
-                <span className="ml-1 text-gray-900">{new Date(invoice.dueDate).toLocaleDateString()}</span>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-gray-100 flex justify-end gap-3">
-              <button
-                onClick={() => setSelectedInvoiceId(invoice.id)}
-                className="w-full sm:w-auto px-3 py-1 bg-blue-50 text-blue-600 rounded text-sm font-medium hover:bg-blue-100"
-              >
-                View Details
-              </button>
-              {invoice.pdfUrl && (
-                <button
-                  onClick={() => handleDownloadPDF(invoice.id)}
-                  className="w-full sm:w-auto px-3 py-1 bg-green-50 text-green-600 rounded text-sm font-medium hover:bg-green-100"
-                >
-                  PDF
-                </button>
-              )}
-              {invoice.status !== 'paid' && (
-                <button
-                  onClick={() => setPaymentLinkModal({ open: true, invoiceId: invoice.id })}
-                  className="w-full sm:w-auto px-3 py-1 bg-indigo-50 text-indigo-600 rounded text-sm font-medium hover:bg-indigo-100"
-                >
-                  Pay Link
-                </button>
-              )}
-            </div>
-          </div>
+          <InvoiceCard 
+            key={invoice.id} 
+            invoice={invoice} 
+            onView={() => setSelectedInvoiceId(invoice.id)}
+            onDownloadPDF={() => handleDownloadPDF(invoice.id)}
+            onSendLink={() => setPaymentLinkModal({ open: true, invoiceId: invoice.id })}
+          />
         ))}
       </div>
 
@@ -255,6 +164,202 @@ export default function InvoicesManagement() {
           onClose={() => setPaymentLinkModal({ open: false, invoiceId: null })}
         />
       )}
+    </div>
+  );
+}
+
+interface InvoiceRowProps {
+  invoice: {
+    id: string;
+    customerId: string;
+    customer?: { name: string };
+    subtotal: number | string;
+    creditApplied: number | string;
+    total: number | string;
+    status: string;
+    dueDate: string;
+    pdfUrl?: string | null;
+  };
+  onView: () => void;
+  onDownloadPDF: () => void;
+  onSendLink: () => void;
+}
+
+function InvoiceRow({ invoice, onView, onDownloadPDF, onSendLink }: InvoiceRowProps) {
+  const { data: payments, isLoading } = useInvoicePayments(invoice.id);
+  
+  const getPaymentMethod = () => {
+    if (isLoading || !payments || payments.length === 0) return null;
+    const lastPayment = payments[0];
+    return lastPayment.method;
+  };
+  
+  const paymentMethod = getPaymentMethod();
+  
+  const getMethodIcon = () => {
+    switch (paymentMethod) {
+      case 'yoco': return <CreditCard size={16} className="text-purple-600" />;
+      case 'cash': return <Banknote size={16} className="text-green-600" />;
+      case 'eft': return <Building size={16} className="text-blue-600" />;
+      default: return null;
+    }
+  };
+  
+  const getMethodLabel = () => {
+    switch (paymentMethod) {
+      case 'yoco': return 'Yoco';
+      case 'cash': return 'Cash';
+      case 'eft': return 'EFT';
+      default: return '-';
+    }
+  };
+
+  return (
+    <tr>
+      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+        {invoice.id.slice(0, 8)}...
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {invoice.customer?.name || invoice.customerId.slice(0, 8)}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        R {toNumber(invoice.subtotal).toFixed(2)}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
+        {toNumber(invoice.creditApplied) > 0 ? `-R ${toNumber(invoice.creditApplied).toFixed(2)}` : '-'}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+        R {toNumber(invoice.total).toFixed(2)}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span
+          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${invoice.status === 'paid'
+            ? 'bg-green-100 text-green-800'
+            : invoice.status === 'partial'
+              ? 'bg-yellow-100 text-yellow-800'
+              : 'bg-red-100 text-red-800'
+            }`}
+        >
+          {invoice.status}
+        </span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        {paymentMethod ? (
+          <div className="flex items-center gap-1">
+            {getMethodIcon()}
+            <span className="text-sm text-gray-600">{getMethodLabel()}</span>
+          </div>
+        ) : (
+          <span className="text-sm text-gray-400">-</span>
+        )}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {new Date(invoice.dueDate).toLocaleDateString()}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+        <button
+          onClick={onView}
+          className="text-blue-600 hover:text-blue-900"
+        >
+          View
+        </button>
+        {invoice.pdfUrl && (
+          <button
+            onClick={onDownloadPDF}
+            className="text-green-600 hover:text-green-900"
+          >
+            PDF
+          </button>
+        )}
+        {invoice.status !== 'paid' && (
+          <button
+            onClick={onSendLink}
+            className="text-indigo-600 hover:text-indigo-900"
+          >
+            Link
+          </button>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+function InvoiceCard({ invoice, onView, onDownloadPDF, onSendLink }: InvoiceRowProps) {
+  const { data: payments, isLoading } = useInvoicePayments(invoice.id);
+  
+  const getPaymentMethod = () => {
+    if (isLoading || !payments || payments.length === 0) return null;
+    return payments[0].method;
+  };
+  
+  const paymentMethod = getPaymentMethod();
+  
+  const getMethodBadge = () => {
+    switch (paymentMethod) {
+      case 'yoco': return <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded">💳 Yoco</span>;
+      case 'cash': return <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">💵 Cash</span>;
+      case 'eft': return <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">🏦 EFT</span>;
+      default: return null;
+    }
+  };
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow space-y-3">
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="text-sm font-bold text-gray-900">#{invoice.id.slice(0, 8)}...</h3>
+          <p className="text-sm text-gray-600">{invoice.customer?.name || invoice.customerId.slice(0, 8)}</p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <span
+            className={`px-2 py-1 text-xs font-semibold rounded-full ${invoice.status === 'paid'
+              ? 'bg-green-100 text-green-800'
+              : invoice.status === 'partial'
+                ? 'bg-yellow-100 text-yellow-800'
+                : 'bg-red-100 text-red-800'
+              }`}
+          >
+            {invoice.status}
+          </span>
+          {getMethodBadge()}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        <div>
+          <span className="text-gray-500">Total:</span>
+          <span className="ml-1 font-semibold text-gray-900">R {toNumber(invoice.total).toFixed(2)}</span>
+        </div>
+        <div>
+          <span className="text-gray-500">Due:</span>
+          <span className="ml-1 text-gray-900">{new Date(invoice.dueDate).toLocaleDateString()}</span>
+        </div>
+      </div>
+
+      <div className="pt-2 border-t border-gray-100 flex justify-end gap-3">
+        <button
+          onClick={onView}
+          className="w-full sm:w-auto px-3 py-1 bg-blue-50 text-blue-600 rounded text-sm font-medium hover:bg-blue-100"
+        >
+          View Details
+        </button>
+        {invoice.pdfUrl && (
+          <button
+            onClick={onDownloadPDF}
+            className="w-full sm:w-auto px-3 py-1 bg-green-50 text-green-600 rounded text-sm font-medium hover:bg-green-100"
+          >
+            PDF
+          </button>
+        )}
+        {invoice.status !== 'paid' && (
+          <button
+            onClick={onSendLink}
+            className="w-full sm:w-auto px-3 py-1 bg-indigo-50 text-indigo-600 rounded text-sm font-medium hover:bg-indigo-100"
+          >
+            Pay Link
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -332,7 +437,31 @@ interface InvoiceDetailModalProps {
 
 function InvoiceDetailModal({ invoiceId, onClose }: InvoiceDetailModalProps) {
   const { data: invoice, isLoading } = useInvoice(invoiceId);
+  const { data: payments } = useInvoicePayments(invoiceId);
   const downloadPDF = useDownloadInvoicePDF();
+
+  // Get the primary payment method
+  const getPrimaryPaymentMethod = () => {
+    if (!payments || payments.length === 0) return null;
+    return payments[0].method;
+  };
+
+  const paymentMethod = getPrimaryPaymentMethod();
+
+  const getMethodDetails = () => {
+    switch (paymentMethod) {
+      case 'yoco':
+        return { icon: '💳', label: 'Yoco Card', color: 'bg-purple-50 border-purple-200' };
+      case 'cash':
+        return { icon: '💵', label: 'Cash', color: 'bg-green-50 border-green-200' };
+      case 'eft':
+        return { icon: '🏦', label: 'EFT Transfer', color: 'bg-blue-50 border-blue-200' };
+      default:
+        return { icon: '💰', label: 'No payment yet', color: 'bg-gray-50 border-gray-200' };
+    }
+  };
+
+  const methodDetails = getMethodDetails();
 
   if (isLoading) {
     return (
@@ -378,6 +507,27 @@ function InvoiceDetailModal({ invoiceId, onClose }: InvoiceDetailModalProps) {
               </div>
             </div>
           </div>
+
+          {/* Payment Method */}
+          {paymentMethod && (
+            <div className={`p-4 rounded-lg border ${methodDetails.color}`}>
+              <h3 className="font-semibold text-gray-900 mb-2">Payment Method</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{methodDetails.icon}</span>
+                <span className="font-medium text-gray-900">{methodDetails.label}</span>
+                {paymentMethod === 'yoco' && invoice.status === 'paid' && (
+                  <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 text-xs rounded">
+                    Verified
+                  </span>
+                )}
+              </div>
+              {payments && payments.length > 0 && (
+                <div className="mt-2 text-sm text-gray-600">
+                  {payments.length} payment(s) recorded
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Order Items */}
           {invoice.order && (
@@ -444,6 +594,31 @@ function InvoiceDetailModal({ invoiceId, onClose }: InvoiceDetailModalProps) {
               </div>
             </div>
           </div>
+
+          {/* Payment History */}
+          {payments && payments.length > 0 && (
+            <div className="bg-green-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-gray-900 mb-2">Payment History</h3>
+              <div className="space-y-2">
+                {payments.map((payment) => (
+                  <div key={payment.id} className="flex justify-between items-center text-sm">
+                    <div className="flex items-center gap-2">
+                      {payment.method === 'yoco' && <CreditCard size={14} className="text-purple-600" />}
+                      {payment.method === 'cash' && <Banknote size={14} className="text-green-600" />}
+                      {payment.method === 'eft' && <Building size={14} className="text-blue-600" />}
+                      <span className="text-gray-600 capitalize">{payment.method}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-900">R {(Number(payment.amount) / 100).toFixed(2)}</span>
+                      <span className="ml-2 text-gray-500 text-xs">
+                        {new Date(payment.paymentDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 mt-6">

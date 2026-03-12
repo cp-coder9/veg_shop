@@ -20,6 +20,30 @@ interface UpdateCustomerRequest {
   deliveryPreference?: 'delivery' | 'collection';
 }
 
+// Payment interface
+export interface Payment {
+  id: string;
+  invoiceId: string;
+  customerId: string;
+  amount: number;
+  method: 'cash' | 'yoco' | 'eft';
+  paymentDate: Date | string;
+  notes: string | null;
+  invoice?: {
+    id: string;
+    orderId: string;
+    status: 'paid' | 'partial' | 'unpaid';
+    subtotal: number;
+    creditApplied: number;
+    total: number;
+  };
+  customer?: {
+    id: string;
+    name: string;
+    email: string | null;
+  };
+}
+
 export function useCustomerProfile() {
   return useQuery({
     queryKey: ['customer', 'profile'],
@@ -59,6 +83,20 @@ export function useCustomerInvoices() {
     queryKey: ['invoices', 'customer'],
     queryFn: async () => {
       const response = await api.get('/invoices/customer/me');
+      return response.data;
+    },
+  });
+}
+
+/**
+ * Hook to get customer's payment history
+ * Returns all payments made by the authenticated customer
+ */
+export function useCustomerPayments() {
+  return useQuery({
+    queryKey: ['payments', 'customer'],
+    queryFn: async () => {
+      const response = await api.get<Payment[]>('/payments/customer/me');
       return response.data;
     },
   });

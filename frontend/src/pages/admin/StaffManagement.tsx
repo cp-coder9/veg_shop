@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api';
 import StaffHistoryModal from '../../components/StaffHistoryModal';
-import { Button, Input, Card, CardContent, Badge, Modal, Select } from '@/components/ui';
+import { Button, Input, Card, Badge, Modal, Select } from '@/components/ui';
 
 interface User {
     id: string;
@@ -206,8 +206,8 @@ const StaffManagement = () => {
                 ) : (
                     <div className="divide-y divide-light-gray">
                         {users.map((user: User) => (
-                            <div 
-                                key={user.id} 
+                            <div
+                                key={user.id}
                                 className={`p-6 flex items-center justify-between hover:bg-cream/50 transition-colors ${user.status === 'inactive' ? 'opacity-60 bg-light-gray/30' : ''}`}
                             >
                                 <div className="flex-1">

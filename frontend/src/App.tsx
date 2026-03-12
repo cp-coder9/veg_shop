@@ -63,6 +63,7 @@ function App() {
           <Route path="/login" element={<AuthPage />} />
           <Route path="/verify" element={<VerifyCodePage />} />
           <Route path="/payment/:invoiceId" element={<PaymentPage />} />
+          <Route path="/payment/:invoiceId/complete" element={<PaymentPage />} />
 
           {/* Customer Routes */}
           <Route element={<Layout />}>

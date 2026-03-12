@@ -12,23 +12,23 @@ export default {
                 'primary-dark': '#1A1A1A',
                 'primary-light': '#FFFFFF',
                 'cream': '#F5F0E8',
-                
+
                 // Secondary Colors
                 'warm-gray': '#8B8178',
                 'light-gray': '#E8E4DE',
                 'soft-black': '#2D2926',
-                
+
                 // Accent Colors
                 'terracotta': '#C17F59',
                 'sage-green': '#8B9A7D',
                 'muted-gold': '#B8A77A',
-                
+
                 // Semantic Colors
                 'success': '#7A9E7E',
                 'warning': '#D4A574',
                 'error': '#C75D5D',
                 'info': '#7B8FA2',
-                
+
                 // Legacy colors for backward compatibility
                 'organic-green': {
                     100: '#fdf6e8',
@@ -49,6 +49,8 @@ export default {
                 'body': ['Inter', '-apple-system', 'sans-serif'],
                 // Accent font for labels, captions
                 'accent': ['"DM Sans"', 'sans-serif'],
+                // Serif font
+                'serif': ['"Playfair Display"', 'Georgia', 'serif'],
                 // Legacy fonts for backward compatibility
                 'sans': ['Inter', '-apple-system', 'sans-serif'],
                 'league': ['"League Spartan"', 'sans-serif'],

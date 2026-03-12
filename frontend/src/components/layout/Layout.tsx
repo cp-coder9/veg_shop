@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { UserIcon, CartIcon } from '../ui';
 import logo from '../../assets/our-harvest-tote-logo.png';
 
 /**
@@ -7,14 +8,9 @@ import logo from '../../assets/our-harvest-tote-logo.png';
  * Features bottom tab navigation for mobile and responsive header
  */
 export default function Layout() {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
 
   const navItems = [
     {
@@ -64,59 +60,58 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-cream flex flex-col">
-      {/* Header - Hidden on mobile, visible on tablet/desktop */}
-      <header className="hidden md:block bg-white border-b border-light-gray px-5 py-4 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Logo */}
-          <NavLink to="/" className="flex items-center gap-3">
-            <img
-              src={logo}
-              alt="Our Harvest Tote"
-              className="w-10 h-10 rounded-lg"
-            />
-            <span className="font-display text-display-sm text-primary-dark">
-              Our Harvest Tote
-            </span>
-          </NavLink>
+      {/* Header - Hidden on mobile, visible on tablet/desktop. Also hidden on home page when guest */}
+      {!(location.pathname === '/' && !user) && (
+        <header className="hidden md:block bg-white border-b border-light-gray px-5 py-4 sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            {/* Logo */}
+            <NavLink to="/" className="flex items-center gap-3">
+              <img
+                src={logo}
+                alt="Our Harvest Tote"
+                className="w-10 h-10 rounded-lg"
+              />
+              <span className="font-display text-display-sm text-primary-dark">
+                Our Harvest Tote
+              </span>
+            </NavLink>
 
-          {/* Desktop Navigation */}
-          <nav className="flex items-center gap-8">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={`font-body text-body-md transition-colors ${
-                  isActive(item.path)
+            {/* Desktop Navigation */}
+            <nav className="flex items-center gap-8">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={`font-body text-body-md transition-colors ${isActive(item.path)
                     ? 'text-primary-dark font-medium'
                     : 'text-warm-gray hover:text-primary-dark'
-                }`}
-              >
-                {item.name}
-              </NavLink>
-            ))}
-          </nav>
+                    }`}
+                >
+                  {item.name}
+                </NavLink>
+              ))}
+            </nav>
 
-          {/* User Info & Logout */}
-          {user && (
-            <div className="flex items-center gap-4">
-              <span className="text-body-sm text-warm-gray">
-                {user.name}
-              </span>
+            {/* Header Icons */}
+            <div className="flex items-center gap-6">
               <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 text-warm-gray hover:text-primary-dark transition-colors"
+                onClick={() => navigate(user ? '/profile' : '/login')}
+                className="text-warm-gray hover:text-primary-dark transition-colors"
+                title={user ? "Profile" : "Login"}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                <span className="text-body-sm">
-                  Logout
-                </span>
+                <UserIcon strokeWidth={1.2} />
+              </button>
+              <button
+                onClick={() => navigate(user ? '/cart' : '/login')}
+                className="text-warm-gray hover:text-primary-dark transition-colors"
+                title="Cart"
+              >
+                <CartIcon strokeWidth={1.2} />
               </button>
             </div>
-          )}
-        </div>
-      </header>
+          </div>
+        </header>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 pb-20 md:pb-0">
@@ -124,24 +119,25 @@ export default function Layout() {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-light-gray z-50">
-        <div className="flex items-center justify-around py-2">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={`flex flex-col items-center py-2 px-4 transition-colors ${
-                isActive(item.path)
+      {user && (user.role === 'admin' || user.role === 'customer') && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-light-gray z-50">
+          <div className="flex items-center justify-around py-2">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={`flex flex-col items-center py-2 px-4 transition-colors ${isActive(item.path)
                   ? 'text-primary-dark'
                   : 'text-warm-gray hover:text-primary-dark'
-              }`}
-            >
-              {item.icon}
-              <span className="text-caption font-medium mt-1">{item.name}</span>
-            </NavLink>
-          ))}
-        </div>
-      </nav>
+                  }`}
+              >
+                {item.icon}
+                <span className="text-caption font-medium mt-1">{item.name}</span>
+              </NavLink>
+            ))}
+          </div>
+        </nav>
+      )}
     </div>
   );
 }

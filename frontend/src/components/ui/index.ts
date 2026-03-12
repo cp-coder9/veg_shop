@@ -25,13 +25,13 @@ export { Select, type SelectSize } from './Select';
 export { Textarea, type TextareaSize } from './Textarea';
 
 // Card component
-export { 
-  Card, 
-  CardHeader, 
-  CardContent, 
+export {
+  Card,
+  CardHeader,
+  CardContent,
   CardFooter,
-  type CardVariant, 
-  type CardPadding 
+  type CardVariant,
+  type CardPadding
 } from './Card';
 
 // Modal component
@@ -39,3 +39,6 @@ export { Modal, type ModalSize } from './Modal';
 
 // Badge component
 export { Badge, type BadgeVariant } from './Badge';
+
+// Icons component
+export { UserIcon, CartIcon } from './Icons';

@@ -25,6 +25,27 @@ export function useAdminInvoices(filters?: {
   });
 }
 
+interface InvoicePayment {
+  id: string;
+  invoiceId: string;
+  customerId: string;
+  amount: number;
+  method: string;
+  paymentDate: string;
+  notes: string | null;
+}
+
+export function useInvoicePayments(invoiceId: string) {
+  return useQuery<InvoicePayment[]>({
+    queryKey: ['invoice-payments', invoiceId],
+    queryFn: async () => {
+      const response = await api.get(`/payments/invoice/${invoiceId}`);
+      return response.data;
+    },
+    enabled: !!invoiceId,
+  });
+}
+
 interface InvoiceWithOrder extends Invoice {
   order: {
     id: string;

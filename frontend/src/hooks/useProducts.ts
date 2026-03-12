@@ -9,8 +9,15 @@ export function useProducts() {
       const response = await api.get<Product[]>('/products', {
         params: { isAvailable: true },
       });
+      // Ensure we always return an array
+      if (!Array.isArray(response.data)) {
+        console.warn('API returned non-array response:', response.data);
+        return [];
+      }
       return response.data;
     },
+    // Provide default value to prevent undefined issues
+    placeholderData: [],
   });
 }
 

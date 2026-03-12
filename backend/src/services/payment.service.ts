@@ -1,7 +1,7 @@
 import { prisma } from '../lib/prisma.js';
 import { Decimal } from '@prisma/client/runtime/library';
 import { appEvents } from '../lib/events.js';
-import { yokoService } from './yoko.service.js';
+import { yocoService } from './yoco.service.js';
 import { env } from '../config/env.js';
 import { paymentRepository } from '../repositories/payment.repository.js';
 import { invoiceRepository } from '../repositories/invoice.repository.js';
@@ -17,7 +17,7 @@ export interface RecordPaymentDto {
   method: 'cash' | 'yoco' | 'eft';
   paymentDate: Date;
   notes?: string;
-  yokoToken?: string; // Optional token for real Yoko transactions
+  yocoToken?: string; // Optional token for real Yoco transactions
 }
 
 export interface ShortDeliveryDto {
@@ -72,10 +72,10 @@ export class PaymentService {
       if (data.amount <= 0) throw new Error('Payment amount must be positive');
 
       let gatewayReference: string | undefined;
-      if (data.method === 'yoco' && data.yokoToken) {
-        const yokoResult = await yokoService.createCharge(data.yokoToken, Math.round(data.amount * 100));
-        if (!yokoResult.success) throw new Error(`Yoko Payment Failed: ${yokoResult.errorMessage}`);
-        gatewayReference = yokoResult.chargeId;
+      if (data.method === 'yoco' && data.yocoToken) {
+        const yocoResult = await yocoService.createCharge(data.yocoToken, Math.round(data.amount * 100));
+        if (!yocoResult.success) throw new Error(`Yoco Payment Failed: ${yocoResult.errorMessage}`);
+        gatewayReference = yocoResult.chargeId;
       }
 
       const payment = await paymentRepository.create({
@@ -84,7 +84,7 @@ export class PaymentService {
         amount: data.amount,
         method: data.method,
         paymentDate: data.paymentDate,
-        notes: gatewayReference ? `${data.notes || ''} (Yoko Ref: ${gatewayReference})`.trim() : data.notes,
+        notes: gatewayReference ? `${data.notes || ''} (Yoco Ref: ${gatewayReference})`.trim() : data.notes,
         createdAt: new Date(),
         updatedAt: new Date(),
       } as any);
@@ -154,14 +154,14 @@ export class PaymentService {
         throw new Error(`Invalid payment method. Must be one of: ${validMethods.join(', ')}`);
       }
 
-      // If real Yoko payment, process with Yoko first
+      // If real Yoco payment, process with Yoco first
       let gatewayReference: string | undefined;
-      if (data.method === 'yoco' && data.yokoToken) {
-        const yokoResult = await yokoService.createCharge(data.yokoToken, Math.round(data.amount * 100));
-        if (!yokoResult.success) {
-          throw new Error(`Yoko Payment Failed: ${yokoResult.errorMessage}`);
+      if (data.method === 'yoco' && data.yocoToken) {
+        const yocoResult = await yocoService.createCharge(data.yocoToken, Math.round(data.amount * 100));
+        if (!yocoResult.success) {
+          throw new Error(`Yoco Payment Failed: ${yocoResult.errorMessage}`);
         }
-        gatewayReference = yokoResult.chargeId;
+        gatewayReference = yocoResult.chargeId;
       }
 
       // Record payment and update invoice in a transaction
@@ -174,7 +174,7 @@ export class PaymentService {
             amount: new Decimal(data.amount),
             method: data.method,
             paymentDate: data.paymentDate,
-            notes: gatewayReference ? `${data.notes || ''} (Yoko Ref: ${gatewayReference})`.trim() : data.notes,
+            notes: gatewayReference ? `${data.notes || ''} (Yoco Ref: ${gatewayReference})`.trim() : data.notes,
           },
           include: {
             invoice: true,
@@ -466,7 +466,10 @@ export class PaymentService {
       },
     });
 
-    return credits;
+    return credits.map((credit: any) => ({
+      ...credit,
+      amount: Number(credit.amount),
+    }));
   }
 
   /**
@@ -655,6 +658,133 @@ export class PaymentService {
 
       return credit;
     }
+  }
+
+  /**
+   * Get payment stats broken down by method (cash/yoco/eft)
+   */
+  async getPaymentStatsByMethod(): Promise<{
+    today: { total: number; count: number; yoco: number; cash: number; eft: number };
+    week: { total: number; count: number; yoco: number; cash: number; eft: number };
+    month: { total: number; count: number; yoco: number; cash: number; eft: number };
+  }> {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const getStats = async (startDate: Date) => {
+      const payments = await prisma.payment.findMany({
+        where: {
+          paymentDate: {
+            gte: startDate,
+          },
+        },
+      });
+
+      const total = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+      const yoco = payments.filter((p: any) => p.method === 'yoco').reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+      const cash = payments.filter((p: any) => p.method === 'cash').reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+      const eft = payments.filter((p: any) => p.method === 'eft').reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+
+      return {
+        total,
+        count: payments.length,
+        yoco,
+        cash,
+        eft,
+      };
+    };
+
+    const [today, week, month] = await Promise.all([
+      getStats(startOfDay),
+      getStats(startOfWeek),
+      getStats(startOfMonth),
+    ]);
+
+    return { today, week, month };
+  }
+
+  /**
+   * Get recent Yoco payments for admin view
+   */
+  async getRecentYocoTransactions(limit: number = 10): Promise<any[]> {
+    const payments = await prisma.payment.findMany({
+      where: {
+        method: 'yoco',
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        invoice: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: {
+        paymentDate: 'desc',
+      },
+      take: limit,
+    });
+
+    return payments.map((payment: any) => ({
+      id: payment.id,
+      amount: Number(payment.amount),
+      paymentDate: payment.paymentDate,
+      notes: payment.notes,
+      customer: payment.customer,
+      invoiceId: payment.invoiceId,
+      invoiceStatus: payment.invoice?.status,
+    }));
+  }
+
+  /**
+   * Get all recent payments for admin view
+   */
+  async getRecentPayments(limit: number = 20): Promise<any[]> {
+    const payments = await prisma.payment.findMany({
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        invoice: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: {
+        paymentDate: 'desc',
+      },
+      take: limit,
+    });
+
+    return payments.map((payment: any) => ({
+      id: payment.id,
+      amount: Number(payment.amount),
+      method: payment.method,
+      paymentDate: payment.paymentDate,
+      notes: payment.notes,
+      customer: payment.customer,
+      invoiceId: payment.invoiceId,
+      invoiceStatus: payment.invoice?.status,
+    }));
   }
 }
 

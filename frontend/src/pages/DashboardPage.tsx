@@ -6,7 +6,7 @@ import { useCartStore } from '../stores/cartStore';
 import api from '../lib/api';
 import { toast } from 'react-hot-toast';
 import { formatPrice } from '../lib/utils';
-import { Button, Input, Card, CardHeader, CardContent, Badge } from '../components/ui';
+import { Button, Input, Card, Badge } from '../components/ui';
 
 export default function DashboardPage() {
     const navigate = useNavigate();

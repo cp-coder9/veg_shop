@@ -74,7 +74,7 @@ export default function AuthPage() {
             <span className="font-medium">🔧 Quick Logins (Development)</span>
             <span className="text-xl">{showQuickLogin ? '▼' : '▲'}</span>
           </button>
-          
+
           {showQuickLogin && (
             <div className="px-4 pb-4">
               <p className="text-sm text-gray-400 mb-3">
@@ -100,7 +100,17 @@ export default function AuthPage() {
 
       {/* Main Auth Card - pushed down when quick login is shown */}
       <div className={`w-full max-w-md ${showQuickLogin ? 'mt-32' : ''}`}>
-        <Card>
+        <Card className="relative">
+          {/* Back Button */}
+          <button
+            onClick={() => navigate('/')}
+            className="absolute top-4 left-4 p-2 text-warm-gray hover:text-primary-dark transition-colors"
+            aria-label="Back to home"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </button>
           <div className="text-center mb-8">
             {/* Logo */}
             <div className="w-20 h-20 bg-terracotta/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -138,11 +148,10 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => setMethod('whatsapp')}
-                    className={`flex-1 p-3 rounded-lg border-2 transition-all ${
-                      method === 'whatsapp'
+                    className={`flex-1 p-3 rounded-lg border-2 transition-all ${method === 'whatsapp'
                         ? 'border-terracotta bg-terracotta/5'
                         : 'border-light-gray hover:border-warm-gray'
-                    }`}
+                      }`}
                   >
                     <span className="text-xl mb-1 block">📱</span>
                     <span className="font-body text-body-sm text-primary-dark">WhatsApp</span>
@@ -150,11 +159,10 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => setMethod('email')}
-                    className={`flex-1 p-3 rounded-lg border-2 transition-all ${
-                      method === 'email'
+                    className={`flex-1 p-3 rounded-lg border-2 transition-all ${method === 'email'
                         ? 'border-terracotta bg-terracotta/5'
                         : 'border-light-gray hover:border-warm-gray'
-                    }`}
+                      }`}
                   >
                     <span className="text-xl mb-1 block">📧</span>
                     <span className="font-body text-body-sm text-primary-dark">Email</span>
