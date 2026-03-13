@@ -1,16 +1,19 @@
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { UserIcon, CartIcon } from '../ui';
 import logo from '../../assets/our-harvest-tote-logo.png';
 
-/**
- * Main customer layout with mobile-first design
- * Features bottom tab navigation for mobile and responsive header
- */
 export default function Layout() {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Close menu when route changes
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
 
   const navItems = [
     {
@@ -51,6 +54,12 @@ export default function Layout() {
     },
   ];
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+    setIsMenuOpen(false);
+  };
+
   const isActive = (path: string) => {
     if (path === '/') {
       return location.pathname === '/';
@@ -60,84 +69,139 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-cream flex flex-col">
-      {/* Header - Hidden on mobile, visible on tablet/desktop. Also hidden on home page when guest */}
-      {!(location.pathname === '/' && !user) && (
-        <header className="hidden md:block bg-white border-b border-light-gray px-5 py-4 sticky top-0 z-40">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            {/* Logo */}
+      {/* Mobile-only Header for Hamburger (Visible when guest on home page or everywhere else) */}
+      <header className="bg-[#F2F2F7] md:hidden border-b border-gray-300 px-5 py-4 sticky top-0 z-40 flex items-center justify-between">
+        <button
+          onClick={() => setIsMenuOpen(true)}
+          className="text-primary-dark p-1"
+          aria-label="Menu"
+        >
+          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M4 8h16M4 16h10" strokeWidth="2.5" strokeLinecap="round" />
+          </svg>
+        </button>
+
+        <NavLink to="/" className="flex items-center gap-2">
+          <img src={logo} alt="Logo" className="w-8 h-8 rounded-lg" />
+        </NavLink>
+
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate(user ? '/profile' : '/login')} className="text-warm-gray">
+            <UserIcon width={24} height={24} strokeWidth={1.5} />
+          </button>
+          <button onClick={() => navigate(user ? '/cart' : '/login')} className="text-warm-gray">
+            <CartIcon width={24} height={24} strokeWidth={1.5} />
+          </button>
+        </div>
+      </header>
+
+      {/* Desktop Header */}
+      <header className="hidden md:block bg-[#F2F2F7] border-b border-gray-300 px-5 py-4 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <button
+              onClick={() => setIsMenuOpen(true)}
+              className="text-primary-dark p-1"
+              aria-label="Menu"
+            >
+              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M4 8h16M4 16h10" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+            </button>
             <NavLink to="/" className="flex items-center gap-3">
-              <img
-                src={logo}
-                alt="Our Harvest Tote"
-                className="w-10 h-10 rounded-lg"
-              />
-              <span className="font-display text-display-sm text-primary-dark">
-                Our Harvest Tote
-              </span>
+              <img src={logo} alt="Logo" className="w-10 h-10 rounded-lg" />
+              <span className="font-display text-display-sm text-primary-dark">Our Harvest Tote</span>
             </NavLink>
-
-            {/* Desktop Navigation */}
-            <nav className="flex items-center gap-8">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={`font-body text-body-md transition-colors ${isActive(item.path)
-                    ? 'text-primary-dark font-medium'
-                    : 'text-warm-gray hover:text-primary-dark'
-                    }`}
-                >
-                  {item.name}
-                </NavLink>
-              ))}
-            </nav>
-
-            {/* Header Icons */}
-            <div className="flex items-center gap-6">
-              <button
-                onClick={() => navigate(user ? '/profile' : '/login')}
-                className="text-warm-gray hover:text-primary-dark transition-colors"
-                title={user ? "Profile" : "Login"}
-              >
-                <UserIcon strokeWidth={1.2} />
-              </button>
-              <button
-                onClick={() => navigate(user ? '/cart' : '/login')}
-                className="text-warm-gray hover:text-primary-dark transition-colors"
-                title="Cart"
-              >
-                <CartIcon strokeWidth={1.2} />
-              </button>
-            </div>
           </div>
-        </header>
+
+          <div className="flex items-center gap-6">
+            <button onClick={() => navigate(user ? '/profile' : '/login')} className="text-warm-gray hover:text-primary-dark transition-colors">
+              <UserIcon strokeWidth={1.2} />
+            </button>
+            <button onClick={() => navigate(user ? '/cart' : '/login')} className="text-warm-gray hover:text-primary-dark transition-colors">
+              <CartIcon strokeWidth={1.2} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Slide-out Menu Overlay */}
+      {isMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-[60] backdrop-blur-sm transition-opacity"
+          onClick={() => setIsMenuOpen(false)}
+        />
       )}
 
-      {/* Main Content */}
-      <main className="flex-1 pb-20 md:pb-0">
-        <Outlet />
-      </main>
+      {/* Slide-out Menu */}
+      <aside className={`fixed top-0 left-0 bottom-0 w-[280px] bg-white z-[70] shadow-2xl transition-transform duration-300 ease-in-out transform ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="p-6 flex flex-col h-full">
+          <div className="flex items-center justify-between mb-10">
+            <img src={logo} alt="Logo" className="w-12 h-12 rounded-xl" />
+            <button onClick={() => setIsMenuOpen(false)} className="text-warm-gray p-2" aria-label="Close menu">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
 
-      {/* Mobile Bottom Navigation */}
-      {user && (user.role === 'admin' || user.role === 'customer') && (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-light-gray z-50">
-          <div className="flex items-center justify-around py-2">
+          <nav className="flex-1 space-y-4">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={`flex flex-col items-center py-2 px-4 transition-colors ${isActive(item.path)
-                  ? 'text-primary-dark'
-                  : 'text-warm-gray hover:text-primary-dark'
-                  }`}
+                onClick={() => setIsMenuOpen(false)}
+                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${isActive(item.path) ? 'bg-cream text-primary-dark font-semibold' : 'text-warm-gray hover:bg-cream hover:text-primary-dark'}`}
               >
-                {item.icon}
-                <span className="text-caption font-medium mt-1">{item.name}</span>
+                <div className={isActive(item.path) ? 'text-primary-dark' : 'text-warm-gray'}>
+                  {item.icon}
+                </div>
+                <span className="font-body text-lg">{item.name}</span>
               </NavLink>
             ))}
+          </nav>
+
+          <div className="pt-6 border-t border-light-gray space-y-4">
+            {user && (
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-error bg-error/5 hover:bg-error/10 transition-colors font-medium border border-error/10"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>Logout</span>
+              </button>
+            )}
+
+            {!user && (
+              <button
+                onClick={() => { navigate('/login'); setIsMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary-dark text-white hover:bg-primary-dark/90 transition-colors font-medium"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+                <span>Login</span>
+              </button>
+            )}
+
+            <div className="flex items-center gap-4 px-2">
+              <div className="w-10 h-10 rounded-full bg-terracotta flex items-center justify-center text-white">
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-primary-dark font-medium">{user?.name || 'Guest'}</span>
+                <span className="text-caption text-warm-gray capitalize">{user?.role || 'Visitor'}</span>
+              </div>
+            </div>
           </div>
-        </nav>
-      )}
+        </div>
+      </aside>
+
+      <main className="flex-1">
+        <Outlet />
+      </main>
     </div>
   );
 }

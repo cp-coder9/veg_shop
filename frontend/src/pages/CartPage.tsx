@@ -6,7 +6,7 @@ import { useProducts } from '../hooks/useProducts';
 import { useCreateOrder } from '../hooks/useOrders';
 import { formatPrice } from '../lib/utils';
 import { toast } from 'react-hot-toast';
-import { Button, Input, Select, Card, CardHeader } from '../components/ui';
+import { Button, Input, Select, Card, CardHeader, BackIcon } from '../components/ui';
 
 // Delivery options
 const deliveryOptions = [
@@ -125,9 +125,17 @@ export default function CartPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-display-md text-primary-dark">
-          {isCheckout ? 'Checkout' : 'Review Your Order'}
-        </h1>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate(-1)} 
+            className="p-2 hover:bg-cream rounded-full transition-colors"
+          >
+            <BackIcon className="w-5 h-5 text-primary-dark" />
+          </button>
+          <h1 className="font-display text-display-md text-primary-dark">
+            {isCheckout ? 'Checkout' : 'Review Your Order'}
+          </h1>
+        </div>
         {!isCheckout && (
           <Button variant="ghost" onClick={() => clearCart()}>
             Clear Cart

@@ -1,19 +1,22 @@
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import logo from '../../assets/our-harvest-tote-logo.png';
 
-/**
- * Admin dashboard layout with sidebar navigation
- * Features responsive design with collapsible sidebar on mobile
- */
 export default function AdminLayout() {
   const { user, logout } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+    setIsMenuOpen(false);
   };
 
   const navItems = [
@@ -118,40 +121,49 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-cream flex">
-      {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white border-r border-light-gray">
+    <div className="min-h-screen bg-cream flex flex-col">
+      {/* Slide-out Menu Overlay */}
+      {isMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-[60] backdrop-blur-sm transition-opacity"
+          onClick={() => setIsMenuOpen(false)}
+        />
+      )}
+
+      {/* Slide-out Menu (Drawer) */}
+      <aside className={`fixed top-0 left-0 bottom-0 w-72 bg-white z-[70] shadow-2xl transition-transform duration-300 ease-in-out transform flex flex-col ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Logo */}
-        <div className="px-5 py-4 border-b border-light-gray">
+        <div className="px-6 py-8 border-b border-light-gray flex items-center justify-between">
           <NavLink to="/admin" className="flex items-center gap-3">
-            <img
-              src={logo}
-              alt="Our Harvest Tote"
-              className="w-10 h-10 rounded-lg"
-            />
+            <img src={logo} alt="Logo" className="w-10 h-10 rounded-lg" />
             <div className="flex flex-col">
-              <span className="font-display text-display-sm text-primary-dark">
-                Admin
-              </span>
-              <span className="text-caption text-warm-gray">Dashboard</span>
+              <span className="font-display text-lg text-primary-dark">Admin</span>
+              <span className="text-xs text-warm-gray tracking-wider">DASHBOARD</span>
             </div>
           </NavLink>
+          <button onClick={() => setIsMenuOpen(false)} className="text-warm-gray hover:text-primary-dark" aria-label="Close menu">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-4 overflow-y-auto">
-          <ul className="space-y-1 px-3">
+        <nav className="flex-1 py-6 overflow-y-auto px-4">
+          <ul className="space-y-2">
             {navItems.map((item) => (
               <li key={item.path}>
                 <NavLink
                   to={item.path}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                    isActive(item.path)
-                      ? 'bg-cream text-primary-dark font-medium'
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${isActive(item.path)
+                      ? 'bg-cream text-primary-dark font-semibold shadow-sm'
                       : 'text-warm-gray hover:bg-cream hover:text-primary-dark'
-                  }`}
+                    }`}
                 >
-                  {item.icon}
+                  <div className={isActive(item.path) ? 'text-primary-dark' : 'text-warm-gray'}>
+                    {item.icon}
+                  </div>
                   <span className="font-body text-body-md">{item.name}</span>
                 </NavLink>
               </li>
@@ -159,23 +171,29 @@ export default function AdminLayout() {
           </ul>
         </nav>
 
-        {/* User Info */}
-        <div className="px-5 py-4 border-t border-light-gray">
-          <div className="flex items-center gap-3">
+        {/* Bottom Actions and User Info */}
+        <div className="p-4 border-t border-light-gray space-y-4">
+          <div className="flex items-center gap-3 px-2">
             <div className="w-10 h-10 rounded-full bg-terracotta flex items-center justify-center">
-              <span className="text-white font-medium text-body-md">
+              <span className="text-white font-medium">
                 {user?.name?.charAt(0).toUpperCase() || 'A'}
               </span>
             </div>
-            <div className="flex flex-col">
-              <span className="font-body text-body-md text-primary-dark font-medium">
-                {user?.name || 'Admin'}
-              </span>
-              <span className="text-caption text-warm-gray">
-                {user?.role || 'Administrator'}
-              </span>
+            <div className="flex flex-col min-w-0">
+              <span className="font-body text-sm font-semibold text-primary-dark truncate">{user?.name || 'Admin'}</span>
+              <span className="text-[10px] text-warm-gray uppercase tracking-tighter">Administrator</span>
             </div>
           </div>
+
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-error bg-error/5 hover:bg-error/10 transition-colors font-medium border border-error/10"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>Logout</span>
+          </button>
         </div>
       </aside>
 
@@ -183,84 +201,47 @@ export default function AdminLayout() {
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Header */}
         <header className="bg-white border-b border-light-gray px-5 py-4 sticky top-0 z-40">
-          <div className="flex items-center justify-between">
-            {/* Mobile Logo */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsMenuOpen(true)}
+              className="text-primary-dark p-2 -ml-2 hover:bg-cream rounded-lg transition-colors"
+              aria-label="Toggle Menu"
+            >
+              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M4 8h16M4 16h10" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+            </button>
+
+            {/* Logo (Mobile Only) */}
             <div className="lg:hidden flex items-center gap-3">
-              <img
-                src={logo}
-                alt="Our Harvest Tote"
-                className="w-8 h-8 rounded-lg"
-              />
-              <span className="font-display text-display-sm text-primary-dark">
-                Admin
-              </span>
+              <img src={logo} alt="Logo" className="w-8 h-8 rounded-lg" />
+              <span className="font-display text-lg text-primary-dark">Admin</span>
             </div>
 
-            {/* Page Title - Desktop */}
-            <div className="hidden lg:block">
-              <h1 className="font-display text-display-sm text-primary-dark">
-                {navItems.find((item) => isActive(item.path))?.name || 'Dashboard'}
-              </h1>
-            </div>
+            {/* Title */}
+            <h1 className="hidden sm:block font-display text-display-sm text-primary-dark flex-1 ml-2">
+              {navItems.find((item) => isActive(item.path))?.name || 'Dashboard'}
+            </h1>
 
-            {/* Right Side Actions */}
-            <div className="flex items-center gap-4">
-              {/* Logout Button */}
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 text-warm-gray hover:text-primary-dark transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                <span className="hidden sm:inline font-body text-body-md">
-                  Logout
+            {/* User Profile */}
+            <NavLink
+              to="/admin/profile"
+              className="flex items-center gap-2 text-warm-gray hover:text-primary-dark transition-colors"
+            >
+              <div className="w-8 h-8 rounded-full bg-terracotta flex items-center justify-center">
+                <span className="text-white font-medium text-xs">
+                  {user?.name?.charAt(0).toUpperCase() || 'A'}
                 </span>
-              </button>
-
-              {/* Profile Link */}
-              <NavLink
-                to="/admin/profile"
-                className="flex items-center gap-2 text-warm-gray hover:text-primary-dark transition-colors"
-              >
-                <div className="w-8 h-8 rounded-full bg-terracotta flex items-center justify-center">
-                  <span className="text-white font-medium text-body-sm">
-                    {user?.name?.charAt(0).toUpperCase() || 'A'}
-                  </span>
-                </div>
-                <span className="hidden sm:inline font-body text-body-md">
-                  {user?.name || 'Admin'}
-                </span>
-              </NavLink>
-            </div>
+              </div>
+            </NavLink>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+        <main className="flex-1 p-4 md:p-6 lg:p-10 max-w-7xl mx-auto w-full">
           <Outlet />
         </main>
       </div>
-
-      {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-light-gray z-50">
-        <div className="flex items-center justify-around py-2">
-          {navItems.slice(0, 5).map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={`flex flex-col items-center py-2 px-3 transition-colors ${
-                isActive(item.path)
-                  ? 'text-primary-dark'
-                  : 'text-warm-gray hover:text-primary-dark'
-              }`}
-            >
-              {item.icon}
-              <span className="text-caption font-medium mt-1">{item.name}</span>
-            </NavLink>
-          ))}
-        </div>
-      </nav>
     </div>
   );
 }

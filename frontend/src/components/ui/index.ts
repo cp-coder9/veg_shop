@@ -41,4 +41,4 @@ export { Modal, type ModalSize } from './Modal';
 export { Badge, type BadgeVariant } from './Badge';
 
 // Icons component
-export { UserIcon, CartIcon } from './Icons';
+export { UserIcon, CartIcon, BackIcon } from './Icons';

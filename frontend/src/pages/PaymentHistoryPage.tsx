@@ -1,7 +1,7 @@
 import { useCustomerInvoices } from '../hooks/useCustomer';
 import { formatPrice } from '../lib/utils';
-import { Link } from 'react-router-dom';
-import { Card, CardHeader, Badge, Button } from '../components/ui';
+import { Link, useNavigate } from 'react-router-dom';
+import { Card, CardHeader, Badge, Button, BackIcon } from '../components/ui';
 
 // Status badge variant mapping
 const statusVariants: Record<string, 'success' | 'warning' | 'info' | 'error'> = {
@@ -13,6 +13,7 @@ const statusVariants: Record<string, 'success' | 'warning' | 'info' | 'error'> =
 
 export default function PaymentHistoryPage() {
   const { data: invoices, isLoading, isError } = useCustomerInvoices();
+  const navigate = useNavigate();
 
   if (isLoading) {
     return (
@@ -65,11 +66,19 @@ export default function PaymentHistoryPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="font-display text-display-md text-primary-dark">Payment History</h1>
-        <p className="font-body text-body-md text-warm-gray mt-1">
-          View your invoices and payment history
-        </p>
+      <div className="flex items-center gap-4">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="p-2 hover:bg-cream rounded-full transition-colors"
+        >
+          <BackIcon className="w-5 h-5 text-primary-dark" />
+        </button>
+        <div>
+          <h1 className="font-display text-display-md text-primary-dark">Payment History</h1>
+          <p className="font-body text-body-md text-warm-gray mt-1">
+            View your invoices and payment history
+          </p>
+        </div>
       </div>
 
       {/* Summary Cards */}

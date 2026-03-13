@@ -1,11 +1,10 @@
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { Button, UserIcon, CartIcon } from '../components/ui';
+import { Button, CartIcon } from '../components/ui';
 import logo from '../assets/our-harvest-tote-logo.png';
 
 export default function HomePage() {
   const { user } = useAuthStore();
-  const navigate = useNavigate();
 
   // Redirect admins to admin panel
   if (user?.role === 'admin') {
@@ -14,46 +13,23 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-cream font-sans">
-      {/* Top Header Section */}
-      <div className="relative pt-6 flex flex-col items-center">
-        <div className="mb-8 px-6 w-full flex justify-end gap-6 items-center">
-          <button
-            onClick={() => navigate(user ? '/profile' : '/login')}
-            className="text-black/80 hover:text-black transition-colors"
-            title={user ? "Profile" : "Login"}
-          >
-            <UserIcon strokeWidth={1.2} />
-          </button>
-          <button
-            onClick={() => navigate(user ? '/cart' : '/login')}
-            className="text-black/80 hover:text-black transition-colors"
-            title="Cart"
-          >
-            <CartIcon strokeWidth={1.2} />
-          </button>
+      {/* Hero Section */}
+      <div className="py-12 flex flex-col items-center">
+        <div className="mb-6">
+          <img
+            src={logo}
+            alt="Our Harvest Tote"
+            className="w-48 drop-shadow-sm"
+          />
         </div>
 
-        {/* Grey Line below Login */}
-        <div className="w-full border-b border-gray-300" />
-
-        {/* Logo Section with Grey Backing */}
-        <div className="w-full bg-[#F2F2F7] py-12 flex flex-col items-center border-b border-gray-300">
-          <div className="mb-6">
-            <img
-              src={logo}
-              alt="Our Harvest Tote"
-              className="w-48 drop-shadow-sm"
-            />
-          </div>
-
-          <div className="max-w-xl text-center px-6">
-            <p className="font-sans text-xl text-gray-800 leading-relaxed font-medium mb-1">
-              Fresh from regenerative farms straight to your door
-            </p>
-            <p className="font-sans text-xl text-gray-800 leading-relaxed font-medium">
-              Farming that heals. food that nourishes.
-            </p>
-          </div>
+        <div className="max-w-xl text-center px-6">
+          <p className="font-sans text-xl text-gray-800 leading-relaxed font-medium mb-1">
+            Fresh from regenerative farms straight to your door
+          </p>
+          <p className="font-sans text-xl text-gray-800 leading-relaxed font-medium">
+            Farming that heals. food that nourishes.
+          </p>
         </div>
       </div>
 

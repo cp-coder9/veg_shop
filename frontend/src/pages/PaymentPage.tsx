@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDownloadInvoicePDF } from '../hooks/useInvoicePDF';
 import { formatPrice } from '../lib/utils';
-import { Button, Card, CardHeader, Badge } from '../components/ui';
+import { Button, Card, CardHeader, Badge, BackIcon } from '../components/ui';
 import api from '../lib/api';
 
 // Add Yoco to window namespace
@@ -248,11 +248,19 @@ export default function PaymentPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Header */}
-      <div className="text-center">
-        <h1 className="font-display text-display-md text-primary-dark">Make Payment</h1>
-        <p className="font-body text-body-md text-warm-gray mt-1">
-          Complete your payment for invoice #{invoice.invoiceNumber}
-        </p>
+      <div className="flex items-center gap-4">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="p-2 hover:bg-cream rounded-full transition-colors"
+        >
+          <BackIcon className="w-5 h-5 text-primary-dark" />
+        </button>
+        <div className="text-center flex-1">
+          <h1 className="font-display text-display-md text-primary-dark">Make Payment</h1>
+          <p className="font-body text-body-md text-warm-gray mt-1">
+            Complete your payment for invoice #{invoice.invoiceNumber}
+          </p>
+        </div>
       </div>
 
       {/* Invoice Summary */}
