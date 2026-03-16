@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Harvest Tote | Regenerative Produce</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Space+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b120c;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.12);
+            --dew: rgba(164, 255, 182, 0.15);
+            --accent: #b8ff9a;
+            --text-main: #f0f4f0;
+            --text-dim: #a0ada0;
+            --sintered: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3External%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Animated Dew Background */
+        .dew-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 50%, #1a2e1d 0%, #0b120c 100%);
+        }
+
+        .dew-drop {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--dew);
+            filter: blur(80px);
+            animation: float 20s infinite alternate ease-in-out;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(10vw, 15vh) scale(1.2); }
+        }
+
+        /* Glass Texture Overlay */
+        .sintered-overlay {
+            position: fixed;
+            inset: 0;
+            background-image: var(--sintered);
+            opacity: 0.04;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 24px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 1.2rem;
+            letter-spacing: -0.03em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        .nav-icons {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-main);
+            transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .icon-btn:hover {
+            transform: translateY(-2px);
+            color: var(--accent);
+        }
+
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 0 10%;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 8vw, 6rem);
+            line-height: 0.95;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            margin-bottom: 24px;
+            max-width: 1200px;
+        }
+
+        .hero p {
+            font-size: 1.5rem;
+            color: var(--text-dim);
+            max-width: 600px;
+            margin-bottom: 48px;
+        }
+
+        .cta-button {
+            background: var(--accent);
+            color: #0b120c;
+            padding: 20px 48px;
+            border-radius: 100px;
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            border: 1px solid transparent;
+            box-shadow: 0 0 40px rgba(184, 255, 154, 0.2);
+        }
+
+        .cta-button:hover {
+            transform: scale(1.05);
+            background: white;
+            box-shadow: 0 0 60px rgba(255, 255, 255, 0.3);
+        }
+
+        section {
+            padding: 120px 60px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 60px;
+            display: block;
+            letter-spacing: 0.2em;
+        }
+
+        .process-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            padding: 40px;
+            border-radius: 32px;
+            transition: all 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .glass-card:hover {
+            border-color: rgba(184, 255, 154, 0.4);
+            transform: translateY(-10px);
+        }
+
+        .glass-card:hover::before {
+            opacity: 1;
+        }
+
+        .step-num {
+            font-family: 'Space Mono', monospace;
+            font-size: 3rem;
+            color: var(--accent);
+            opacity: 0.4;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .glass-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+
+        .glass-card p {
+            color: var(--text-dim);
+            font-size: 1.05rem;
+        }
+
+        .values-section {
+            margin-top: 100px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+        }
+
+        .values-content h2 {
+            font-size: 3.5rem;
+            line-height: 1.1;
+            margin-bottom: 32px;
+        }
+
+        .value-list {
+            list-style: none;
+        }
+
+        .value-item {
+            font-size: 1.4rem;
+            padding: 24px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .value-item::before {
+            content: '•';
+            color: var(--accent);
+            font-size: 2rem;
+        }
+
+        .footer {
+            padding: 60px;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .values-section { grid-template-columns: 1fr; }
+            header { padding: 20px 30px; }
+            section { padding: 80px 30px; }
+            .hero h1 { font-size: 3.5rem; }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sintered-overlay"></div>
+    <div class="dew-container">
+        <div class="dew-drop" style="width: 400px; height: 400px; top: -10%; left: -5%;"></div>
+        <div class="dew-drop" style="width: 500px; height: 500px; bottom: -10%; right: -5%; background: rgba(100, 200, 255, 0.1);"></div>
+        <div class="dew-drop" style="width: 300px; height: 300px; top: 40%; right: 20%; background: rgba(184, 255, 154, 0.08);"></div>
+    </div>
+
+    <header>
+        <div class="logo">Our Harvest Tote</div>
+        <div class="nav-icons">
+            <button class="icon-btn" title="Login">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            </button>
+            <button class="icon-btn" title="Cart">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h1 class="reveal">Fresh from regenerative farms straight to your door</h1>
+            <p class="reveal">Farming that heals. Food that nourishes.</p>
+            <a href="#" class="cta-button reveal">Pre-order next weeks harvest</a>
+        </section>
+
+        <section id="how-it-works">
+            <span class="section-title reveal">The Journey</span>
+            <div class="process-grid">
+                <div class="glass-card reveal">
+                    <span class="step-num">01</span>
+                    <h3>Whats growing</h3>
+                    <p>Each week we share what our partner farms are harvesting, ensuring you get the absolute best of the season.</p>
+                </div>
+                <div class="glass-card reveal">
+                    <span class="step-num">02</span>
+                    <h3>Pre-order</h3>
+                    <p>Place your order within the week prior to delivery so the farmers harvest exactly whats needed. Zero waste agriculture.</p>
+                </div>
+                <div class="glass-card reveal">
+                    <span class="step-num">03</span>
+                    <h3>Harvest & pack</h3>
+                    <p>Produce is harvested at peak freshness and often on the same day. Packed with minimal packaging and reusable where possible.</p>
+                </div>
+                <div class="glass-card reveal">
+                    <span class="step-num">04</span>
+                    <h3>Collection or Delivery</h3>
+                    <p>WhatsApp messages will be sent out once your order has been packed for collection or doorstep delivery.</p>
+                </div>
+                <div class="glass-card reveal">
+                    <span class="step-num">05</span>
+                    <h3>Processing</h3>
+                    <p>If produce is unavailable post-ordering, a credit will be allocated to your account—login to your profile to view.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="values-section">
+            <div class="values-content reveal">
+                <span class="section-title">The Philosophy</span>
+                <h2>A BETTER WAY TO BUY PRODUCE</h2>
+                <p style="font-size: 1.2rem; color: var(--text-dim);">Instead of produce sitting in a warehouse or on a shelf for days, we work directly with small farmers and harvest only what has already been ordered.</p>
+            </div>
+            <ul class="value-list reveal">
+                <li class="value-item">Fresher food</li>
+                <li class="value-item">Less waste</li>
+                <li class="value-item">Fair trade</li>
+                <li class="value-item">Better soil & eco system</li>
+                <li class="value-item">Higher nutrient value</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer class="footer">
+        &copy; 2023 OUR HARVEST TOTE. REGENERATIVE BY DESIGN.
+    </footer>
+
+    <script>
+        // Intersection Observer for scroll reveals
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // Subtle Parallax for dew drops
+        window.addEventListener('mousemove', (e) => {
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            
+            document.querySelectorAll('.dew-drop').forEach((drop, index) => {
+                const speed = (index + 1) * 20;
+                drop.style.transform = `translate(${x * speed}px, ${y * speed}px)`;
+            });
+        });
+    </script>
+</body>
+</html>

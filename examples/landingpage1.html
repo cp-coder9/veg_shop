@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Harvest Tote | Regenerative Produce</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@300;500;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --loam-deep: #1A1612;
+            --loam-mid: #3D352E;
+            --fiber-pulp: #F2EFE9;
+            --fiber-white: #FAF9F6;
+            --leaf-muted: #4A5D23;
+            --accent-clay: #A67B5B;
+            --grain-opacity: 0.04;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--fiber-white);
+            color: var(--loam-deep);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        /* Materiality: Grain Overlay */
+        .grain-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: var(--grain-opacity);
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3ExternalIcon %3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* Typography */
+        h1, h2, h3 { font-weight: 800; text-transform: uppercase; letter-spacing: -0.02em; }
+        .mono { font-family: 'Space Mono', monospace; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.1em; }
+
+        /* Layout */
+        header {
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: rgba(250, 249, 246, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            border-bottom: 1px solid rgba(26, 22, 18, 0.05);
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: var(--loam-deep);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-icons {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .nav-icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--loam-deep);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .nav-icon-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 8rem 2rem 4rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 8vw, 7rem);
+            line-height: 0.9;
+            color: var(--loam-deep);
+            margin-bottom: 2rem;
+            perspective: 1000px;
+        }
+
+        .hero h1 span {
+            display: inline-block;
+            animation: revealUp 1s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+            opacity: 0;
+            transform: translateY(50px) rotateX(-20deg);
+        }
+
+        @keyframes revealUp {
+            to { opacity: 1; transform: translateY(0) rotateX(0); }
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto 3rem;
+            color: var(--loam-mid);
+        }
+
+        /* Pressed Fiber Cards */
+        .process-section {
+            padding: 6rem 2rem;
+            background: var(--fiber-pulp);
+            position: relative;
+        }
+
+        .process-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .process-card {
+            background: var(--fiber-white);
+            padding: 3rem 2rem;
+            border: 1px solid rgba(26, 22, 18, 0.05);
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .process-card:hover {
+            background: var(--fiber-white);
+            transform: scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.03);
+            z-index: 2;
+        }
+
+        .card-num {
+            font-size: 4rem;
+            font-weight: 800;
+            color: var(--accent-clay);
+            opacity: 0.2;
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-family: 'Space Mono', monospace;
+        }
+
+        /* Loam Section (The Dark Side) */
+        .values-section {
+            background: var(--loam-deep);
+            color: var(--fiber-white);
+            padding: 8rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .values-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        @media (max-width: 900px) {
+            .values-container { grid-template-columns: 1fr; }
+        }
+
+        .value-tagline {
+            font-size: 0.8rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--accent-clay);
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .value-title {
+            font-size: 3.5rem;
+            margin-bottom: 2rem;
+            line-height: 1.1;
+        }
+
+        .benefits-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        .benefit-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-clay);
+            border-radius: 50%;
+        }
+
+        /* Interactive Footer/CTA */
+        .footer-cta {
+            padding: 6rem 2rem;
+            text-align: center;
+        }
+
+        .btn-pressed {
+            background: var(--loam-deep);
+            color: var(--fiber-white);
+            padding: 1.5rem 3rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            border: none;
+            cursor: pointer;
+            letter-spacing: 0.1em;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+
+        .btn-pressed:hover {
+            transform: scale(0.98);
+        }
+
+        .btn-pressed::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.1);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .btn-pressed:hover::after { opacity: 1; }
+
+        /* Animation utilities */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="grain-overlay"></div>
+
+    <header>
+        <div class="logo">
+            <i data-lucide="sprout" style="color: var(--leaf-muted)"></i>
+            OUR HARVEST TOTE
+        </div>
+        <div class="nav-icons">
+            <button class="nav-icon-btn"><i data-lucide="user"></i></button>
+            <button class="nav-icon-btn">
+                <i data-lucide="shopping-bag"></i>
+                <span style="position:absolute; top:-5px; right:-8px; background: var(--accent-clay); color:white; font-size:10px; padding: 2px 5px; border-radius:10px; font-family: 'Space Mono'">0</span>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <span class="mono" style="margin-bottom: 1rem; display: block; color: var(--accent-clay);">Est. Regenerative Roots</span>
+            <h1>
+                <span>FRESH FROM</span><br>
+                <span style="animation-delay: 0.1s; color: var(--leaf-muted);">REGENERATIVE FARMS</span><br>
+                <span style="animation-delay: 0.2s;">TO YOUR DOOR</span>
+            </h1>
+            <p class="reveal">Farming that heals. Food that nourishes. Direct connection from our soil to your soul.</p>
+            <button class="btn-pressed reveal">Pre-order next weeks harvest</button>
+        </section>
+
+        <section class="process-section">
+            <div class="process-grid">
+                <div class="process-card reveal">
+                    <span class="card-num">01</span>
+                    <span class="mono">The Selection</span>
+                    <h3>Whats growing</h3>
+                    <p>Each week we share what our partner farms are harvesting at their peak.</p>
+                </div>
+                <div class="process-card reveal">
+                    <span class="card-num">02</span>
+                    <span class="mono">The Commitment</span>
+                    <h3>Pre-order</h3>
+                    <p>Place your order within the week prior to delivery so the farmers harvest exactly whats needed.</p>
+                </div>
+                <div class="process-card reveal">
+                    <span class="card-num">03</span>
+                    <span class="mono">The Extraction</span>
+                    <h3>Harvest & pack</h3>
+                    <p>Produce is harvested at peak freshness and often on the same day. Minimal, reusable packaging.</p>
+                </div>
+                <div class="process-card reveal">
+                    <span class="card-num">04</span>
+                    <span class="mono">The Transit</span>
+                    <h3>Collection or Delivery</h3>
+                    <p>WhatsApp messages will be sent out once your order has been packed and ready for you.</p>
+                </div>
+                <div class="process-card reveal">
+                    <span class="card-num">05</span>
+                    <span class="mono">The Account</span>
+                    <h3>Processing</h3>
+                    <p>If produce is unavailable post-ordering, a credit will be allocated to your account instantly.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="values-section">
+            <div class="values-container">
+                <div>
+                    <span class="value-tagline">The Philosophy</span>
+                    <h2 class="value-title">A BETTER WAY TO BUY PRODUCE</h2>
+                    <p style="opacity: 0.8; font-size: 1.2rem; margin-bottom: 2rem;">
+                        Instead of produce sitting in a warehouse or on a shelf for days, we work directly with small farmers and harvest only what has already been ordered.
+                    </p>
+                </div>
+                <ul class="benefits-list">
+                    <li class="benefit-item reveal"><div class="benefit-dot"></div> Fresher food</li>
+                    <li class="benefit-item reveal"><div class="benefit-dot"></div> Less waste</li>
+                    <li class="benefit-item reveal"><div class="benefit-dot"></div> Fair trade</li>
+                    <li class="benefit-item reveal"><div class="benefit-dot"></div> Better soil</li>
+                    <li class="benefit-item reveal"><div class="benefit-dot"></div> Eco system health</li>
+                    <li class="benefit-item reveal"><div class="benefit-dot"></div> Higher nutrients</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="footer-cta">
+            <div class="mono" style="margin-bottom: 2rem;">READY FOR REAL FLAVOUR?</div>
+            <h2 style="font-size: 3rem; margin-bottom: 3rem;">JOIN THE MOVEMENT</h2>
+            <button class="btn-pressed">Browse Current Harvest</button>
+        </section>
+    </main>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Reveal Animations on Scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // Subtle parallax on cards
+        document.addEventListener('mousemove', (e) => {
+            const cards = document.querySelectorAll('.process-card');
+            const x = (window.innerWidth / 2 - e.pageX) / 50;
+            const y = (window.innerHeight / 2 - e.pageY) / 50;
+            
+            cards.forEach(card => {
+                if(card.classList.contains('active')) {
+                   // Slight movement for depth
+                }
+            });
+        });
+    </script>
+</body>
+</html>
