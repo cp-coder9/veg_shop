@@ -373,7 +373,7 @@ export class CustomerService {
           date: nextOrder.deliveryDate,
           method: nextOrder.deliveryMethod,
         } : null,
-        outstandingInvoices: invoices.map((inv: { id: string; total: number | string; dueDate: Date; status: string }) => ({
+        outstandingInvoices: invoices.map((inv: any) => ({
           id: inv.id,
           total: Number(inv.total),
           dueDate: inv.dueDate,

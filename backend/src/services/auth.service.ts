@@ -343,9 +343,31 @@ export class AuthService {
     //   throw new Error('This feature is only available in development');
     // }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    let user;
+    
+    // Check if Firebase is properly initialized (credentials provided)
+    const firebaseConfigured = env.USE_FIREBASE && 
+      env.FIREBASE_PROJECT_ID && 
+      env.FIREBASE_CLIENT_EMAIL && 
+      env.FIREBASE_PRIVATE_KEY;
+    
+    if (firebaseConfigured) {
+      // Use Firestore repository when Firebase is enabled and configured
+      try {
+        user = await userRepository.findByEmail(email);
+      } catch (error) {
+        // If Firestore fails, fall back to Prisma
+        console.warn('Firebase query failed, falling back to Prisma:', error);
+        user = await prisma.user.findUnique({
+          where: { email },
+        });
+      }
+    } else {
+      // Use Prisma when Firebase is not configured
+      user = await prisma.user.findUnique({
+        where: { email },
+      });
+    }
 
     if (!user) {
       throw new Error('User not found');

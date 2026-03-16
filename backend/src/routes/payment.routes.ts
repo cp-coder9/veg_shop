@@ -6,7 +6,7 @@ import { asyncHandler } from '../utils/async-handler.js';
 import { prisma } from '../lib/prisma.js';
 import { z } from 'zod';
 
-import { yocoService, YocoPaymentStatus } from '../services/yoco.service.js';
+import { yocoService } from '../services/yoco.service.js';
 import { notificationService } from '../services/notification.service.js';
 
 const router = Router();
@@ -63,9 +63,9 @@ router.post('/checkout', asyncHandler(async (req: Request, res: Response) => {
     where: { invoiceId },
     _sum: { amount: true },
   });
-  
+
   const amountDue = Number(invoice.total) - Number(totalPaid._sum.amount || 0);
-  
+
   if (amountDue <= 0) {
     return res.status(400).json({
       error: {
@@ -144,20 +144,6 @@ router.get('/verify/:paymentId', asyncHandler(async (req: Request, res: Response
  * POST /api/payments/webhook/yoco
  * Webhook for Yoco payment status updates
  */
-interface YocoWebhookPayload {
-  type: string;
-  id: string;
-  createdDate: string;
-  payload: {
-    id: string;
-    type: string;
-    status: string;
-    amount: number;
-    currency: string;
-    metadata?: { invoiceId?: string; customerId?: string };
-  }
-}
-
 router.post('/webhook/yoco', asyncHandler(async (req: Request, res: Response) => {
   // Get signature from headers
   const signature = req.headers['x-yoco-signature'] as string;
@@ -344,7 +330,7 @@ router.post('/', authenticate, requireAdmin, auditLog('CREATE', 'payment'), asyn
  * Get payment statistics by method (cash/yoco/eft)
  * NOTE: Must be BEFORE /:id to avoid being caught by catch-all
  */
-router.get('/stats', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.get('/stats', authenticate, requireAdmin, asyncHandler(async (_req: Request, res: Response) => {
   try {
     const stats = await paymentService.getPaymentStatsByMethod();
     return res.json(stats);
@@ -363,21 +349,21 @@ router.get('/stats', authenticate, requireAdmin, asyncHandler(async (req: Reques
  * Get Yoco-specific payment statistics
  * NOTE: Must be BEFORE /:id to avoid being caught by catch-all
  */
-router.get('/stats/yoco', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.get('/stats/yoco', authenticate, requireAdmin, asyncHandler(async (_req: Request, res: Response) => {
   try {
     const stats = await paymentService.getPaymentStatsByMethod();
     const recentTransactions = await paymentService.getRecentYocoTransactions(10);
-    
+
     // Calculate Yoco-specific metrics
     const yocoToday = stats.today.yoco;
     const yocoWeek = stats.week.yoco;
     const yocoMonth = stats.month.yoco;
-    
+
     const yocoSuccessCount = recentTransactions.length;
     const yocoFailedCount = 0;
-    
-    const averageTransaction = yocoToday > 0 && stats.today.count > 0 
-      ? yocoToday / stats.today.count 
+
+    const averageTransaction = yocoToday > 0 && stats.today.count > 0
+      ? yocoToday / stats.today.count
       : 0;
 
     return res.json({
