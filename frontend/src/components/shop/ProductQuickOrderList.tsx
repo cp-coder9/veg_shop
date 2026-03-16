@@ -1,6 +1,7 @@
 import { Product, CATEGORY_LABELS } from '../../types';
 import { useCartStore } from '../../stores/cartStore';
 import { formatPrice } from '../../lib/utils';
+import { Plus, Minus, Calendar } from 'lucide-react';
 
 interface ProductQuickOrderListProps {
   products: Product[];
@@ -13,7 +14,7 @@ export function ProductQuickOrderList({
   category,
   onProductClick,
 }: ProductQuickOrderListProps) {
-  const { addItem, getItemQuantity } = useCartStore();
+  const { addItem, getItemQuantity, updateQuantity } = useCartStore();
 
   const handleAddClick = (e: React.MouseEvent, product: Product) => {
     e.stopPropagation();
@@ -29,86 +30,78 @@ export function ProductQuickOrderList({
   }
 
   return (
-    <section className="space-y-3">
-      <h2 className="font-display text-body-lg text-primary-dark font-semibold sticky top-0 bg-white py-2 z-10 border-b border-light-gray">
+    <section className="mb-16">
+      <h2 className="font-mono text-[10px] uppercase font-bold tracking-[0.3em] text-[var(--pigment-ochre)] mb-4 pb-2 border-b border-[var(--pigment-ochre)]/10">
         {CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] || category}
       </h2>
-      <div className="bg-white rounded-lg border border-light-gray overflow-hidden">
-        {/* Header Row */}
-        <div className="hidden md:grid md:grid-cols-12 gap-4 px-4 py-2 bg-cream text-body-sm font-medium text-warm-gray border-b border-light-gray">
-          <div className="col-span-6">Product</div>
-          <div className="col-span-3 text-right">Price</div>
-          <div className="col-span-3 text-right">Action</div>
-        </div>
 
-        {/* Product Rows */}
+      <div className="grid grid-cols-1 gap-px bg-[var(--pigment-ochre)]/10 rounded-sm">
         {products.map((product) => {
           const qty = getItemQuantity(product.id);
-          
+
           return (
             <div
               key={product.id}
               onClick={() => handleRowClick(product)}
-              className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-4 py-3 border-b border-light-gray last:border-b-0 hover:bg-cream/30 cursor-pointer transition-colors items-center"
+              className="group bg-white/40 hover:bg-white/80 transition-all duration-300 cursor-pointer p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center"
             >
-              {/* Product Name */}
-              <div className="col-span-6 flex items-center gap-2 flex-wrap">
-                <span className="font-body text-body-md text-primary-dark">
-                  {product.name}
-                </span>
-                {product.isSeasonal && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-caption font-medium bg-amber-100 text-amber-800">
-                    Seasonal
+              {/* Product Info */}
+              <div className="md:col-span-6 flex flex-col gap-1">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl font-black uppercase tracking-tighter text-[var(--pigment-green)] group-hover:text-[var(--pigment-oxide)] transition-colors">
+                    {product.name}
                   </span>
-                )}
+                  {product.isSeasonal && (
+                    <span className="text-[10px] font-mono font-bold text-[var(--pigment-ochre)] uppercase tracking-wider bg-[var(--pigment-ochre)]/10 px-2 py-0.5">
+                      Seasonal
+                    </span>
+                  )}
+                </div>
                 {product.deliveryDay && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-caption font-medium bg-sage-green/20 text-sage-green">
-                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    {product.deliveryDay}
-                  </span>
+                  <div className="flex items-center gap-1.5 text-[11px] font-mono opacity-60 uppercase">
+                    <Calendar size={12} />
+                    <span>Next harvest: {product.deliveryDay}</span>
+                  </div>
                 )}
               </div>
 
-              {/* Price */}
-              <div className="col-span-3 text-right">
-                <span className="font-body text-body-md text-terracotta font-semibold">
+              {/* Pricing */}
+              <div className="md:col-span-3 font-mono flex flex-col items-start md:items-end">
+                <span className="text-lg font-black text-[var(--pigment-oxide)]">
                   R{formatPrice(product.price)}
                 </span>
-                <span className="text-body-sm text-warm-gray"> / {product.unit}</span>
+                <span className="text-[10px] opacity-40 uppercase tracking-tighter">PER {product.unit}</span>
               </div>
 
-              {/* Action Buttons */}
-              <div className="col-span-3 flex items-center justify-end gap-2">
+              {/* Add/Quantity Action */}
+              <div className="md:col-span-3 flex justify-end" onClick={(e) => e.stopPropagation()}>
                 {qty > 0 ? (
-                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-4 bg-white border border-[var(--pigment-green)]/10 p-1">
                     <button
-                      onClick={() => useCartStore.getState().updateQuantity(product.id, qty - 1)}
-                      className="w-7 h-7 flex items-center justify-center rounded-full bg-light-gray text-primary-dark hover:bg-warm-gray/40 transition-colors text-sm font-bold"
-                      aria-label="Decrease quantity"
+                      onClick={() => updateQuantity(product.id, qty - 1)}
+                      className="p-2 text-[var(--ink)] hover:text-[var(--pigment-oxide)] hover:bg-[var(--canvas)] transition-all"
+                      aria-label="Decrease"
                     >
-                      −
+                      <Minus size={14} />
                     </button>
-                    <span className="w-6 text-center font-bold text-terracotta text-body-sm">
+                    <span className="w-6 text-center font-bold font-mono text-sm">
                       {qty}
                     </span>
                     <button
                       onClick={() => addItem(product.id, 1)}
-                      className="w-7 h-7 flex items-center justify-center rounded-full bg-terracotta text-white hover:bg-terracotta/80 transition-colors text-sm font-bold"
-                      aria-label="Increase quantity"
+                      className="p-2 text-[var(--ink)] hover:text-[var(--pigment-green)] hover:bg-[var(--canvas)] transition-all"
+                      aria-label="Increase"
                     >
-                      +
+                      <Plus size={14} />
                     </button>
                   </div>
                 ) : (
                   <button
                     onClick={(e) => handleAddClick(e, product)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-terracotta text-white rounded-md hover:bg-terracotta/80 transition-colors text-body-sm font-medium"
-                    aria-label={`Add ${product.name} to cart`}
+                    className="flex justify-between items-center gap-4 px-6 py-3 border border-[var(--pigment-green)]/20 hover:border-[var(--pigment-green)] hover:bg-[var(--pigment-green)] hover:text-[var(--canvas)] transition-all duration-300 font-bold uppercase tracking-widest text-xs"
                   >
                     <span>Add</span>
-                    <span className="text-base leading-none">→</span>
+                    <Plus size={14} />
                   </button>
                 )}
               </div>
@@ -121,3 +114,4 @@ export function ProductQuickOrderList({
 }
 
 export default ProductQuickOrderList;
+

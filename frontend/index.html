@@ -9,32 +9,15 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Our Harvest Tote" />
-  <title>Our Harvest Tote</title>
 
-  <!-- Firebase SDKs -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+  <title>Our Harvest Tote — Fresh Regenerative Produce</title>
+  <meta name="description"
+    content="Fresh from regenerative farms straight to your door. Farming that heals. Food that nourishes." />
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCeBDhY7SOvsmfcTmxi5Ra-qOZGtLrJApM",
-      authDomain: "our-harvest-tote.firebaseapp.com",
-      projectId: "our-harvest-tote",
-      storageBucket: "our-harvest-tote.firebasestorage.app",
-      messagingSenderId: "703119370454",
-      appId: "1:703119370454:web:e27f87706d213ff30d4177",
-      measurementId: "G-YEVS64C84N"
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-
-    console.log("Firebase initialized");
-  </script>
 </head>
 
 <body>
+  <div class="grain-overlay"></div>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

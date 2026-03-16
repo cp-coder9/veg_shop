@@ -1,10 +1,44 @@
+import { useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { Button, CartIcon } from '../components/ui';
-import logo from '../assets/our-harvest-tote-logo.png';
+import { ArrowRight } from 'lucide-react';
 
 export default function HomePage() {
   const { user } = useAuthStore();
+
+  useEffect(() => {
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.process-item, .manifesto-item').forEach(item => {
+      observer.observe(item);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Parallax effect for the hero text
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrolled = window.scrollY;
+      const heroH1 = document.querySelector('.hero-h1') as HTMLElement;
+      if (heroH1) {
+        heroH1.style.transform = `translateY(${scrolled * 0.1}px)`;
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Redirect admins to admin panel
   if (user?.role === 'admin') {
@@ -12,111 +46,98 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream font-sans">
+    <div className="pb-24">
       {/* Hero Section */}
-      <div className="py-12 flex flex-col items-center">
-        <div className="mb-6">
-          <img
-            src={logo}
-            alt="Our Harvest Tote"
-            className="w-48 drop-shadow-sm"
-          />
-        </div>
-
-        <div className="max-w-xl text-center px-6">
-          <p className="font-sans text-xl text-gray-800 leading-relaxed font-medium mb-1">
-            Fresh from regenerative farms straight to your door
-          </p>
-          <p className="font-sans text-xl text-gray-800 leading-relaxed font-medium">
-            Farming that heals. food that nourishes.
-          </p>
-        </div>
-      </div>
-
-      {/* Pre-order Section */}
-      <div className="py-16 flex flex-col items-center bg-cream border-b border-gray-300">
-        <Link to="/products" className="w-full max-w-sm px-6">
-          <Button
-            variant="harvest"
-            size="lg"
-            leftIcon={<CartIcon className="w-5 h-5 text-white" strokeWidth={2} />}
-            className="w-full py-4 font-sans text-xl normal-case tracking-normal"
+      <section className="px-8 pt-32 pb-16 max-w-[1200px] mx-auto min-h-[85vh] flex flex-col justify-center">
+        <p className="font-mono text-xl mb-8 opacity-0 animate-[fadeIn_1s_0.5s_ease-out_forwards] text-[var(--pigment-ochre)] uppercase tracking-widest">
+          Farming that heals. Food that nourishes.
+        </p>
+        <h1 className="hero-h1 text-[clamp(2.5rem,8vw,7rem)] font-[900] leading-[0.9] text-[var(--pigment-green)] mb-12 animate-[slideUp_1s_ease-out_forwards]">
+          Fresh from regenerative farms straight to your door.
+        </h1>
+        <div className="mt-8 animate-[fadeIn_1s_1s_ease-out_forwards] opacity-0 flex flex-wrap gap-6 items-center">
+          <Link
+            to="/products"
+            className="inline-flex items-center gap-4 bg-[var(--pigment-green)] text-[var(--canvas)] px-10 py-5 font-bold uppercase tracking-[2px] -rotate-1 hover:rotate-0 hover:scale-105 transition-all shadow-xl hover:shadow-[var(--pigment-green)]/20"
           >
-            Pre-order next weeks harvest
-          </Button>
-        </Link>
-      </div>
-
-      {/* How it Works Section */}
-      <div className="py-12 bg-cream flex justify-center px-6">
-        <div className="border border-gray-300 max-w-lg w-full p-8 space-y-10">
-          <div className="flex gap-4">
-            <div className="bg-[#0B3004] text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-sans font-bold text-xs">1</div>
-            <div>
-              <h3 className="font-sans font-bold text-lg text-black uppercase tracking-tight mb-1">Whats growing</h3>
-              <p className="font-sans text-gray-800 leading-relaxed text-lg">Each week we share what our partner farms are harvesting</p>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <div className="bg-[#0B3004] text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-sans font-bold text-xs">2</div>
-            <div>
-              <h3 className="font-sans font-bold text-lg text-black uppercase tracking-tight mb-1">Pre-order</h3>
-              <p className="font-sans text-gray-800 leading-relaxed text-lg">Place your order within the week prior to delivery so the farmers harvest exactly whats needed</p>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <div className="bg-[#0B3004] text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-sans font-bold text-xs">3</div>
-            <div>
-              <h3 className="font-sans font-bold text-lg text-black uppercase tracking-tight mb-1">Harvest & pack</h3>
-              <p className="font-sans text-gray-800 leading-relaxed text-lg">Produce is harvested at peak freshness and often on the same day. Packed with minimal packaging and reusable where possible</p>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <div className="bg-[#0B3004] text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-sans font-bold text-xs">4</div>
-            <div>
-              <h3 className="font-sans font-bold text-lg text-black uppercase tracking-tight mb-1">Collection or Delivery</h3>
-              <p className="font-sans text-gray-800 leading-relaxed text-lg">WhatsApp messages will be sent out once your order has been packed for collection or delivery</p>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <div className="bg-[#0B3004] text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-sans font-bold text-xs">5</div>
-            <div>
-              <h3 className="font-sans font-bold text-lg text-black uppercase tracking-tight mb-1">PROCESSING</h3>
-              <p className="font-sans text-gray-800 leading-relaxed text-lg">If produce is unavailable post-ordering, a credit will be allocated to your account - login to your profile to view</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Mustard Section */}
-      <div className="bg-[#FFCC00] py-16 px-8 relative overflow-hidden border-t border-gray-300">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="font-sans font-bold text-2xl mb-8 uppercase tracking-tight text-black">A BETTER WAY TO BUY PRODUCE</h2>
-          <p className="font-sans text-gray-800 text-xl mb-8 leading-relaxed font-medium">
-            Instead of produce sitting in a warehouse or on a shelf for days, we work directly with a small farmers and harvest only what has already been ordered
+            Pre-order now <ArrowRight size={20} />
+          </Link>
+          <p className="font-mono text-sm max-w-[200px] opacity-60">
+            orders open friday 9am — close monday 12pm
           </p>
-          <ul className="space-y-3 text-gray-800 text-xl font-sans leading-relaxed font-medium">
-            <li>• Fresher food</li>
-            <li>• Less waste</li>
-            <li>• Fair trade</li>
-            <li>• Better soil & eco system</li>
-            <li>• Higher nutrient value</li>
-          </ul>
         </div>
+      </section>
 
-        {/* Floating icon at bottom right */}
-        <div className="absolute bottom-8 right-8 bg-[#FFFF99] p-4 rounded-3xl shadow-lg cursor-pointer">
-          <svg className="w-8 h-8 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M4 8V4h4m8 0h4v4m0 8v4h-4M8 20H4v-4" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M7 9h10v6H7z" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M7 12h10" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+      {/* Process Section */}
+      <section className="px-8 py-32 max-w-[1400px] mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
+          {[
+            { num: '01', title: "Whats growing", desc: "Each week we share what our partner farms are harvesting, keeping you connected to the rhythm of the seasons." },
+            { num: '02', title: "Pre-order", desc: "Place your order within the week prior to delivery so the farmers harvest exactly whats needed. Zero excess." },
+            { num: '03', title: "Harvest & pack", desc: "Produce is harvested at peak freshness and often on the same day. Packed with minimal, reusable materials." },
+            { num: '04', title: "Collection or Delivery", desc: "WhatsApp messages will be sent out once your order has been packed for collection or delivery." },
+          ].map((item, idx) => (
+            <div key={idx} className="process-item relative p-10 border border-[var(--pigment-ochre)]/20 hover:border-[var(--pigment-ochre)] hover:bg-white/40 transition-all duration-500 opacity-0 translate-y-[40px] [&.visible]:opacity-100 [&.visible]:translate-y-0">
+              <span className="font-mono text-[5rem] font-[900] text-[var(--pigment-ochre)] opacity-10 absolute -top-6 right-6">
+                {item.num}
+              </span>
+              <h3 className="text-2xl font-bold mb-6 text-[var(--pigment-green)] uppercase tracking-tight">
+                {item.title}
+              </h3>
+              <p className="leading-relaxed text-lg opacity-80">
+                {item.desc}
+              </p>
+            </div>
+          ))}
+
+          <div className="lg:col-span-4 bg-[var(--pigment-oxide)] text-[var(--canvas)] p-12 mt-16 font-mono flex flex-col md:flex-row items-center gap-10 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
+            <div className="text-6xl font-black opacity-20">05</div>
+            <div className="relative z-10">
+              <strong className="text-2xl inline-block mb-3 tracking-tighter">FAIR ACCOUNTING</strong><br />
+              <p className="text-lg opacity-90 max-w-[800px]">
+                If produce is unavailable post-ordering, a credit will be allocated to your account instantly. Direct, transparent, and fair.
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
+
+      {/* Manifesto Section */}
+      <section className="px-8 py-40 bg-[var(--pigment-green)] text-[var(--canvas)] relative overflow-hidden">
+        <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-white/5 blur-3xl rounded-full" />
+        <div className="max-w-[1000px] mx-auto relative z-10">
+          <h2 className="text-[clamp(2.5rem,6vw,4.5rem)] mb-16 leading-[1] pb-6 inline-block oxide-stroke">
+            A BETTER WAY <br /> TO BUY PRODUCE
+          </h2>
+          <p className="text-2xl md:text-3xl mb-16 max-w-[850px] leading-relaxed font-light">
+            Instead of produce sitting in a warehouse or on a shelf for days, we work directly with small farmers and harvest only what has already been ordered.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 mb-20">
+            <ul className="space-y-6 font-mono text-lg">
+              {[
+                "Fresher food", "Less waste", "Fair trade",
+                "Enriched soil", "Biodiversity", "Nutrient dense"
+              ].map((benefit, idx) => (
+                <li key={idx} className="flex items-center gap-4 manifesto-item opacity-0 translate-x-[-20px] [&.visible]:opacity-100 [&.visible]:translate-x-0 transition-all duration-500" style={{ transitionDelay: `${idx * 100}ms` }}>
+                  <div className="w-2 h-2 rounded-full bg-[var(--pigment-ochre)]" />
+                  {benefit}
+                </li>
+              ))}
+            </ul>
+
+            <div className="bg-white/5 p-10 border border-white/10 flex flex-col justify-center items-start">
+              <h4 className="text-xl font-bold mb-4">JOIN THE HARVEST</h4>
+              <p className="opacity-70 mb-8 font-mono text-sm">Be the first to know what's growing and support local food systems.</p>
+              <Link to="/login" className="bg-[var(--pigment-oxide)] text-white px-8 py-3 font-bold uppercase tracking-widest hover:bg-white hover:text-[var(--pigment-green)] transition-colors">
+                Community Access
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
+

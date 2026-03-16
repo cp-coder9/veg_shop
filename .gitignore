@@ -1,23 +1,54 @@
-# Dependencies
+# =============================================================================
+# ORGANIC VEG SHOP - PRODUCTION GITIGNORE
+# =============================================================================
+
+# =============================================================================
+# NODE.JS / NPM
+# =============================================================================
 node_modules/
 .pnp
 .pnp.js
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# Testing
-coverage/
-
-# Production
+# =============================================================================
+# BUILD OUTPUTS (Production)
+# =============================================================================
 dist/
 build/
+*.tsbuildinfo
 
-# Environment variables
+# =============================================================================
+# TESTING & COVERAGE
+# =============================================================================
+coverage/
+.nyc_output/
+*.test.ts
+*.spec.ts
+__tests__/
+test/
+*.test.js
+*.spec.js
+vitest.config.ts
+vitest.config.js
+
+# =============================================================================
+# ENVIRONMENT VARIABLES (CRITICAL - NEVER COMMIT)
+# =============================================================================
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
+backend/.env
+frontend/.env
 
-# Logs
+
+# =============================================================================
+# LOGS
+# =============================================================================
 logs
 *.log
 npm-debug.log*
@@ -25,6 +56,34 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+server_error.log
+backend_log.txt
+backend_out.log
+frontend_out.log
+frontend_tsc_error.log
+backend_tsc_error.log
+
+# =============================================================================
+# BUILD & LINT REPORTS (Development artifacts)
+# =============================================================================
+build_errors.txt
+build_errors_2.txt
+build_out.txt
+build_output.txt
+lint_errors.txt
+lint_output.txt
+lint_report.txt
+lint_report_2.txt
+lint_report_3.txt
+backend_lint_report.txt
+backend_lint.txt
+frontend_lint_report.txt
+frontend_lint_report_fixed.txt
+frontend_lint_report_final.txt
+frontend_lint.txt
+supplier_test_log.txt
+test_output.txt
+
 
 # Editor directories and files
 .vscode/*
@@ -37,28 +96,150 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+*.code-workspace
 
-# Prisma
-backend/prisma/migrations/
+# =============================================================================
+# DATABASE FILES (SQLite/Development)
+# =============================================================================
 *.db
+*.sqlite
+*.sqlite3
+backend/prisma/*.db
+backend/prisma/dev.db
 backend/prisma/**/*.db
-
-# Design captures
-design-captures/
-
-# Uploads
+backend/storage/
 backend/uploads/
+backend/test_outputs/
 
-# IDE rules
-.clinerules/byterover-rules.md
-.kilocode/rules/byterover-rules.md
-.roo/rules/byterover-rules.md
-.windsurf/rules/byterover-rules.md
-.cursor/rules/byterover-rules.mdc
-.kiro/steering/byterover-rules.md
-.qoder/rules/byterover-rules.md
-.augment/rules/byterover-rules.md
-.ariana/
+# =============================================================================
+# DEVELOPMENT SCRIPTS & TOOLS (Local only)
+# =============================================================================
+backend/scripts/test-*.ts
+backend/scripts/test_*.ts
+backend/scripts/check-*.ts
+backend/scripts/e2e_*.ts
+backend/scripts/full_flow_*.ts
+backend/scripts/verify-*.ts
+backend/scripts/migrate-*.ts
+backend/diagnose_db.*
+backend/test-*.ts
+backend/test_*.cjs
+backend/test-all.ts
+backend/test-auth.ts
+backend/test-env.ts
+backend/test-listen.ts
+backend/test-product.ts
+check_sqlite.*
+capture_figma.py
+parse_form.py
+test_mysql_connection.cjs
+
+# =============================================================================
+# DESIGN CAPTURES & LARGE FILES
+# =============================================================================
+design-captures/
+*.pdf
+*.png
+screencapture-*
+form_data.html
+
+# =============================================================================
+# PROJECT-SPECIFIC DOCS (Development only)
+# =============================================================================
+*_REPORT.txt
+*_REPORT.md
+*_STATUS.md
+*_CHECKLIST.md
+*_GUIDE.md
+*_FIX.md
+*_SETUP.md
+*_COMPLETE.md
+*_TEST_*.md
+*_SCENARIOS.md
+*_IMPLEMENTATION.md
+SETUP_*.md
+QUICK_*.md
+ADMIN_*.md
+CUSTOMER_*.md
+CLAUDE.md
+task.md
+TECHNICAL_OVERVIEW.md
+PRD.md
+render.yaml
+
+# =============================================================================
+# IDE & EDITOR
+# =============================================================================
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+# =============================================================================
+# KILOCODE & AI ASSISTANT FILES
+# =============================================================================
+.kilocode/
+.kiro/
+.roo/
+.windsurf/
+.cursor/
+.augment/
+.clinerules/
+.agent/
+.qoder/
 .traces/
-.ariana_saved_traces/
 .vault_secret_key
+.ariana/
+.ariana_saved_traces/
+
+# =============================================================================
+# GITHUB WORKFLOWS (Keep .github/ if needed)
+# =============================================================================
+.github/
+
+# =============================================================================
+# NGINX & DEPLOYMENT
+# =============================================================================
+nginx.conf
+deploy_*.sh
+*.pem
+*.key
+
+# =============================================================================
+# PHP BACKEND (Legacy/Optional)
+# =============================================================================
+backend-php/vendor/
+backend-php/composer.lock
+
+# =============================================================================
+# MISC CACHE & TEMP FILES
+# =============================================================================
+.htaccess
+*.bak
+*.tmp
+*.temp
+.cache/
+.eslintcache
+.tsbuildinfo
+.next/
+out/
+
+# =============================================================================
+# =============================================================================
+# KEEP THESE ESSENTIAL FILES (NEGATE PATTERNS)
+# =============================================================================
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+!.gitignore
+!.prettierrc
+!.prettierignore
+!.eslintrc.cjs
+!tsconfig.json
+!backend/tsconfig.json
+!frontend/tsconfig.json
+

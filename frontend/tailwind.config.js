@@ -13,6 +13,13 @@ export default {
                 'primary-light': '#FFFFFF',
                 'cream': '#F5F0E8',
 
+                // Artisanal Palette
+                'canvas': 'var(--canvas)',
+                'pigment-green': 'var(--pigment-green)',
+                'pigment-ochre': 'var(--pigment-ochre)',
+                'pigment-oxide': 'var(--pigment-oxide)',
+                'ink': 'var(--ink)',
+
                 // Secondary Colors
                 'warm-gray': '#8B8178',
                 'light-gray': '#E8E4DE',

@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
-import { useCartStore } from '../stores/cartStore';
-import { Button, Input, Card } from '../components/ui';
 import { ProductQuickOrderList } from '../components/shop/ProductQuickOrderList';
 import { ProductDetailModal } from '../components/shop/ProductDetailModal';
 import { Product, CATEGORY_LABELS } from '../types';
+import { Search, SlidersHorizontal, PackageX } from 'lucide-react';
 
 // Category display names mapping (fallback)
 const categoryNames: Record<string, string> = {
@@ -19,7 +17,6 @@ const categoryNames: Record<string, string> = {
 
 export default function ProductsPage() {
   const { data: products, isLoading, isError } = useProducts();
-  const { getTotalItems } = useCartStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -28,27 +25,27 @@ export default function ProductsPage() {
   // Group products by category - ensure products is an array
   const groupedProducts: Record<string, Product[]> = Array.isArray(products)
     ? products.reduce((acc, product) => {
-        const category = product.category || 'other';
-        if (!acc[category]) {
-          acc[category] = [];
-        }
-        acc[category].push(product);
-        return acc;
-      }, {} as Record<string, Product[]>)
+      const category = product.category || 'other';
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(product);
+      return acc;
+    }, {} as Record<string, Product[]>)
     : {};
 
   // Filter products based on search and category
   const filteredGroups = Object.entries(groupedProducts).reduce((acc, [category, categoryProducts]) => {
-        const filtered = (categoryProducts || []).filter(
-          (p) =>
-            p.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-            (!selectedCategory || category === selectedCategory)
-        );
-        if (filtered.length > 0) {
-          acc[category] = filtered;
-        }
-        return acc;
-      }, {} as Record<string, Product[]>);
+    const filtered = (categoryProducts || []).filter(
+      (p) =>
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        (!selectedCategory || category === selectedCategory)
+    );
+    if (filtered.length > 0) {
+      acc[category] = filtered;
+    }
+    return acc;
+  }, {} as Record<string, Product[]>);
 
   // Get unique categories for filter - defensive check for array
   const categories = Array.isArray(products)
@@ -69,99 +66,98 @@ export default function ProductsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="loading-spinner h-12 w-12 mx-auto animate-spin rounded-full border-4 border-light-gray border-t-terracotta"></div>
-          <p className="mt-4 font-body text-body-md text-warm-gray">Loading products...</p>
-        </div>
+      <div className="flex flex-col items-center justify-center py-40 gap-8">
+        <div className="w-16 h-16 border-4 border-[var(--pigment-green)]/10 border-t-[var(--pigment-green)] rounded-full animate-spin" />
+        <p className="font-mono text-xs uppercase tracking-[0.3em] opacity-40">Consulting the harvest...</p>
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="bg-red-50 text-error px-4 py-3 rounded-lg border border-error/20 font-body">
-        Failed to load products. Please try again later.
+      <div className="max-w-4xl mx-auto py-20 px-8">
+        <div className="bg-[var(--pigment-oxide)]/10 border border-[var(--pigment-oxide)]/20 p-12 text-center">
+          <h2 className="text-2xl font-black uppercase tracking-tighter text-[var(--pigment-oxide)] mb-4">Connection Lost</h2>
+          <p className="font-mono text-sm opacity-60 uppercase tracking-widest leading-relaxed">
+            We couldn't reach the fields. <br /> Please attempt a reconnection shortly.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-[1200px] mx-auto px-8 py-20 pb-40">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-display-md text-primary-dark">Quick Order</h1>
-          <p className="font-body text-body-md text-warm-gray mt-1">
-            Tap a product to view details, or click Add → to order quickly
-          </p>
-        </div>
-        <Link to="/cart" className="relative">
-          <Button variant="secondary">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            Cart ({getTotalItems()})
-          </Button>
-        </Link>
+      <div className="mb-20">
+        <p className="font-mono text-[10px] uppercase font-bold tracking-[0.4em] text-[var(--pigment-ochre)] mb-4">
+          Direct from the earth
+        </p>
+        <h1 className="text-6xl font-[900] uppercase tracking-tighter text-[var(--pigment-green)] mb-6">
+          Seasonal Shop
+        </h1>
+        <p className="font-mono text-xs opacity-60 uppercase tracking-widest max-w-sm leading-relaxed">
+          Select from our weekly harvest. <br /> Orders harvested fresh for you.
+        </p>
       </div>
 
-      {/* Search and Category Filters */}
-      <div className="flex flex-col gap-4">
-        <div>
-          <Input
-            placeholder="Search products..."
+      {/* Search and Filters */}
+      <div className="mb-16 space-y-8">
+        <div className="relative group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 transition-opacity" size={18} />
+          <input
+            type="text"
+            placeholder="FIND PRODUCE..."
+            className="w-full bg-white/40 border-b-2 border-[var(--pigment-green)]/10 focus:border-[var(--pigment-green)] py-6 pl-12 pr-6 outline-none font-mono text-xs uppercase tracking-widest transition-all placeholder:opacity-30"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            leftIcon={
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            }
           />
         </div>
-        
-        {/* Category Filter Chips */}
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={() => setSelectedCategory(null)}
-            className={`px-4 py-2 rounded-full text-body-sm font-medium transition-colors ${
-              selectedCategory === null
-                ? 'bg-primary-dark text-white'
-                : 'bg-cream text-primary-dark hover:bg-light-gray'
-            }`}
-          >
-            All
-          </button>
-          {categories.map((category) => (
+
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3 opacity-40 font-mono text-[10px] uppercase tracking-[0.2em] mb-2">
+            <SlidersHorizontal size={14} />
+            <span>Classification</span>
+          </div>
+          <div className="flex gap-3 flex-wrap">
             <button
-              key={category}
-              onClick={() => setSelectedCategory(category === selectedCategory ? null : category)}
-              className={`px-4 py-2 rounded-full text-body-sm font-medium transition-colors ${
-                selectedCategory === category
-                  ? 'bg-primary-dark text-white'
-                  : 'bg-cream text-primary-dark hover:bg-light-gray'
-              }`}
+              onClick={() => setSelectedCategory(null)}
+              className={`px-6 py-2 border transition-all font-mono text-[10px] uppercase tracking-widest ${selectedCategory === null
+                ? 'bg-[var(--pigment-green)] text-[var(--canvas)] border-[var(--pigment-green)]'
+                : 'bg-transparent border-[var(--pigment-ochre)]/20 text-[var(--ink)] hover:border-[var(--pigment-ochre)]'
+                }`}
             >
-              {CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] || categoryNames[category] || category}
+              All Produce
             </button>
-          ))}
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category === selectedCategory ? null : category)}
+                className={`px-6 py-2 border transition-all font-mono text-[10px] uppercase tracking-widest ${selectedCategory === category
+                  ? 'bg-[var(--pigment-green)] text-[var(--canvas)] border-[var(--pigment-green)]'
+                  : 'bg-transparent border-[var(--pigment-ochre)]/20 text-[var(--ink)] hover:border-[var(--pigment-ochre)]'
+                  }`}
+              >
+                {CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] || categoryNames[category] || category}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Products List (Quick Order Format) */}
+      {/* Products List */}
       {Object.keys(filteredGroups).length === 0 ? (
-        <Card className="text-center py-12">
-          <svg className="w-16 h-16 mx-auto text-warm-gray mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <h3 className="font-display text-display-sm text-primary-dark mb-2">No Products Found</h3>
-          <p className="font-body text-body-md text-warm-gray">
-            Try adjusting your search or filter criteria
+        <div className="py-32 text-center border-y border-[var(--pigment-ochre)]/10">
+          <div className="flex justify-center mb-8 opacity-10">
+            <PackageX size={64} />
+          </div>
+          <h3 className="text-xl font-black uppercase tracking-tighter text-[var(--pigment-green)] mb-3">Void In The Fields</h3>
+          <p className="font-mono text-[10px] opacity-40 uppercase tracking-[0.2em]">
+            No produce matches your current criteria
           </p>
-        </Card>
+        </div>
       ) : (
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-12">
           {Object.entries(filteredGroups).map(([category, categoryProducts]) => (
             <ProductQuickOrderList
               key={category}
@@ -182,3 +178,4 @@ export default function ProductsPage() {
     </div>
   );
 }
+
