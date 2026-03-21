@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuthStore } from '../../stores/authStore.js';
 import logo from '../../assets/our-harvest-tote-logo.png';
 
 export default function AdminLayout() {
@@ -53,6 +53,15 @@ export default function AdminLayout() {
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Availability',
+      path: '/admin/availability',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
     },
@@ -157,8 +166,8 @@ export default function AdminLayout() {
                   to={item.path}
                   onClick={() => setIsMenuOpen(false)}
                   className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${isActive(item.path)
-                      ? 'bg-cream text-primary-dark font-semibold shadow-sm'
-                      : 'text-warm-gray hover:bg-cream hover:text-primary-dark'
+                    ? 'bg-cream text-primary-dark font-semibold shadow-sm'
+                    : 'text-warm-gray hover:bg-cream hover:text-primary-dark'
                     }`}
                 >
                   <div className={isActive(item.path) ? 'text-primary-dark' : 'text-warm-gray'}>

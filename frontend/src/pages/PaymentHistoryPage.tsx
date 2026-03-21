@@ -1,7 +1,7 @@
-import { useCustomerInvoices } from '../hooks/useCustomer';
-import { formatPrice } from '../lib/utils';
+import { useCustomerInvoices } from '../hooks/useCustomer.js';
+import { formatPrice } from '../lib/utils.js';
 import { Link, useNavigate } from 'react-router-dom';
-import { Card, CardHeader, Badge, Button, BackIcon } from '../components/ui';
+import { Card, CardHeader, Badge, Button, BackIcon } from '../components/ui/index.js';
 
 // Status badge variant mapping
 const statusVariants: Record<string, 'success' | 'warning' | 'info' | 'error'> = {
@@ -67,8 +67,8 @@ export default function PaymentHistoryPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <button 
-          onClick={() => navigate(-1)} 
+        <button
+          onClick={() => navigate(-1)}
           className="p-2 hover:bg-cream rounded-full transition-colors"
         >
           <BackIcon className="w-5 h-5 text-primary-dark" />

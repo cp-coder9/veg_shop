@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../lib/api';
-import { Invoice } from '../types';
+import api from '../lib/api.js';
+import { Invoice } from '../types/index.js';
 
 export function useAdminInvoices(filters?: {
   customerId?: string;
@@ -46,7 +46,7 @@ export function useInvoicePayments(invoiceId: string) {
   });
 }
 
-interface InvoiceWithOrder extends Invoice {
+export interface InvoiceWithOrder extends Invoice {
   order: {
     id: string;
     customerId: string;

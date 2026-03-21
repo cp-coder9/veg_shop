@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '../test/utils';
+import { render, screen } from '../test/utils.js';
 import userEvent from '@testing-library/user-event';
-import OrdersPage from './OrdersPage';
+import OrdersPage from './OrdersPage.js';
 
 const mockOrders = [
   {
@@ -46,7 +46,7 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-import { useCustomerOrders } from '../hooks/useOrders';
+import { useCustomerOrders } from '../hooks/useOrders.js';
 
 describe('OrdersPage', () => {
   it('shows loading state', () => {
@@ -90,14 +90,14 @@ describe('OrdersPage', () => {
     } as any);
 
     render(<OrdersPage />);
-    
+
     expect(screen.getByText(/order #order-1/i)).toBeInTheDocument();
     expect(screen.getByText('Confirmed')).toBeInTheDocument();
     expect(screen.getByText('R51.98')).toBeInTheDocument();
   });
 
   it('expands order details when clicked', async () => {
-    const user = userEvent.setup();
+    const user = (userEvent as any).setup();
     vi.mocked(useCustomerOrders).mockReturnValue({
       data: mockOrders,
       isLoading: false,
@@ -105,12 +105,12 @@ describe('OrdersPage', () => {
     } as any);
 
     render(<OrdersPage />);
-    
+
     const orderCard = screen.getByText(/order #order-1/i).closest('div');
     if (orderCard) {
       await user.click(orderCard);
     }
-    
+
     expect(screen.getByText('Order Details')).toBeInTheDocument();
     expect(screen.getByText(/tomatoes x 2/i)).toBeInTheDocument();
     expect(screen.getByText('Leave at door')).toBeInTheDocument();

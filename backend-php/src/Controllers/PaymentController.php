@@ -39,39 +39,38 @@ class PaymentController
 
         $payments = [];
         if ($customerId) {
-            $payments = $this->firebase->query('payments', 'customer_id', '==', $customerId);
+            $payments = $this->firebase->query('payments', 'customerId', '==', $customerId);
         } else {
-            // Fetch all (with dummy query)
-            $payments = $this->firebase->query('payments', 'method', '>', '');
+            $payments = $this->firebase->listDocuments('payments');
         }
 
         // Apply remaining filters
         if ($startDate || $endDate) {
             $payments = array_values(array_filter($payments, function ($p) use ($startDate, $endDate) {
-                if ($startDate && ($p['payment_date'] ?? '') < $startDate)
+                if ($startDate && ($p['paymentDate'] ?? '') < $startDate)
                     return false;
-                if ($endDate && ($p['payment_date'] ?? '') > $endDate)
+                if ($endDate && ($p['paymentDate'] ?? '') > $endDate)
                     return false;
                 return true;
             }));
         }
 
-        // Sort by payment_date DESC
-        usort($payments, fn($a, $b) => ($b['payment_date'] ?? '') <=> ($a['payment_date'] ?? ''));
+        // Sort by paymentDate DESC
+        usort($payments, fn($a, $b) => ($b['paymentDate'] ?? '') <=> ($a['paymentDate'] ?? ''));
 
         if ($limit > 0) {
             $payments = array_slice($payments, 0, $limit);
         }
 
-        // Attach customer name and order_id from invoice
+        // Attach customer name and orderId from invoice
         foreach ($payments as &$p) {
             $p['amount'] = (float) ($p['amount'] ?? 0);
 
-            $customer = $this->firebase->getDocument('users', $p['customer_id']);
-            $p['customer_name'] = $customer['name'] ?? 'Unknown';
+            $customer = $this->firebase->getDocument('users', $p['customerId'] ?? '');
+            $p['customerName'] = $customer['name'] ?? 'Unknown';
 
-            $invoice = $this->firebase->getDocument('invoices', $p['invoice_id']);
-            $p['order_id'] = $invoice['order_id'] ?? null;
+            $invoice = $this->firebase->getDocument('invoices', $p['invoiceId'] ?? '');
+            $p['orderId'] = $invoice['orderId'] ?? null;
         }
 
         Response::json($payments);
@@ -98,19 +97,19 @@ class PaymentController
             // Record payment
             $paymentData = [
                 'id' => $paymentId,
-                'invoice_id' => $data['invoiceId'],
-                'customer_id' => $invoice['customer_id'],
+                'invoiceId' => $data['invoiceId'],
+                'customerId' => $invoice['customerId'],
                 'amount' => (float) $data['amount'],
                 'method' => $data['method'],
-                'payment_date' => $data['paymentDate'],
+                'paymentDate' => $data['paymentDate'],
                 'notes' => $data['notes'] ?? null,
-                'timestamp' => date('c')
+                'createdAt' => date('c')
             ];
 
             $this->firebase->createDocument('payments', $paymentId, $paymentData);
 
             // Check total paid for invoice
-            $allPayments = $this->firebase->query('payments', 'invoice_id', '==', $data['invoiceId']);
+            $allPayments = $this->firebase->query('payments', 'invoiceId', '==', $data['invoiceId']);
             $totalPaid = array_sum(array_column($allPayments, 'amount'));
 
             $invoiceTotal = (float) ($invoice['total'] ?? 0);
@@ -139,6 +138,10 @@ class PaymentController
         AuthMiddleware::check();
 
         $customerId = $params['id'];
+        if ($customerId === 'me') {
+            $customerId = Request::userId();
+        }
+
         $role = Request::userRole();
         $userId = Request::userId();
 
@@ -146,17 +149,97 @@ class PaymentController
             Response::forbidden('Cannot access these payments');
         }
 
-        $payments = $this->firebase->query('payments', 'customer_id', '==', $customerId);
+        $payments = $this->firebase->query('payments', 'customerId', '==', $customerId);
 
-        // Sort by payment_date DESC
-        usort($payments, fn($a, $b) => ($b['payment_date'] ?? '') <=> ($a['payment_date'] ?? ''));
+        // Sort by paymentDate DESC
+        usort($payments, fn($a, $b) => ($b['paymentDate'] ?? '') <=> ($a['paymentDate'] ?? ''));
 
         foreach ($payments as &$p) {
             $p['amount'] = (float) ($p['amount'] ?? 0);
-            $invoice = $this->firebase->getDocument('invoices', $p['invoice_id']);
-            $p['order_id'] = $invoice['order_id'] ?? null;
+            $invoice = $this->firebase->getDocument('invoices', $p['invoiceId'] ?? '');
+            $p['orderId'] = $invoice['orderId'] ?? null;
         }
 
         Response::json($payments);
+    }
+
+    /**
+     * GET /api/payments/stats
+     * Payment statistics by method grouped by today / this week / this month.
+     * Values are stored as real amounts but returned as cents (×100) to match frontend.
+     */
+    public function stats(): void
+    {
+        AuthMiddleware::admin();
+
+        $allPayments = $this->firebase->listDocuments('payments');
+
+        $today = date('Y-m-d');
+        $weekStart = date('Y-m-d', strtotime('monday this week'));
+        $monthStart = date('Y-m-01');
+
+        $buckets = [
+            'today' => ['total' => 0, 'count' => 0, 'yoco' => 0, 'cash' => 0, 'eft' => 0],
+            'week' => ['total' => 0, 'count' => 0, 'yoco' => 0, 'cash' => 0, 'eft' => 0],
+            'month' => ['total' => 0, 'count' => 0, 'yoco' => 0, 'cash' => 0, 'eft' => 0],
+        ];
+
+        foreach ($allPayments as $p) {
+            $date = substr($p['paymentDate'] ?? '', 0, 10);
+            $amount = (float) ($p['amount'] ?? 0);
+            $method = $p['method'] ?? 'cash';
+            // centify amount so frontend divides by 100
+            $amountCents = (int) round($amount * 100);
+
+            foreach (['today' => $today, 'week' => $weekStart, 'month' => $monthStart] as $key => $cutoff) {
+                if ($date >= $cutoff) {
+                    $buckets[$key]['total'] += $amountCents;
+                    $buckets[$key]['count']++;
+                    if (in_array($method, ['yoco', 'cash', 'eft'])) {
+                        $buckets[$key][$method] += $amountCents;
+                    }
+                }
+            }
+        }
+
+        Response::json($buckets);
+    }
+
+    /**
+     * GET /api/payments/recent
+     * Recent payments enriched with customer info and invoice status.
+     */
+    public function recent(): void
+    {
+        AuthMiddleware::admin();
+
+        $limit = (int) (Request::query('limit') ?? 20);
+
+        $allPayments = $this->firebase->listDocuments('payments');
+
+        // Sort DESC by paymentDate
+        usort($allPayments, fn($a, $b) => ($b['paymentDate'] ?? '') <=> ($a['paymentDate'] ?? ''));
+
+        if ($limit > 0) {
+            $allPayments = array_slice($allPayments, 0, $limit);
+        }
+
+        foreach ($allPayments as &$p) {
+            $p['amount'] = (float) ($p['amount'] ?? 0);
+
+            // Enrich with customer info
+            $customer = $this->firebase->getDocument('users', $p['customerId'] ?? '');
+            $p['customer'] = [
+                'id' => $p['customerId'] ?? null,
+                'name' => $customer['name'] ?? 'Unknown',
+                'email' => $customer['email'] ?? null,
+            ];
+
+            // Enrich with invoice info
+            $invoice = $this->firebase->getDocument('invoices', $p['invoiceId'] ?? '');
+            $p['invoiceStatus'] = $invoice['status'] ?? null;
+        }
+
+        Response::json($allPayments);
     }
 }

@@ -3,9 +3,9 @@ import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement } from 'react';
 import MockAdapter from 'axios-mock-adapter';
-import { useSendCode, useVerifyCode, useLogout } from './useAuth';
-import { useAuthStore } from '../stores/authStore';
-import api from '../lib/api';
+import { useSendCode, useVerifyCode, useLogout } from './useAuth.js';
+import { useAuthStore } from '../stores/authStore.js';
+import api from '../lib/api.js';
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -24,7 +24,7 @@ describe('useAuth hooks', () => {
   let mock: MockAdapter;
 
   beforeEach(() => {
-    mock = new MockAdapter(api);
+    mock = new MockAdapter(api as any);
     useAuthStore.getState().logout();
   });
 
@@ -65,12 +65,12 @@ describe('useAuth hooks', () => {
       });
 
       expect(result.current.mutate).toBeDefined();
-      
+
       await result.current.mutateAsync({
         contact: 'test@example.com',
         code: '123456',
       });
-      
+
       const authState = useAuthStore.getState();
       expect(authState.accessToken).toBe('access-token');
       expect(authState.user?.name).toBe('Test User');
@@ -102,7 +102,7 @@ describe('useAuth hooks', () => {
       });
 
       await result.current.mutateAsync();
-      
+
       const authState = useAuthStore.getState();
       expect(authState.accessToken).toBeNull();
       expect(authState.user).toBeNull();

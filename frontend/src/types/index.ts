@@ -10,8 +10,10 @@ export interface Product {
   imageUrl: string | null;
   isAvailable: boolean;
   isSeasonal: boolean;
+  isPerishable: boolean;
   packingType: string;
   supplierId?: string | null;
+  supplier?: { id: string; name: string } | null;
   deliveryDay?: string | null; // "Wednesday" | "Friday" - delivery day for the product
   createdAt: string;
   updatedAt: string;
@@ -29,13 +31,19 @@ export interface Order {
   deliveryMethod: 'delivery' | 'collection';
   deliveryAddress: string | null;
   specialInstructions: string | null;
+  deliveryFees?: number | string;
+  deliveryInstruction?: 'door' | 'hand_to_me' | 'inside_fridge' | 'inside_freezer' | null;
+  groupDelivery?: boolean;
   status: 'pending' | 'confirmed' | 'packed' | 'delivered' | 'cancelled' | 'out_for_delivery';
   packerId?: string | null;
   packerNotes?: string | null;
   packerSignature?: string | null;
+  driverId?: string | null;
   deliveryNotes?: string | null;
+  driverNotes?: string | null;
   coolerBagOption: boolean;
   coolerBagStatus: 'none' | 'taken' | 'returned';
+  invoice?: Invoice | null;
   items: {
     id: string;
     productId: string;

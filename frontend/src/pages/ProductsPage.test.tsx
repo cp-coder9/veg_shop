@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '../test/utils';
-import ProductsPage from './ProductsPage';
+import { render, screen } from '../test/utils.js';
+import ProductsPage from './ProductsPage.js';
 
 const mockProducts = [
   {
@@ -48,7 +48,7 @@ vi.mock('../stores/cartStore', () => ({
   }),
 }));
 
-import { useProducts } from '../hooks/useProducts';
+import { useProducts } from '../hooks/useProducts.js';
 
 describe('ProductsPage', () => {
   beforeEach(() => {

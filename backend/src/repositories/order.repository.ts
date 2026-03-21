@@ -10,6 +10,8 @@ export interface Order {
     deliveryFees: number;
     status: string;
     coolerBagOption: boolean;
+    groupDelivery?: boolean;
+    deliveryInstruction?: string | null;
     packerId?: string | null;
     packerNotes?: string | null;
     packerSignature?: string | null;

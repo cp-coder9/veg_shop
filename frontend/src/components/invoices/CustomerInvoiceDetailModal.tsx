@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import api from '../../lib/api';
-import { toNumber } from '../../lib/utils';
-import { useDownloadInvoicePDF } from '../../hooks/useInvoicePDF';
+import api from '../../lib/api.js';
+import { toNumber } from '../../lib/utils.js';
+import { useDownloadInvoicePDF } from '../../hooks/useInvoicePDF.js';
 
 interface InvoiceDetailModalProps {
   invoiceId: string;
@@ -172,10 +172,10 @@ export default function CustomerInvoiceDetailModal({
               <p className="text-sm text-gray-600">Status</p>
               <span
                 className={`inline-block px-3 py-1 text-sm font-semibold rounded-full ${invoice.status === 'paid'
-                    ? 'bg-green-100 text-green-800'
-                    : invoice.status === 'partial'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-red-100 text-red-800'
+                  ? 'bg-green-100 text-green-800'
+                  : invoice.status === 'partial'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-red-100 text-red-800'
                   }`}
               >
                 {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}

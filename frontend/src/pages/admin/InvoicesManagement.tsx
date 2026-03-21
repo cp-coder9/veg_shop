@@ -5,8 +5,8 @@ import {
   useInvoicePayments,
   useDownloadInvoicePDF,
   useSendPaymentLink,
-} from '../../hooks/useAdminInvoices';
-import { toNumber } from '../../lib/utils';
+} from '../../hooks/useAdminInvoices.js';
+import { toNumber } from '../../lib/utils.js';
 import { toast } from 'react-hot-toast';
 import { CreditCard, Banknote, Building } from 'lucide-react';
 
@@ -124,9 +124,9 @@ export default function InvoicesManagement() {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {invoices?.map((invoice) => (
-              <InvoiceRow 
-                key={invoice.id} 
-                invoice={invoice} 
+              <InvoiceRow
+                key={invoice.id}
+                invoice={invoice}
                 onView={() => setSelectedInvoiceId(invoice.id)}
                 onDownloadPDF={() => handleDownloadPDF(invoice.id)}
                 onSendLink={() => setPaymentLinkModal({ open: true, invoiceId: invoice.id })}
@@ -139,9 +139,9 @@ export default function InvoicesManagement() {
       {/* Invoices List - Mobile Cards */}
       <div className="md:hidden space-y-4">
         {invoices?.map((invoice) => (
-          <InvoiceCard 
-            key={invoice.id} 
-            invoice={invoice} 
+          <InvoiceCard
+            key={invoice.id}
+            invoice={invoice}
             onView={() => setSelectedInvoiceId(invoice.id)}
             onDownloadPDF={() => handleDownloadPDF(invoice.id)}
             onSendLink={() => setPaymentLinkModal({ open: true, invoiceId: invoice.id })}
@@ -187,15 +187,15 @@ interface InvoiceRowProps {
 
 function InvoiceRow({ invoice, onView, onDownloadPDF, onSendLink }: InvoiceRowProps) {
   const { data: payments, isLoading } = useInvoicePayments(invoice.id);
-  
+
   const getPaymentMethod = () => {
     if (isLoading || !payments || payments.length === 0) return null;
     const lastPayment = payments[0];
     return lastPayment.method;
   };
-  
+
   const paymentMethod = getPaymentMethod();
-  
+
   const getMethodIcon = () => {
     switch (paymentMethod) {
       case 'yoco': return <CreditCard size={16} className="text-purple-600" />;
@@ -204,7 +204,7 @@ function InvoiceRow({ invoice, onView, onDownloadPDF, onSendLink }: InvoiceRowPr
       default: return null;
     }
   };
-  
+
   const getMethodLabel = () => {
     switch (paymentMethod) {
       case 'yoco': return 'Yoco';
@@ -226,19 +226,19 @@ function InvoiceRow({ invoice, onView, onDownloadPDF, onSendLink }: InvoiceRowPr
         R {toNumber(invoice.subtotal).toFixed(2)}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-        {toNumber(invoice.creditApplied) > 0 ? `-R ${toNumber(invoice.creditApplied).toFixed(2)}` : '-'}
+        {toNumber(invoice.creditApplied) > 0 ? `- R ${toNumber(invoice.creditApplied).toFixed(2)} ` : '-'}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
         R {toNumber(invoice.total).toFixed(2)}
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <span
-          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${invoice.status === 'paid'
+          className={`px - 2 inline - flex text - xs leading - 5 font - semibold rounded - full ${invoice.status === 'paid'
             ? 'bg-green-100 text-green-800'
             : invoice.status === 'partial'
               ? 'bg-yellow-100 text-yellow-800'
               : 'bg-red-100 text-red-800'
-            }`}
+            } `}
         >
           {invoice.status}
         </span>
@@ -286,14 +286,14 @@ function InvoiceRow({ invoice, onView, onDownloadPDF, onSendLink }: InvoiceRowPr
 
 function InvoiceCard({ invoice, onView, onDownloadPDF, onSendLink }: InvoiceRowProps) {
   const { data: payments, isLoading } = useInvoicePayments(invoice.id);
-  
+
   const getPaymentMethod = () => {
     if (isLoading || !payments || payments.length === 0) return null;
     return payments[0].method;
   };
-  
+
   const paymentMethod = getPaymentMethod();
-  
+
   const getMethodBadge = () => {
     switch (paymentMethod) {
       case 'yoco': return <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded">💳 Yoco</span>;
@@ -312,12 +312,12 @@ function InvoiceCard({ invoice, onView, onDownloadPDF, onSendLink }: InvoiceRowP
         </div>
         <div className="flex flex-col items-end gap-1">
           <span
-            className={`px-2 py-1 text-xs font-semibold rounded-full ${invoice.status === 'paid'
+            className={`px - 2 py - 1 text - xs font - semibold rounded - full ${invoice.status === 'paid'
               ? 'bg-green-100 text-green-800'
               : invoice.status === 'partial'
                 ? 'bg-yellow-100 text-yellow-800'
                 : 'bg-red-100 text-red-800'
-              }`}
+              } `}
           >
             {invoice.status}
           </span>

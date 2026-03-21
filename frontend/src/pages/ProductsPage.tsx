@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { useProducts } from '../hooks/useProducts';
-import { ProductQuickOrderList } from '../components/shop/ProductQuickOrderList';
-import { ProductDetailModal } from '../components/shop/ProductDetailModal';
-import { Product, CATEGORY_LABELS } from '../types';
-import { Search, SlidersHorizontal, PackageX } from 'lucide-react';
+import { useProducts } from '../hooks/useProducts.js';
+import { useOrderWindowStatus } from '../hooks/useOrders.js';
+import { ProductQuickOrderList } from '../components/shop/ProductQuickOrderList.js';
+import { ProductDetailModal } from '../components/shop/ProductDetailModal.js';
+import { QuickOrderSection } from '../components/shop/QuickOrderSection.js';
+import { Product, CATEGORY_LABELS } from '../types/index.js';
+import { Search, SlidersHorizontal, PackageX, Calendar, Truck, Layers, Leaf } from 'lucide-react';
 
 // Category display names mapping (fallback)
 const categoryNames: Record<string, string> = {
@@ -17,40 +19,58 @@ const categoryNames: Record<string, string> = {
 
 export default function ProductsPage() {
   const { data: products, isLoading, isError } = useProducts();
+  const { data: windowStatus } = useOrderWindowStatus();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
+  const [selectedDeliveryDay, setSelectedDeliveryDay] = useState<string | null>(null);
+  const [groupBy, setGroupBy] = useState<'category' | 'supplier' | 'deliveryDay'>('category');
+  const [showSeasonalOnly, setShowSeasonalOnly] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Group products by category - ensure products is an array
+  // Group products based on selected grouping method
   const groupedProducts: Record<string, Product[]> = Array.isArray(products)
     ? products.reduce((acc, product) => {
-      const category = product.category || 'other';
-      if (!acc[category]) {
-        acc[category] = [];
+      let key = 'other';
+      if (groupBy === 'category') {
+        key = product.category || 'other';
+      } else if (groupBy === 'supplier') {
+        key = product.supplier?.name || 'Unknown Supplier';
+      } else if (groupBy === 'deliveryDay') {
+        key = product.deliveryDay || 'Unscheduled';
       }
-      acc[category].push(product);
+
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(product);
       return acc;
     }, {} as Record<string, Product[]>)
     : {};
 
-  // Filter products based on search and category
-  const filteredGroups = Object.entries(groupedProducts).reduce((acc, [category, categoryProducts]) => {
-    const filtered = (categoryProducts || []).filter(
+  // Filter products based on all criteria
+  const filteredGroups = Object.entries(groupedProducts).reduce((acc, [groupKey, groupProducts]) => {
+    const filtered = (groupProducts || []).filter(
       (p) =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (!selectedCategory || category === selectedCategory)
+        (!selectedCategory || p.category === selectedCategory) &&
+        (!selectedSupplier || p.supplier?.name === selectedSupplier) &&
+        (!selectedDeliveryDay || p.deliveryDay === selectedDeliveryDay) &&
+        (!showSeasonalOnly || p.isSeasonal)
     );
     if (filtered.length > 0) {
-      acc[category] = filtered;
+      acc[groupKey] = filtered;
     }
     return acc;
   }, {} as Record<string, Product[]>);
 
-  // Get unique categories for filter - defensive check for array
-  const categories = Array.isArray(products)
-    ? [...new Set(products.map((p) => p.category || 'other'))]
+  // Get unique values for filters
+  const categories = Array.isArray(products) ? [...new Set(products.map((p) => p.category || 'other'))].sort() : [];
+  const supplierNames = Array.isArray(products)
+    ? [...new Set(products.filter(p => p.supplier?.name).map(p => p.supplier!.name))].sort()
     : [];
+  const deliveryDays = Array.isArray(products) ? [...new Set(products.filter(p => p.deliveryDay).map(p => p.deliveryDay!))].sort() : [];
 
   // Handle product click to open modal
   const handleProductClick = (product: Product) => {
@@ -114,36 +134,110 @@ export default function ProductsPage() {
           />
         </div>
 
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3 opacity-40 font-mono text-[10px] uppercase tracking-[0.2em] mb-2">
-            <SlidersHorizontal size={14} />
-            <span>Classification</span>
-          </div>
-          <div className="flex gap-3 flex-wrap">
-            <button
-              onClick={() => setSelectedCategory(null)}
-              className={`px-6 py-2 border transition-all font-mono text-[10px] uppercase tracking-widest ${selectedCategory === null
-                ? 'bg-[var(--pigment-green)] text-[var(--canvas)] border-[var(--pigment-green)]'
-                : 'bg-transparent border-[var(--pigment-ochre)]/20 text-[var(--ink)] hover:border-[var(--pigment-ochre)]'
-                }`}
-            >
-              All Produce
-            </button>
-            {categories.map((category) => (
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col md:flex-row justify-between gap-8">
+            {/* Group By Toggle */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3 opacity-40 font-mono text-[10px] uppercase tracking-[0.2em] mb-2">
+                <Layers size={14} />
+                <span>Organisation</span>
+              </div>
+              <div className="flex border border-[var(--pigment-green)]/10 p-1 bg-white/40 self-start">
+                {[
+                  { id: 'category', label: 'By Type' },
+                  { id: 'supplier', label: 'By Supplier' },
+                  { id: 'deliveryDay', label: 'By Harvest Day' },
+                ].map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => setGroupBy(option.id as any)}
+                    className={`px-6 py-2 font-mono text-[10px] uppercase tracking-widest transition-all ${groupBy === option.id
+                      ? 'bg-[var(--pigment-green)] text-[var(--canvas)]'
+                      : 'text-[var(--ink)] opacity-40 hover:opacity-100'
+                      }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Seasonal Toggle */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3 opacity-40 font-mono text-[10px] uppercase tracking-[0.2em] mb-2">
+                <Leaf size={14} />
+                <span>Curation</span>
+              </div>
               <button
-                key={category}
-                onClick={() => setSelectedCategory(category === selectedCategory ? null : category)}
-                className={`px-6 py-2 border transition-all font-mono text-[10px] uppercase tracking-widest ${selectedCategory === category
-                  ? 'bg-[var(--pigment-green)] text-[var(--canvas)] border-[var(--pigment-green)]'
-                  : 'bg-transparent border-[var(--pigment-ochre)]/20 text-[var(--ink)] hover:border-[var(--pigment-ochre)]'
+                onClick={() => setShowSeasonalOnly(!showSeasonalOnly)}
+                className={`flex justify-between items-center gap-8 px-6 py-3 border transition-all font-mono text-[10px] uppercase tracking-widest self-start ${showSeasonalOnly
+                  ? 'bg-amber-100 border-amber-300 text-amber-800'
+                  : 'bg-white/40 border-[var(--pigment-green)]/10 opacity-40 hover:opacity-100'
                   }`}
               >
-                {CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] || categoryNames[category] || category}
+                <span>Seasonal Only</span>
+                <div className={`w-3 h-3 rounded-full ${showSeasonalOnly ? 'bg-amber-500 animate-pulse' : 'bg-gray-300'}`} />
               </button>
-            ))}
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-4 border-t border-[var(--pigment-green)]/5">
+            <div className="flex items-center gap-3 opacity-40 font-mono text-[10px] uppercase tracking-[0.2em]">
+              <SlidersHorizontal size={14} />
+              <span>Refinements</span>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {/* Category Filters */}
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category === selectedCategory ? null : category)}
+                  className={`px-4 py-2 border transition-all font-mono text-[9px] uppercase tracking-widest ${selectedCategory === category
+                    ? 'bg-[var(--pigment-green)] text-[var(--canvas)] border-[var(--pigment-green)]'
+                    : 'bg-transparent border-[var(--pigment-ochre)]/20 text-[var(--ink)] opacity-40 hover:opacity-100 hover:border-[var(--pigment-ochre)]'
+                    }`}
+                >
+                  {CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] || categoryNames[category] || category}
+                </button>
+              ))}
+
+              {/* Delivery Day Filters */}
+              {deliveryDays.map((day) => (
+                <button
+                  key={day}
+                  onClick={() => setSelectedDeliveryDay(day === selectedDeliveryDay ? null : day)}
+                  className={`px-4 py-2 border transition-all font-mono text-[9px] uppercase tracking-widest flex items-center gap-2 ${selectedDeliveryDay === day
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-transparent border-blue-200 text-blue-800 opacity-40 hover:opacity-100'
+                    }`}
+                >
+                  <Calendar size={10} />
+                  {day}
+                </button>
+              ))}
+
+              {/* Supplier Filters */}
+              {supplierNames.map((supplier) => (
+                <button
+                  key={supplier}
+                  onClick={() => setSelectedSupplier(supplier === selectedSupplier ? null : supplier)}
+                  className={`px-4 py-2 border transition-all font-mono text-[9px] uppercase tracking-widest flex items-center gap-2 ${selectedSupplier === supplier
+                    ? 'bg-purple-600 text-white border-purple-600'
+                    : 'bg-transparent border-purple-200 text-purple-800 opacity-40 hover:opacity-100'
+                    }`}
+                >
+                  <Truck size={10} />
+                  {supplier}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Quick Order Section */}
+      <QuickOrderSection />
 
       {/* Products List */}
       {Object.keys(filteredGroups).length === 0 ? (
@@ -158,12 +252,13 @@ export default function ProductsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-12">
-          {Object.entries(filteredGroups).map(([category, categoryProducts]) => (
+          {Object.entries(filteredGroups).map(([groupKey, groupProducts]) => (
             <ProductQuickOrderList
-              key={category}
-              products={categoryProducts || []}
-              category={category}
+              key={groupKey}
+              products={groupProducts || []}
+              category={groupBy === 'category' ? groupKey : groupBy === 'supplier' ? `Supplier: ${groupKey}` : `Harvest: ${groupKey}`}
               onProductClick={handleProductClick}
+              isDisabled={windowStatus?.isOpen === false}
             />
           ))}
         </div>
@@ -178,4 +273,3 @@ export default function ProductsPage() {
     </div>
   );
 }
-

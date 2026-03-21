@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '../../test/utils';
+import { render, screen, waitFor } from '../../test/utils.js';
 import { fireEvent } from '@testing-library/react';
-import InvoicesManagement from './InvoicesManagement';
+import InvoicesManagement from './InvoicesManagement.js';
 
 const mockInvoices = [
   {
@@ -43,7 +43,7 @@ import {
   useAdminInvoices,
   useInvoice,
   useDownloadInvoicePDF,
-} from '../../hooks/useAdminInvoices';
+} from '../../hooks/useAdminInvoices.js';
 
 describe('InvoicesManagement', () => {
   beforeEach(() => {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePackingList, useGeneratePackingListPDF } from '../../hooks/useAdminPackingLists';
+import { usePackingList, useGeneratePackingListPDF } from '../../hooks/useAdminPackingLists.js';
 
 export default function PackingListsManagement() {
   const [selectedDate, setSelectedDate] = useState('');

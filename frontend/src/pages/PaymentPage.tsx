@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { useDownloadInvoicePDF } from '../hooks/useInvoicePDF';
-import { formatPrice } from '../lib/utils';
+import { useDownloadInvoicePDF } from '../hooks/useInvoicePDF.js';
+import { formatPrice } from '../lib/utils.js';
 import { CreditCard, Landmark, Banknote as CashIcon, ChevronLeft, Download, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
-import api from '../lib/api';
+import api from '../lib/api.js';
 
 declare global {
   interface Window {

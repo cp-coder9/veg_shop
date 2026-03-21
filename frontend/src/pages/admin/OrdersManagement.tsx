@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Order } from '../../types';
+import { Order } from '../../types/index.js';
 import {
   useAdminOrders,
   useOrder,
@@ -8,16 +8,20 @@ import {
   useGenerateBulkOrder,
   useOrderWeeklyCollation,
   CollationItem,
-} from '../../hooks/useAdminOrders';
-import { useGenerateInvoice } from '../../hooks/useAdminInvoices';
-import { useAdminUsers } from '../../hooks/useAdminUsers';
+} from '../../hooks/useAdminOrders.js';
+import { useGenerateInvoice } from '../../hooks/useAdminInvoices.js';
+import { useAdminUsers } from '../../hooks/useAdminUsers.js';
+import { useProducts } from '../../hooks/useProducts.js';
 import {
   useStockOrders,
   useStockOrder,
   useCreateStockOrder,
   useUpdateReceivedQuantities,
   useFulfillStockOrder,
-} from '../../hooks/useStockOrders';
+} from '../../hooks/useStockOrders.js';
+import { Button, Input, Badge, Card, CardContent } from '../../components/ui/index.js';
+import { LayoutDashboard, FileText, Package, Filter, Download } from 'lucide-react';
+
 
 export default function OrdersManagement() {
   const [deliveryDateFilter, setDeliveryDateFilter] = useState('');
@@ -41,6 +45,7 @@ export default function OrdersManagement() {
   });
 
   const { data: packers } = useAdminUsers('packer');
+  const { data: drivers } = useAdminUsers('driver');
   const updateStatus = useUpdateOrderStatus();
   const updateOrder = useUpdateOrder();
 
@@ -61,132 +66,139 @@ export default function OrdersManagement() {
   }
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Orders Management</h1>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <button
+    <div className="space-y-8 max-w-[1600px] mx-auto">
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+        <div>
+          <h1 className="font-display text-display-md text-primary-dark">Orders Management</h1>
+          <p className="font-body text-body-md text-warm-gray mt-1 flex items-center gap-2">
+            <LayoutDashboard size={16} /> Manage customer orders, packing, and dispatch.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-3 w-full lg:w-auto">
+          <Button
             onClick={() => setShowCollationModal(true)}
-            className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            variant="harvest"
+            size="md"
+            leftIcon={<FileText size={18} />}
           >
             Weekly Collation
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setShowStockOrderListModal(true)}
-            className="flex-1 sm:flex-none px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            variant="secondary"
+            size="md"
+            className="bg-purple-50 border-purple-100 text-purple-700 hover:bg-purple-100"
+            leftIcon={<Package size={18} />}
           >
             Stock Orders
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setShowBulkOrderModal(true)}
-            className="flex-1 sm:flex-none px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            variant="secondary"
+            size="md"
+            className="bg-green-50 border-green-100 text-green-700 hover:bg-green-100"
+            leftIcon={<Download size={18} />}
           >
             Generate Bulk Order
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Specific Date
-            </label>
-            <input
-              type="date"
-              value={deliveryDateFilter}
-              onChange={(e) => {
-                setDeliveryDateFilter(e.target.value);
-                setStartDateFilter('');
-                setEndDateFilter('');
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
+      {/* Filters Card */}
+      <Card className="border-light-gray/50 shadow-sm overflow-visible">
+        <CardContent className="p-0">
+          <div className="p-4 bg-cream/30 border-b border-light-gray flex items-center gap-2">
+            <Filter size={16} className="text-warm-gray" />
+            <span className="font-body text-body-sm font-semibold text-primary-dark">Advanced Filtering</span>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Start Date
-            </label>
-            <input
-              type="date"
-              value={startDateFilter}
-              onChange={(e) => {
-                setStartDateFilter(e.target.value);
-                setDeliveryDateFilter('');
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="space-y-2">
+              <label className="block font-body text-caption font-bold text-warm-gray uppercase tracking-wider">
+                Specific Delivery Date
+              </label>
+              <Input
+                type="date"
+                value={deliveryDateFilter}
+                onChange={(e) => {
+                  setDeliveryDateFilter(e.target.value);
+                  setStartDateFilter('');
+                  setEndDateFilter('');
+                }}
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block font-body text-caption font-bold text-warm-gray uppercase tracking-wider">
+                Status Filter
+              </label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full bg-white border border-light-gray rounded-md px-4 py-3 text-body-sm text-primary-dark focus:border-primary-dark focus:ring-1 focus:ring-primary-dark outline-none transition-all"
+              >
+                <option value="">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="packed">Packed</option>
+                <option value="out_for_delivery">Out for Delivery</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block font-body text-caption font-bold text-warm-gray uppercase tracking-wider">
+                Date Range Start
+              </label>
+              <Input
+                type="date"
+                value={startDateFilter}
+                onChange={(e) => {
+                  setStartDateFilter(e.target.value);
+                  setDeliveryDateFilter('');
+                }}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block font-body text-caption font-bold text-warm-gray uppercase tracking-wider">
+                Date Range End
+              </label>
+              <Input
+                type="date"
+                value={endDateFilter}
+                onChange={(e) => {
+                  setEndDateFilter(e.target.value);
+                  setDeliveryDateFilter('');
+                }}
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              End Date
-            </label>
-            <input
-              type="date"
-              value={endDateFilter}
-              onChange={(e) => {
-                setEndDateFilter(e.target.value);
-                setDeliveryDateFilter('');
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status
-            </label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="packed">Packed</option>
-              <option value="delivered">Delivered</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Orders Table - Desktop */}
-      <div className="hidden md:block bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="hidden md:block bg-white rounded-xl shadow-premium border border-light-gray/50 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-light-gray">
+            <thead className="bg-cream/30">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Order ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Delivery Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Method
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Packer
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Items
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Packing
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Order ID</th>
+                <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Customer</th>
+                <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Delivery</th>
+                <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Method</th>
+                <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Status</th>
+                <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Packer</th>
+                <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Driver</th>
+                <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Items</th>
+                <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Packing</th>
+                <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-light-gray">
               {orders?.map((order) => (
                 <tr key={order.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -228,29 +240,45 @@ export default function OrdersManagement() {
                       ))}
                     </select>
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <select
+                      value={order.driverId || ''}
+                      onChange={(e) => updateOrder.mutate({ id: order.id, driverId: e.target.value || null })}
+                      className="text-sm border border-gray-300 rounded px-2 py-1 w-32"
+                    >
+                      <option value="">Unassigned</option>
+                      {drivers?.map((driver) => (
+                        <option key={driver.id} value={driver.id}>
+                          {driver.name}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {order.items.length} items
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex flex-col gap-1">
-                      {order.items.some(i => i.product.packingType === 'fridge') && (
+                      {order.items.some((i: any) => i.product.packingType === 'fridge') && (
                         <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded w-fit uppercase">Fridge</span>
                       )}
-                      {order.items.some(i => i.product.packingType === 'freezer') && (
+                      {order.items.some((i: any) => i.product.packingType === 'freezer') && (
                         <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded w-fit uppercase">Freezer</span>
                       )}
-                      {(!order.items.some(i => i.product.packingType === 'fridge' || i.product.packingType === 'freezer')) && (
+                      {(!order.items.some((i: any) => i.product.packingType === 'fridge' || i.product.packingType === 'freezer')) && (
                         <span className="bg-gray-100 text-gray-800 text-[10px] font-bold px-1.5 py-0.5 rounded w-fit uppercase">Standard</span>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setSelectedOrderId(order.id)}
-                      className="text-blue-600 hover:text-blue-900"
+                      className="text-primary-dark hover:text-black"
                     >
                       View Details
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -262,64 +290,91 @@ export default function OrdersManagement() {
       {/* Orders Cards - Mobile */}
       <div className="md:hidden space-y-4">
         {orders?.map((order) => (
-          <div key={order.id} className="bg-white p-4 rounded-lg shadow space-y-3">
+          <Card key={order.id} className="border-light-gray/50 space-y-4">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-bold text-gray-900">#{order.id.slice(0, 8)}</p>
-                <p className="text-sm text-gray-500">{order.customerName || 'Unknown Customer'}</p>
+                <p className="font-display font-bold text-primary-dark">#{order.id.slice(0, 8)}</p>
+                <p className="font-body text-body-sm text-warm-gray mt-0.5">{order.customerName || 'Unknown Customer'}</p>
               </div>
-              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                  'bg-yellow-100 text-yellow-800'
-                }`}>
-                {order.status}
-              </span>
+              <Badge variant={
+                order.status === 'delivered' ? 'success' :
+                  order.status === 'cancelled' ? 'error' :
+                    order.status === 'pending' ? 'warning' : 'info'
+              }>
+                {order.status.replace('_', ' ')}
+              </Badge>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="text-gray-500">Date:</span>
-                <span className="ml-1 text-gray-900">{new Date(order.deliveryDate).toLocaleDateString()}</span>
+            <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-body-sm font-body">
+              <div className="flex flex-col">
+                <span className="text-overline text-warm-gray uppercase">Date</span>
+                <span className="text-primary-dark font-medium">{new Date(order.deliveryDate).toLocaleDateString()}</span>
               </div>
-              <div>
-                <span className="text-gray-500">Method:</span>
-                <span className="ml-1 text-gray-900 capitalize">{order.deliveryMethod}</span>
+              <div className="flex flex-col">
+                <span className="text-overline text-warm-gray uppercase">Method</span>
+                <span className="text-primary-dark font-medium capitalize">{order.deliveryMethod}</span>
               </div>
-              <div>
-                <span className="text-gray-500">Items:</span>
-                <span className="ml-1 text-gray-900">{order.items.length}</span>
+              <div className="flex flex-col">
+                <span className="text-overline text-warm-gray uppercase">Items</span>
+                <span className="text-primary-dark font-medium">{order.items.length} items</span>
               </div>
-              <div className="flex gap-1">
-                {order.items.some(i => i.product?.packingType === 'fridge') && (
-                  <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded">❄️ Fridge</span>
-                )}
-                {order.items.some(i => i.product?.packingType === 'freezer') && (
-                  <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded">🧊 Freezer</span>
-                )}
+              <div className="flex flex-col">
+                <span className="text-overline text-warm-gray uppercase">Packing</span>
+                <div className="flex gap-1 mt-0.5">
+                  {order.items.some((i: any) => i.product?.packingType === 'fridge') && <Badge size="sm" variant="info">❄️ Fridge</Badge>}
+                  {order.items.some((i: any) => i.product?.packingType === 'freezer') && <Badge size="sm" variant="info">🧊 Freezer</Badge>}
+                </div>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-gray-100 flex justify-between items-center gap-2">
+            <div className="grid grid-cols-2 gap-2 mt-2 pt-3 border-t border-light-gray/50">
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold text-warm-gray uppercase">Packer</span>
+                <select
+                  value={order.packerId || ''}
+                  onChange={(e) => updateOrder.mutate({ id: order.id, packerId: e.target.value || null })}
+                  className="text-xs border border-light-gray rounded px-2 py-1 bg-white"
+                >
+                  <option value="">None</option>
+                  {packers?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold text-warm-gray uppercase">Driver</span>
+                <select
+                  value={order.driverId || ''}
+                  onChange={(e) => updateOrder.mutate({ id: order.id, driverId: e.target.value || null })}
+                  className="text-xs border border-light-gray rounded px-2 py-1 bg-white"
+                >
+                  <option value="">None</option>
+                  {drivers?.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-between items-center gap-2">
               <select
                 value={order.status}
                 onChange={(e) => handleStatusChange(order.id, e.target.value as Order['status'])}
-                className="text-sm border border-gray-300 rounded px-2 py-1 flex-1"
+                className="text-body-sm font-medium border border-light-gray rounded-md px-3 py-2 flex-1 bg-white"
               >
                 <option value="pending">Pending</option>
                 <option value="confirmed">Confirmed</option>
                 <option value="packed">Packed</option>
+                <option value="out_for_delivery">Out for Delivery</option>
                 <option value="delivered">Delivered</option>
                 <option value="cancelled">Cancelled</option>
               </select>
 
-              <button
+              <Button
+                size="sm"
                 onClick={() => setSelectedOrderId(order.id)}
-                className="px-3 py-1 bg-blue-50 text-blue-600 rounded text-sm font-medium hover:bg-blue-100"
+                variant="ghost"
               >
                 View
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
@@ -462,32 +517,46 @@ function CollationModal({ onClose, onCreateStockOrder }: CollationModalProps) {
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 border">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase border-r">Category</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase border-r">Product</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase border-r">Total Qty</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Orders</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {report.map((item, index) => (
-                    <tr key={`${item.productId}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="px-4 py-2 text-sm text-gray-500 border-r capitalize">{item.categoryId.replace('_', ' ')}</td>
-                      <td className="px-4 py-2 text-sm font-medium text-gray-900 border-r">{item.productName}</td>
-                      <td className="px-4 py-2 text-sm text-right text-gray-900 font-bold border-r">
-                        {item.totalQuantity} <span className="text-gray-500 font-normal">{item.unit}</span>
-                      </td>
-                      <td className="px-4 py-2 text-sm text-right text-gray-500">{item.orderCount}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
+          <div className="space-y-8">
+            {/* Group by Supplier */}
+            {Array.from(new Set(report.map(i => i.supplierName))).sort().map(supplierName => {
+              const supplierItems = report.filter(i => i.supplierName === supplierName);
+              return (
+                <div key={supplierName} className="space-y-2 break-inside-avoid shadow-sm rounded-lg border border-gray-100 p-4 bg-white">
+                  <h3 className="text-xl font-bold text-blue-900 flex items-center gap-2 mb-4">
+                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                    {supplierName}
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 border rounded-lg overflow-hidden">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r">Category</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r">Product</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider border-r">Total Qty</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Orders</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {supplierItems.map((item, index) => (
+                          <tr key={`${item.productId}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50 hover:bg-blue-50/30 transition-colors'}>
+                            <td className="px-4 py-2 text-sm text-gray-500 border-r capitalize font-medium">{item.categoryId.replace('_', ' ')}</td>
+                            <td className="px-4 py-2 text-sm font-bold text-gray-900 border-r">{item.productName}</td>
+                            <td className="px-4 py-2 text-sm text-right text-gray-900 border-r">
+                              <span className="font-bold text-base">{item.totalQuantity}</span> <span className="text-gray-500 text-xs font-normal ml-1">{item.unit}</span>
+                            </td>
+                            <td className="px-4 py-2 text-sm text-right text-gray-600 font-medium">{item.orderCount}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <p className="text-xs text-gray-400 font-medium">Total: {supplierItems.length} products to procure from {supplierName}</p>
+                  </div>
+                </div>
+              );
+            })}
             <div className="flex justify-end gap-3 print:hidden">
               <button
                 onClick={() => setReport(null)}
@@ -524,7 +593,9 @@ interface OrderDetailModalProps {
 
 function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
   const { data: order, isLoading } = useOrder(orderId);
+  const { data: products } = useProducts();
   const generateInvoice = useGenerateInvoice();
+  const updateOrder = useUpdateOrder();
 
   const handleGenerateInvoice = async () => {
     try {
@@ -539,6 +610,75 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
     }
   };
 
+  const handleUpdateItems = async (items: any[]) => {
+    try {
+      await updateOrder.mutateAsync({ id: orderId, items });
+    } catch (error) {
+      console.error('Failed to update items:', error);
+      alert('Failed to update items');
+    }
+  };
+
+  const removeItem = (itemId: string) => {
+    if (!order) return;
+    const newItems = order.items
+      .filter((i: any) => i.id !== itemId)
+      .map((i: any) => ({
+        productId: i.productId,
+        quantity: i.quantity,
+        priceAtOrder: i.priceAtOrder
+      }));
+    handleUpdateItems(newItems);
+  };
+
+  const addItem = (productId: string) => {
+    const product = products?.find(p => p.id === productId);
+    if (!product) return;
+
+    const existing = (order?.items || []).find((i: any) => i.productId === productId);
+    if (existing) {
+      const newItems = order!.items.map((i: any) => {
+        if (i.productId === productId) {
+          return {
+            productId: i.productId,
+            quantity: i.quantity + 1,
+            priceAtOrder: i.priceAtOrder
+          };
+        }
+        return {
+          productId: i.productId,
+          quantity: i.quantity,
+          priceAtOrder: i.priceAtOrder
+        };
+      });
+      handleUpdateItems(newItems);
+    } else {
+      const newItems = [
+        ...(order?.items || []).map((i: any) => ({
+          productId: i.productId,
+          quantity: i.quantity,
+          priceAtOrder: i.priceAtOrder
+        })),
+        {
+          productId: product.id,
+          quantity: 1,
+          priceAtOrder: Number(product.price)
+        }
+      ];
+      handleUpdateItems(newItems);
+    }
+  };
+
+  const updateQuantity = (itemId: string, quantity: number) => {
+    if (quantity < 0 || !order) return;
+    const newItems = order.items.map((i: any) => ({
+      productId: i.productId,
+      quantity: i.id === itemId ? quantity : i.quantity,
+      priceAtOrder: i.priceAtOrder
+    }));
+    handleUpdateItems(newItems);
+  };
+
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -551,7 +691,7 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
 
   if (!order) return null;
 
-  const total = order.items.reduce((sum, item) => sum + Number(item.priceAtOrder) * item.quantity, 0);
+  const total = order.items.reduce((sum: number, item: any) => sum + (Number(item.priceAtOrder) * item.quantity), 0) + Number(order.deliveryFees || 0);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -570,10 +710,10 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
               <p className="text-sm text-gray-600">Instructions: {order.specialInstructions}</p>
             )}
             <div className="mt-2 flex gap-2">
-              {order.items.some(i => i.product.packingType === 'fridge') && (
+              {order.items.some((i: any) => i.product.packingType === 'fridge') && (
                 <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-full uppercase">Requires Fridge</span>
               )}
-              {order.items.some(i => i.product.packingType === 'freezer') && (
+              {order.items.some((i: any) => i.product.packingType === 'freezer') && (
                 <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-2 py-1 rounded-full uppercase">Requires Freezer</span>
               )}
             </div>
@@ -589,6 +729,21 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
               Delivery Method: {order.deliveryMethod}
             </p>
             <p className="text-sm text-gray-600">Status: {order.status}</p>
+            {order.deliveryInstruction && (
+              <p className="text-sm text-gray-600">
+                Placement: <span className="font-bold underline">{order.deliveryInstruction.replace('_', ' ')}</span>
+              </p>
+            )}
+            {order.coolerBagOption && (
+              <p className="text-sm text-blue-600 font-bold">
+                ✓ Includes Cooler Bag
+              </p>
+            )}
+            {order.groupDelivery && (
+              <p className="text-sm text-green-600 font-bold">
+                ✓ Group Delivery Eligible
+              </p>
+            )}
           </div>
 
           {/* Items */}
@@ -603,7 +758,7 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
                       Product
                     </th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      Quantity
+                      Qty
                     </th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                       Price
@@ -611,10 +766,13 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                       Subtotal
                     </th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                      Action
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {order.items.map((item) => (
+                  {order.items.map((item: any) => (
                     <tr key={item.id}>
                       <td className="px-4 py-2 text-sm text-gray-900">
                         {item.product.name}
@@ -624,18 +782,79 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
                         </div>
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-500">
-                        {item.quantity} {item.product.unit}
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="p-1 hover:bg-gray-100 rounded">-</button>
+                          <span className="w-8 text-center">{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="p-1 hover:bg-gray-100 rounded">+</button>
+                          <span className="text-xs">{item.product.unit}</span>
+                        </div>
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-500">
                         R {Number(item.priceAtOrder).toFixed(2)}
                       </td>
-                      <td className="px-4 py-2 text-sm text-gray-900">
+                      <td className="px-4 py-2 text-sm text-gray-900 font-medium">
                         R {(Number(item.priceAtOrder) * item.quantity).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-2 text-right">
+                        <button
+                          onClick={() => removeItem(item.id)}
+                          className="text-red-500 hover:text-red-700 text-xs font-bold"
+                        >
+                          Remove
+                        </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
+                  <tr className="bg-green-50/30">
+                    <td colSpan={5} className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold text-green-700 whitespace-nowrap">Add Item:</span>
+                        <select
+                          className="flex-1 text-sm border-2 border-green-100 rounded-lg p-1.5 focus:border-green-300 outline-none"
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              addItem(e.target.value);
+                              e.target.value = '';
+                            }
+                          }}
+                        >
+                          <option value="">Select a product to add...</option>
+                          {products?.filter(p => !(order?.items || []).some((oi: any) => oi.productId === p.id)).map(p => (
+                            <option key={p.id} value={p.id}>{p.name} - R{Number(p.price).toFixed(2)}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </td>
+                  </tr>
+                  {!order.invoice && order.status !== 'cancelled' && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-2 text-right">
+                        <a
+                          href={`/api/invoices/order/${order.id}/proforma`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 text-sm font-medium"
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Download Proforma
+                        </a>
+                      </td>
+                    </tr>
+                  )}
+                  {Number(order.deliveryFees) > 0 && (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-2 text-right text-sm text-gray-500">
+                        Delivery Fee:
+                      </td>
+                      <td className="px-4 py-2 text-sm text-gray-500">
+                        R {Number(order.deliveryFees).toFixed(2)}
+                      </td>
+                    </tr>
+                  )}
                   <tr>
                     <td colSpan={3} className="px-4 py-2 text-right font-semibold">
                       Total:
@@ -648,7 +867,7 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
 
             {/* Mobile List View */}
             <div className="md:hidden space-y-3">
-              {order.items.map((item) => (
+              {order.items.map((item: any) => (
                 <div key={item.id} className="bg-white border rounded-lg p-3 shadow-sm flex justify-between items-center">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -681,13 +900,28 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
             Close
           </button>
           {order.status !== 'cancelled' && (
-            <button
-              onClick={handleGenerateInvoice}
-              disabled={generateInvoice.isPending}
-              className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-center"
-            >
-              {generateInvoice.isPending ? 'Generating...' : 'Generate Invoice'}
-            </button>
+            <div className="flex gap-3 w-full sm:w-auto">
+              {!order.invoice && (
+                <a
+                  href={`/api/invoices/order/${order.id}/proforma`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-center flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Proforma
+                </a>
+              )}
+              <button
+                onClick={handleGenerateInvoice}
+                disabled={generateInvoice.isPending}
+                className="flex-1 sm:flex-none px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-center"
+              >
+                {generateInvoice.isPending ? 'Generating...' : 'Generate Invoice'}
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -700,13 +934,20 @@ interface BulkOrderModalProps {
 }
 
 interface BulkOrderData {
-  weekStartDate: string;
-  items: Array<{
-    productName: string;
-    finalQuantity: number;
-    totalQuantity: number;
-    bufferQuantity: number;
-  }>;
+  bulkOrder: {
+    weekStartDate: string;
+    items: Array<{
+      productName: string;
+      finalQuantity: number;
+      totalQuantity: number;
+      bufferQuantity: number;
+    }>;
+  };
+  formatted: {
+    whatsapp: string;
+    email: string;
+    emailText: string;
+  };
 }
 
 function BulkOrderModal({ onClose }: BulkOrderModalProps) {
@@ -726,21 +967,7 @@ function BulkOrderModal({ onClose }: BulkOrderModalProps) {
 
   const formatBulkOrder = () => {
     if (!bulkOrder) return '';
-    if (!bulkOrder.items || bulkOrder.items.length === 0) return 'No items in bulk order';
-
-    if (format === 'whatsapp') {
-      let text = `*Bulk Order for Week of ${new Date(bulkOrder.weekStartDate).toLocaleDateString()}*\n\n`;
-      bulkOrder.items.forEach((item: { productName: string; finalQuantity: number; totalQuantity: number; bufferQuantity: number }) => {
-        text += `${item.productName}: ${item.finalQuantity} (${item.totalQuantity} + ${item.bufferQuantity} buffer)\n`;
-      });
-      return text;
-    } else {
-      let text = `Bulk Order for Week of ${new Date(bulkOrder.weekStartDate).toLocaleDateString()}\n\n`;
-      bulkOrder.items.forEach((item: { productName: string; finalQuantity: number; totalQuantity: number; bufferQuantity: number }) => {
-        text += `${item.productName}: ${item.finalQuantity} (${item.totalQuantity} ordered + ${item.bufferQuantity} buffer)\n`;
-      });
-      return text;
-    }
+    return format === 'whatsapp' ? bulkOrder.formatted.whatsapp : bulkOrder.formatted.emailText;
   };
 
   const handleCopy = () => {

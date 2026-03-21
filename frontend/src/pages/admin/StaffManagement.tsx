@@ -12,9 +12,9 @@ import {
     ShieldOff,
     History
 } from 'lucide-react';
-import api from '../../lib/api';
-import StaffHistoryModal from '../../components/StaffHistoryModal';
-import { Button, Input, Card, Badge, Modal, Select } from '@/components/ui';
+import api from '../../lib/api.js';
+import StaffHistoryModal from '../../components/StaffHistoryModal.js';
+import { Button, Input, Card, Badge, Modal, Select } from '../../components/ui/index.js';
 
 interface User {
     id: string;

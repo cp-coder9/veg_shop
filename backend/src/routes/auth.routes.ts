@@ -216,6 +216,34 @@ router.get('/me', authenticate, asyncHandler(async (req: Request, res: Response)
 }));
 
 /**
+ * POST /api/auth/accept-privacy
+ * Accept the POPI Act privacy consent
+ */
+router.post(
+  '/accept-privacy',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { version } = req.body as { version: string };
+    const userId = req.user!.userId;
+
+    if (!version) {
+      return res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Policy version is required',
+        },
+      });
+    }
+
+    await authService.acceptPrivacyConsent(userId, version);
+
+    return res.json({
+      message: 'Privacy consent accepted successfully',
+    });
+  })
+);
+
+/**
  * POST /api/auth/logout
  * Logout (client-side token removal, no server action needed)
  */

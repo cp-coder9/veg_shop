@@ -20,6 +20,7 @@ const createProductSchema = z.object({
   imageUrl: z.string().url().optional().or(z.literal('')),
   isAvailable: z.boolean().optional(),
   isSeasonal: z.boolean().optional(),
+  isPerishable: z.boolean().optional(),
   packingType: z.enum(['box', 'bag', 'fridge', 'freezer']).optional(),
   deliveryDay: z.enum(deliveryDays).optional().nullable(),
   supplierId: z.string().nullable().optional(),
@@ -34,6 +35,7 @@ const updateProductSchema = z.object({
   imageUrl: z.string().url().optional().or(z.literal('')),
   isAvailable: z.boolean().optional(),
   isSeasonal: z.boolean().optional(),
+  isPerishable: z.boolean().optional(),
   packingType: z.enum(['box', 'bag', 'fridge', 'freezer']).optional(),
   deliveryDay: z.enum(deliveryDays).optional().nullable(),
   supplierId: z.string().nullable().optional(),
@@ -70,6 +72,37 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
       error: {
         code: 'INTERNAL_ERROR',
         message: 'Failed to fetch products',
+      },
+    });
+  }
+}));
+
+/**
+ * GET /api/products/search
+ * Search products by name or description
+ */
+router.get('/search', asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { q } = req.query;
+
+    if (!q || typeof q !== 'string') {
+      return res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Search query is required',
+        },
+      });
+    }
+
+    const products = await productService.searchProducts(q);
+
+    return res.json(products);
+  } catch (error) {
+    console.error('Search products error:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to search products',
       },
     });
   }
@@ -141,6 +174,7 @@ router.post('/', authenticate, requireAdmin, auditLog('CREATE', 'product'), asyn
       ...data,
       isAvailable: data.isAvailable ?? true,
       isSeasonal: data.isSeasonal ?? false,
+      isPerishable: data.isPerishable ?? false,
     });
 
     return res.status(201).json(product);

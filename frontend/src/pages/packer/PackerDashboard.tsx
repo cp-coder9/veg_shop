@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useAdminOrders, useUpdateOrderStatus, useOrder } from '../../hooks/useAdminOrders';
+import { useAdminOrders, useUpdateOrderStatus, useOrder } from '../../hooks/useAdminOrders.js';
 import { toast } from 'react-hot-toast';
-import { Order } from '../../types';
+import { Order } from '../../types/index.js';
 
 export default function PackerDashboard() {
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);

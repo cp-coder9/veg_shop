@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import api from '../lib/api';
-import { Order } from '../types';
+import api from '../lib/api.js';
+import { Order } from '../types/index.js';
 
 export function useGeneratePackingListPDF() {
   return useMutation({

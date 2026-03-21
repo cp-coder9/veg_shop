@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../lib/api';
+import api from '../lib/api.js';
 
 interface Credit {
   id: string;
@@ -32,7 +32,7 @@ export function useCustomerCredits(customerId: string) {
 
 export function useRecordShortDelivery() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (data: ShortDeliveryDto) => {
       const response = await api.post('/credits/short-delivery', data);

@@ -56,6 +56,11 @@ router.get('/orders', authenticate, asyncHandler(async (req: Request, res: Respo
                     phone: true,
                     deliveryPreference: true,
                 }
+            },
+            items: {
+                include: {
+                    product: true
+                }
             }
         },
         orderBy: {

@@ -73,6 +73,10 @@ class CustomerController
         AuthMiddleware::check();
 
         $id = $params['id'];
+        if ($id === 'me') {
+            $id = Request::userId();
+        }
+
         $role = Request::userRole();
         $userId = Request::userId();
 
@@ -88,7 +92,7 @@ class CustomerController
         }
 
         // Get additional stats from orders
-        $orders = $this->firebase->query('orders', 'customer_id', '==', $id);
+        $orders = $this->firebase->query('orders', 'customerId', '==', $id);
 
         $customer['order_count'] = count($orders);
         $customer['completed_orders'] = count(array_filter($orders, fn($o) => ($o['status'] ?? '') !== 'cancelled'));
@@ -125,13 +129,13 @@ class CustomerController
             'phone' => 'phone',
             'address' => 'address',
             'birthday' => 'birthday',
-            'deliveryPreference' => 'delivery_preference'
+            'deliveryPreference' => 'deliveryPreference'
         ];
 
         // Admin-only fields
         $adminFields = [
             'status' => 'status',
-            'loyaltyPoints' => 'loyalty_points'
+            'loyaltyPoints' => 'loyaltyPoints'
         ];
 
         foreach ($fieldMap as $jsonKey => $dbField) {
@@ -156,7 +160,7 @@ class CustomerController
             Response::error('No fields to update', 400);
         }
 
-        $updates['updated_at'] = date('c');
+        $updates['updatedAt'] = date('c');
         $this->firebase->updateDocument('users', $id, $updates);
 
         AuditService::log('UPDATE', 'customer', $id, json_encode($data));
@@ -182,10 +186,10 @@ class CustomerController
 
         $limit = (int) (Request::query('limit') ?? 10);
 
-        $orders = $this->firebase->query('orders', 'customer_id', '==', $id);
+        $orders = $this->firebase->query('orders', 'customerId', '==', $id);
 
-        // Sort by delivery_date DESC
-        usort($orders, fn($a, $b) => ($b['delivery_date'] ?? '') <=> ($a['delivery_date'] ?? ''));
+        // Sort by deliveryDate DESC
+        usort($orders, fn($a, $b) => ($b['deliveryDate'] ?? '') <=> ($a['deliveryDate'] ?? ''));
 
         if ($limit > 0) {
             $orders = array_slice($orders, 0, $limit);
@@ -193,12 +197,12 @@ class CustomerController
 
         // Add total amount for each order
         foreach ($orders as &$order) {
-            $items = $this->firebase->query('order_items', 'order_id', '==', $order['id']);
+            $items = $this->firebase->query('order_items', 'orderId', '==', $order['id']);
             $total = 0;
             foreach ($items as $item) {
-                $total += ($item['quantity'] ?? 0) * ($item['price_at_order'] ?? 0);
+                $total += ($item['quantity'] ?? 0) * ($item['priceAtOrder'] ?? 0);
             }
-            $order['total_amount'] = (float) $total;
+            $order['totalAmount'] = (float) $total;
         }
 
         Response::json($orders);
@@ -220,9 +224,9 @@ class CustomerController
         }
 
         // Fetch invoices, payments, and credits
-        $invoices = $this->firebase->query('invoices', 'customer_id', '==', $id);
-        $payments = $this->firebase->query('payments', 'customer_id', '==', $id);
-        $credits = $this->firebase->query('credits', 'customer_id', '==', $id);
+        $invoices = $this->firebase->query('invoices', 'customerId', '==', $id);
+        $payments = $this->firebase->query('payments', 'customerId', '==', $id);
+        $credits = $this->firebase->query('credits', 'customerId', '==', $id);
 
         $totalInvoiced = array_sum(array_column($invoices, 'total'));
         $totalPaid = array_sum(array_column($payments, 'amount'));
@@ -254,25 +258,25 @@ class CustomerController
         }
 
         // Fetch all customer orders to aggregate products
-        $orders = $this->firebase->query('orders', 'customer_id', '==', $id);
+        $orders = $this->firebase->query('orders', 'customerId', '==', $id);
 
         $aggregation = [];
         foreach ($orders as $order) {
-            $items = $this->firebase->query('order_items', 'order_id', '==', $order['id']);
+            $items = $this->firebase->query('order_items', 'orderId', '==', $order['id']);
             foreach ($items as $item) {
-                $pid = $item['product_id'];
+                $pid = $item['productId'];
                 if (!isset($aggregation[$pid])) {
                     $aggregation[$pid] = [
                         'id' => $pid,
-                        'total_ordered' => 0,
-                        'order_count' => 0,
-                        'order_ids' => []
+                        'totalOrdered' => 0,
+                        'orderCount' => 0,
+                        'orderIds' => []
                     ];
                 }
-                $aggregation[$pid]['total_ordered'] += (float) ($item['quantity'] ?? 0);
-                if (!in_array($order['id'], $aggregation[$pid]['order_ids'])) {
-                    $aggregation[$pid]['order_count']++;
-                    $aggregation[$pid]['order_ids'][] = $order['id'];
+                $aggregation[$pid]['totalOrdered'] += (float) ($item['quantity'] ?? 0);
+                if (!in_array($order['id'], $aggregation[$pid]['orderIds'])) {
+                    $aggregation[$pid]['orderCount']++;
+                    $aggregation[$pid]['orderIds'][] = $order['id'];
                 }
             }
         }
@@ -289,20 +293,50 @@ class CustomerController
         $result = array_slice($result, 0, 10);
         foreach ($result as &$res) {
             $product = $this->firebase->getDocument('products', $res['id']);
-            if ($product && ($product['is_available'] ?? true)) {
+            if ($product && ($product['isAvailable'] ?? true)) {
                 $res = array_merge($res, $product);
             } else {
                 // If not available or doesn't exist, we might want to skip it
                 // but for now we'll just keep the basic info
             }
-            unset($res['order_ids']);
+            unset($res['orderIds']);
         }
 
         Response::json(array_values($result));
     }
+
     /**
-     * GET /api/customers/me/dashboard
+     * GET /api/customers/me/payments
+     * Returns payments for the currently authenticated customer.
      */
+    public function myPayments(): void
+    {
+        AuthMiddleware::check();
+        $userId = Request::userId();
+
+        $payments = $this->firebase->query('payments', 'customerId', '==', $userId);
+
+        usort($payments, fn($a, $b) => ($b['paymentDate'] ?? '') <=> ($a['paymentDate'] ?? ''));
+
+        foreach ($payments as &$p) {
+            $p['amount'] = (float) ($p['amount'] ?? 0);
+
+            if (!empty($p['invoiceId'])) {
+                $invoice = $this->firebase->getDocument('invoices', $p['invoiceId']);
+                $p['invoice'] = $invoice ? [
+                    'id' => $invoice['id'],
+                    'total' => (float) ($invoice['total'] ?? 0),
+                    'status' => $invoice['status'] ?? null,
+                    'orderId' => $invoice['orderId'] ?? null,
+                ] : null;
+            } else {
+                $p['invoice'] = null;
+            }
+        }
+
+        Response::json($payments);
+    }
+
     public function dashboard(): void
     {
         AuthMiddleware::check();
@@ -315,8 +349,8 @@ class CustomerController
         }
 
         // 2. Fetch Orders (for stats & recent)
-        $orders = $this->firebase->query('orders', 'customer_id', '==', $userId);
-        usort($orders, fn($a, $b) => ($b['delivery_date'] ?? '') <=> ($a['delivery_date'] ?? ''));
+        $orders = $this->firebase->query('orders', 'customerId', '==', $userId);
+        usort($orders, fn($a, $b) => ($b['deliveryDate'] ?? '') <=> ($a['deliveryDate'] ?? ''));
 
         $totalOrders = count($orders);
         $totalSpent = 0;
@@ -328,9 +362,9 @@ class CustomerController
         }
 
         // 3. Fetch Invoices (for outstanding)
-        $invoices = $this->firebase->query('invoices', 'customer_id', '==', $userId);
-        $payments = $this->firebase->query('payments', 'customer_id', '==', $userId);
-        $credits = $this->firebase->query('credits', 'customer_id', '==', $userId);
+        $invoices = $this->firebase->query('invoices', 'customerId', '==', $userId);
+        $payments = $this->firebase->query('payments', 'customerId', '==', $userId);
+        $credits = $this->firebase->query('credits', 'customerId', '==', $userId);
 
         $totalInvoiced = array_sum(array_column($invoices, 'total'));
         $totalPaid = array_sum(array_column($payments, 'amount'));
@@ -348,16 +382,16 @@ class CustomerController
             $orders,
             fn($o) =>
             in_array($o['status'] ?? '', ['pending', 'confirmed', 'processing']) &&
-            ($o['delivery_date'] ?? '') >= $today
+            ($o['deliveryDate'] ?? '') >= $today
         );
-        usort($upcomingOrders, fn($a, $b) => ($a['delivery_date'] ?? '') <=> ($b['delivery_date'] ?? ''));
+        usort($upcomingOrders, fn($a, $b) => ($a['deliveryDate'] ?? '') <=> ($b['deliveryDate'] ?? ''));
 
         if (!empty($upcomingOrders)) {
             $next = $upcomingOrders[0];
             $nextDelivery = [
                 'orderId' => $next['id'],
-                'date' => $next['delivery_date'],
-                'method' => $next['delivery_method'] ?? 'Delivery'
+                'date' => $next['deliveryDate'],
+                'method' => $next['deliveryMethod'] ?? 'Delivery'
             ];
         }
 
@@ -371,7 +405,7 @@ class CustomerController
             ],
             'stats' => [
                 'creditBalance' => (float) $totalCredits, // Or calculate usable credit
-                'loyaltyPoints' => (float) ($customer['loyalty_points'] ?? 0),
+                'loyaltyPoints' => (float) ($customer['loyaltyPoints'] ?? 0),
                 'outstandingAmount' => (float) $outstandingAmount,
                 'outstandingInvoices' => count($outstandingInvoices),
                 'totalOrders' => $totalOrders,
@@ -380,8 +414,8 @@ class CustomerController
             'recentOrders' => array_slice(array_map(fn($o) => [
                 'id' => $o['id'],
                 'status' => $o['status'] ?? 'pending',
-                'deliveryDate' => $o['delivery_date'] ?? '',
-                'createdAt' => $o['created_at'] ?? '',
+                'deliveryDate' => $o['deliveryDate'] ?? '',
+                'createdAt' => $o['createdAt'] ?? '',
                 'itemCount' => 0, // Need to count items if not stored on order
                 'total' => (float) ($o['total'] ?? 0)
             ], $orders), 0, 5),
@@ -389,7 +423,7 @@ class CustomerController
             'outstandingInvoices' => array_map(fn($i) => [
                 'id' => $i['id'],
                 'total' => (float) ($i['total'] ?? 0),
-                'dueDate' => $i['due_date'] ?? '',
+                'dueDate' => $i['dueDate'] ?? '',
                 'status' => $i['status'] ?? 'pending'
             ], $outstandingInvoices)
         ];

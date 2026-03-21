@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma.js';
 import { env } from '../config/env.js';
 import { userRepository } from '../repositories/user.repository.js';
 import { orderRepository } from '../repositories/order.repository.js';
+import { weeklyAvailabilityService } from './weekly-availability.service.js';
 
 export class SchedulerService {
     /**
@@ -106,6 +107,40 @@ export class SchedulerService {
                     console.log(`✅ Sent reminders for ${pendingOrders.length} incomplete orders`);
                 } catch (error) {
                     console.error('❌ Failed to process incomplete order reminders:', error);
+                }
+            })();
+        });
+
+        // 4. Weekly Availability Prep (Every Sunday at 20:00)
+        // 0 20 * * 0
+        cron.schedule('0 20 * * 0', (): void => {
+            void (async (): Promise<void> => {
+                console.log('📅 Running Weekly Availability Prep...');
+                try {
+                    // Calculate next Monday
+                    const nextMonday = new Date();
+                    nextMonday.setDate(nextMonday.getDate() + ((1 + 7 - nextMonday.getDay()) % 7));
+                    nextMonday.setHours(0, 0, 0, 0);
+
+                    // Auto-generate availability records for the week
+                    await weeklyAvailabilityService.getWeekAvailability(nextMonday);
+
+                    // Send notification to admins
+                    const admins = await prisma.user.findMany({ where: { role: 'admin' } });
+                    for (const admin of admins) {
+                        try {
+                            await notificationService.sendAdminNotification(
+                                admin.id,
+                                'Availability List Ready',
+                                `The availability list for week of ${nextMonday.toLocaleDateString()} has been generated. Please review and confirm it before Monday morning.`
+                            );
+                        } catch (e) {
+                            console.error(`Failed to notify admin ${admin.id}:`, e);
+                        }
+                    }
+                    console.log(`✅ Weekly availability prepped for ${nextMonday.toDateString()}`);
+                } catch (error) {
+                    console.error('❌ Failed to prep weekly availability:', error);
                 }
             })();
         });

@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { Package, Plus, Edit2, Trash2, Search, Grid, List, Check, X, AlertTriangle } from 'lucide-react';
-import api from '../../lib/api';
-import { Button, Input, Card, CardContent, Badge, Modal, Select, Textarea } from '@/components/ui';
+import api from '../../lib/api.js';
+import { Button, Input, Card, CardContent, Badge, Modal, Select, Textarea } from '../../components/ui/index.js';
 
 interface Product {
     id: string;
@@ -20,6 +20,7 @@ interface Product {
         id: string;
         name: string;
     } | null;
+    updatedAt?: string;
 }
 
 interface Supplier {
@@ -58,6 +59,62 @@ interface ProductFormData {
     supplierId?: string;
 }
 
+const InlinePriceInput = ({ product, onUpdate }: { product: Product; onUpdate: (id: string, newPrice: number) => void }) => {
+    const [price, setPrice] = useState((product.price / 100).toFixed(2));
+    const [isEditing, setIsEditing] = useState(false);
+
+    const handleBlur = () => {
+        setIsEditing(false);
+        const parsed = Math.round(parseFloat(price) * 100);
+        if (!isNaN(parsed) && parsed !== product.price) {
+            onUpdate(product.id, parsed);
+        } else {
+            setPrice((product.price / 100).toFixed(2));
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            handleBlur();
+        } else if (e.key === 'Escape') {
+            setIsEditing(false);
+            setPrice((product.price / 100).toFixed(2));
+        }
+    };
+
+    if (isEditing) {
+        return (
+            <div className="flex items-center gap-1">
+                <span className="text-warm-gray">R</span>
+                <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    autoFocus
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    onBlur={handleBlur}
+                    onKeyDown={handleKeyDown}
+                    className="w-20 px-1 py-1 text-right border rounded bg-white"
+                />
+                <span className="text-warm-gray font-normal text-sm">/{product.unit}</span>
+            </div>
+        );
+    }
+
+    return (
+        <div
+            className="flex items-center gap-1 cursor-pointer hover:bg-black/5 p-1 -ml-1 rounded transition-colors"
+            onClick={() => setIsEditing(true)}
+            title="Click to edit price inline"
+        >
+            <span className="font-display text-body-lg text-primary-dark font-medium">R{(product.price / 100).toFixed(2)}</span>
+            <span className="text-warm-gray text-sm">/{product.unit}</span>
+            <Edit2 size={12} className="text-light-gray opacity-50 ml-1" />
+        </div>
+    );
+};
+
 const ProductsManagement = () => {
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
@@ -73,23 +130,30 @@ const ProductsManagement = () => {
     const [bulkAffectedOrders, setBulkAffectedOrders] = useState<AffectedOrder[]>([]);
     const [showBulkOrdersPopup, setShowBulkOrdersPopup] = useState(false);
     const [pendingBulkIds, setPendingBulkIds] = useState<string[]>([]);
-    
+
+    // Bulk Price
+    const [isBulkPriceModalOpen, setIsBulkPriceModalOpen] = useState(false);
+    const [bulkPriceAction, setBulkPriceAction] = useState('set');
+    const [bulkPriceValue, setBulkPriceValue] = useState(0);
+
+    const [priceInput, setPriceInput] = useState('');
+
     const [formData, setFormData] = useState<ProductFormData>({
         name: '',
         category: '',
         price: 0,
-        unit: 'kg',
+        unit: '',
         isAvailable: true,
         deliveryDay: undefined,
         description: '',
         supplierId: ''
     });
 
-    const { data: products, isLoading } = useQuery<{ data: Product[] }>({
+    const { data: products, isLoading } = useQuery<Product[]>({
         queryKey: ['products'],
         queryFn: async () => {
             const response = await api.get('/products');
-            return response;
+            return response.data;
         }
     });
 
@@ -116,6 +180,7 @@ const ProductsManagement = () => {
         mutationFn: (data: ProductFormData) => api.post('/products', data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['products'] });
+            queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] });
             toast.success('Product created successfully');
             handleCloseModal();
         },
@@ -130,6 +195,7 @@ const ProductsManagement = () => {
             api.patch(`/products/${data.id}`, data.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['products'] });
+            queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] });
             toast.success('Product updated successfully');
             handleCloseModal();
         },
@@ -143,6 +209,7 @@ const ProductsManagement = () => {
         mutationFn: (id: string) => api.delete(`/products/${id}`),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['products'] });
+            queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] });
             toast.success('Product deleted successfully');
         },
         onError: (error: unknown) => {
@@ -156,7 +223,8 @@ const ProductsManagement = () => {
             api.put(`/products/${data.id}`, { isAvailable: data.isAvailable }),
         onSuccess: (response) => {
             queryClient.invalidateQueries({ queryKey: ['products'] });
-            
+            queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] });
+
             // Check if there are affected orders in the response
             const responseData = response as any;
             const affectedOrders = responseData?.data?.affectedOrders || [];
@@ -189,7 +257,7 @@ const ProductsManagement = () => {
                 // For bulk unavailable, we need to check each product for affected orders first
                 const allAffectedOrders: AffectedOrder[] = [];
                 const productsList = Array.isArray(products) ? products : (products as unknown as { data: Product[] })?.data || [];
-                
+
                 for (const id of data.ids) {
                     const product = productsList.find((p: Product) => p.id === id);
                     if (product && product.isAvailable) {
@@ -209,7 +277,7 @@ const ProductsManagement = () => {
                         }
                     }
                 }
-                
+
                 // If there are affected orders, show popup and don't complete the update yet
                 if (allAffectedOrders.length > 0) {
                     setBulkAffectedOrders(allAffectedOrders);
@@ -217,7 +285,7 @@ const ProductsManagement = () => {
                     setPendingBulkIds(data.ids);
                     throw new Error('AFFECTED_ORDERS_FOUND');
                 }
-                
+
                 // No affected orders, proceed with bulk update
                 return Promise.all(data.ids.map(id => api.put(`/products/${id}`, { isAvailable: false })));
             } else {
@@ -227,6 +295,7 @@ const ProductsManagement = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['products'] });
+            queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] });
             toast.success(`Updated ${selectedProducts.size} products`);
             setSelectedProducts(new Set());
         },
@@ -240,12 +309,49 @@ const ProductsManagement = () => {
         }
     });
 
+    const bulkPriceMutation = useMutation({
+        mutationFn: async (data: { ids: string[]; action: string; value: number }) => {
+            const productsList = Array.isArray(products) ? products : (products as unknown as { data: Product[] })?.data || [];
+            return Promise.all(data.ids.map(id => {
+                const product = productsList.find((p: Product) => p.id === id);
+                if (!product) return Promise.resolve();
+
+                let newPrice = product.price;
+                if (data.action === 'set') newPrice = data.value * 100;
+                else if (data.action === 'add') newPrice = product.price + (data.value * 100);
+                else if (data.action === 'increase_percent') newPrice = product.price * (1 + (data.value / 100));
+
+                return api.patch(`/products/${id}`, { price: Math.round(newPrice) });
+            }));
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] });
+            toast.success(`Updated prices for ${selectedProducts.size} products`);
+            setIsBulkPriceModalOpen(false);
+            setBulkPriceValue(0);
+        },
+        onError: (error: unknown) => {
+            const err = error as { response?: { data?: { error?: { message?: string } } } };
+            toast.error(err.response?.data?.error?.message || 'Failed to update prices');
+        }
+    });
+
+    const handleInlinePriceUpdate = (id: string, newPrice: number) => {
+        updateMutation.mutate({ id, data: { price: newPrice } });
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        const finalData = {
+            ...formData,
+            price: Math.round(parseFloat(priceInput) * 100) || 0
+        };
+
         if (editingProduct) {
-            updateMutation.mutate({ id: editingProduct.id, data: formData });
+            updateMutation.mutate({ id: editingProduct.id, data: finalData });
         } else {
-            createMutation.mutate(formData);
+            createMutation.mutate(finalData);
         }
     };
 
@@ -261,6 +367,7 @@ const ProductsManagement = () => {
             description: product.description || '',
             supplierId: product.supplierId || ''
         });
+        setPriceInput((product.price / 100).toString());
         setIsModalOpen(true);
     };
 
@@ -271,12 +378,13 @@ const ProductsManagement = () => {
             name: '',
             category: '',
             price: 0,
-            unit: 'kg',
+            unit: '',
             isAvailable: true,
             deliveryDay: undefined,
             description: '',
             supplierId: ''
         });
+        setPriceInput('');
     };
 
     // Toggle single product availability with check for active orders
@@ -300,10 +408,10 @@ const ProductsManagement = () => {
     // Handle bulk unavailable with confirmation
     const confirmBulkUnavailable = async () => {
         setShowBulkOrdersPopup(false);
-        
+
         // Now perform the actual bulk update
         const productsList = Array.isArray(products) ? products : (products as unknown as { data: Product[] })?.data || [];
-        
+
         for (const id of pendingBulkIds) {
             const product = productsList.find((p: Product) => p.id === id);
             if (product && product.isAvailable) {
@@ -314,8 +422,9 @@ const ProductsManagement = () => {
                 }
             }
         }
-        
+
         queryClient.invalidateQueries({ queryKey: ['products'] });
+        queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] });
         toast.success(`Updated ${pendingBulkIds.length} products`);
         setSelectedProducts(new Set());
         setBulkAffectedOrders([]);
@@ -354,8 +463,8 @@ const ProductsManagement = () => {
         bulkUpdateMutation.mutate({ ids: Array.from(selectedProducts), isAvailable: false });
     };
 
-    const productsList = Array.isArray(products) ? products : (products as unknown as { data: Product[] })?.data || [];
-    
+    const productsList = Array.isArray(products) ? products : [];
+
     const filteredProducts = productsList.filter((product: Product) => {
         const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
@@ -364,19 +473,22 @@ const ProductsManagement = () => {
     });
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8 max-w-[1600px] mx-auto">
             {/* Page Header */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                 <div>
-                    <h1 className="font-display text-display-sm text-primary-dark">Products Management</h1>
-                    <p className="font-body text-body-md text-warm-gray mt-1">Manage your product catalog</p>
+                    <h1 className="font-display text-display-md text-primary-dark">Products Management</h1>
+                    <p className="font-body text-body-md text-warm-gray mt-1 flex items-center gap-2">
+                        <Package size={16} /> Manage and update your product catalog
+                    </p>
                 </div>
                 <Button
                     onClick={() => setIsModalOpen(true)}
-                    variant="primary"
+                    variant="harvest"
+                    size="md"
                     className="flex items-center gap-2"
+                    leftIcon={<Plus size={20} />}
                 >
-                    <Plus size={20} />
                     Add Product
                 </Button>
             </div>
@@ -435,15 +547,15 @@ const ProductsManagement = () => {
 
             {/* Bulk Actions Bar */}
             {selectedProducts.size > 0 && (
-                <Card className="bg-terracotta/10 border-terracotta/30">
-                    <CardContent className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <Card className="bg-green-50 border-green-100 shadow-sm animate-in fade-in slide-in-from-top-4">
+                    <CardContent className="flex flex-col md:flex-row items-center justify-between gap-4 py-3">
                         <div className="flex items-center gap-2">
-                            <span className="font-body text-body-md text-primary-dark">
+                            <span className="font-body text-body-md font-bold text-green-800">
                                 {selectedProducts.size} product(s) selected
                             </span>
                             <button
                                 onClick={toggleSelectAll}
-                                className="font-body text-body-sm text-terracotta hover:underline"
+                                className="font-body text-body-sm text-green-600 hover:text-green-800 underline transition-colors"
                             >
                                 {selectedProducts.size === filteredProducts.length ? 'Deselect All' : 'Select All'}
                             </button>
@@ -451,11 +563,11 @@ const ProductsManagement = () => {
                         <div className="flex gap-2">
                             <Button
                                 onClick={handleBulkMakeAvailable}
-                                variant="primary"
+                                variant="harvest"
                                 size="sm"
                                 className="flex items-center gap-1"
+                                leftIcon={<Check size={16} />}
                             >
-                                <Check size={16} />
                                 Make Available
                             </Button>
                             <Button
@@ -463,9 +575,18 @@ const ProductsManagement = () => {
                                 variant="secondary"
                                 size="sm"
                                 className="flex items-center gap-1"
+                                leftIcon={<X size={16} />}
                             >
-                                <X size={16} />
                                 Make Unavailable
+                            </Button>
+                            <Button
+                                onClick={() => setIsBulkPriceModalOpen(true)}
+                                variant="secondary"
+                                size="sm"
+                                className="flex items-center gap-1"
+                                leftIcon={<Edit2 size={16} />}
+                            >
+                                Update Price
                             </Button>
                         </div>
                     </CardContent>
@@ -488,20 +609,18 @@ const ProductsManagement = () => {
                 ) : viewMode === 'grid' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
                         {filteredProducts.map((product: Product) => (
-                            <div 
-                                key={product.id} 
-                                className={`border border-light-gray rounded-lg overflow-hidden hover:shadow-md transition-shadow ${
-                                    selectedProducts.has(product.id) ? 'ring-2 ring-terracotta' : ''
-                                }`}
+                            <div
+                                key={product.id}
+                                className={`border border-light-gray rounded-lg overflow-hidden hover:shadow-md transition-shadow ${selectedProducts.has(product.id) ? 'ring-2 ring-terracotta' : ''
+                                    }`}
                             >
                                 <div className="h-32 bg-cream flex items-center justify-center relative">
                                     <button
                                         onClick={() => toggleSelectProduct(product.id)}
-                                        className={`absolute top-2 left-2 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
-                                            selectedProducts.has(product.id)
-                                                ? 'bg-terracotta border-terracotta text-white'
-                                                : 'border-gray-300 bg-white hover:border-terracotta'
-                                        }`}
+                                        className={`absolute top-2 left-2 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${selectedProducts.has(product.id)
+                                            ? 'bg-terracotta border-terracotta text-white'
+                                            : 'border-gray-300 bg-white hover:border-terracotta'
+                                            }`}
                                     >
                                         {selectedProducts.has(product.id) && <Check size={14} />}
                                     </button>
@@ -526,39 +645,33 @@ const ProductsManagement = () => {
                                             {product.isAvailable ? 'Available' : 'Unavailable'}
                                         </Badge>
                                     </div>
-                                    <div className="mt-4 flex items-center justify-between">
-                                        <p className="font-display text-body-lg text-primary-dark">
-                                            R{(product.price / 100).toFixed(2)}/{product.unit}
-                                        </p>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => handleToggleAvailability(product)}
-                                                className={`p-2 rounded-lg transition-colors ${
-                                                    product.isAvailable
-                                                        ? 'text-red-600 hover:bg-red-50'
-                                                        : 'text-green-600 hover:bg-green-50'
-                                                }`}
-                                                title={product.isAvailable ? 'Make Unavailable' : 'Make Available'}
-                                            >
-                                                {product.isAvailable ? <X size={16} /> : <Check size={16} />}
-                                            </button>
-                                            <button
-                                                onClick={() => handleEdit(product)}
-                                                className="p-2 text-warm-gray hover:text-terracotta hover:bg-terracotta/10 rounded-lg transition-colors"
-                                            >
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    if (confirm('Are you sure you want to delete this product?')) {
-                                                        deleteMutation.mutate(product.id);
-                                                    }
-                                                }}
-                                                className="p-2 text-warm-gray hover:text-error hover:bg-error/10 rounded-lg transition-colors"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                    <div className="mt-4 flex flex-col gap-2">
+                                        <div className="flex items-center justify-between">
+                                            <InlinePriceInput product={product} onUpdate={handleInlinePriceUpdate} />
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleToggleAvailability(product)}
+                                                    className={`p-2 rounded-lg transition-colors ${product.isAvailable
+                                                        ? 'text-error hover:bg-error/10'
+                                                        : 'text-success hover:bg-success/10'
+                                                        }`}
+                                                    title={product.isAvailable ? 'Make Unavailable' : 'Make Available'}
+                                                >
+                                                    {product.isAvailable ? <X size={16} /> : <Check size={16} />}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleEdit(product)}
+                                                    className="p-2 text-warm-gray hover:text-terracotta hover:bg-terracotta/10 rounded-lg transition-colors"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                            </div>
                                         </div>
+                                        {product.updatedAt && (
+                                            <div className="text-xs text-warm-gray">
+                                                Last updated: {new Date(product.updatedAt).toLocaleDateString()} {new Date(product.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -582,6 +695,7 @@ const ProductsManagement = () => {
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Updated</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                                 </tr>
@@ -592,11 +706,10 @@ const ProductsManagement = () => {
                                         <td className="px-4 py-4">
                                             <button
                                                 onClick={() => toggleSelectProduct(product.id)}
-                                                className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
-                                                    selectedProducts.has(product.id)
-                                                        ? 'bg-terracotta border-terracotta text-white'
-                                                        : 'border-gray-300 hover:border-terracotta'
-                                                }`}
+                                                className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${selectedProducts.has(product.id)
+                                                    ? 'bg-terracotta border-terracotta text-white'
+                                                    : 'border-gray-300 hover:border-terracotta'
+                                                    }`}
                                             >
                                                 {selectedProducts.has(product.id) && <Check size={14} />}
                                             </button>
@@ -624,17 +737,24 @@ const ProductsManagement = () => {
                                         <td className="px-4 py-4 text-body-sm text-gray-500">
                                             {product.supplier?.name || '-'}
                                         </td>
-                                        <td className="px-4 py-4 text-body-sm font-medium text-primary-dark">
-                                            R{(product.price / 100).toFixed(2)}/{product.unit}
+                                        <td className="px-4 py-4 whitespace-nowrap">
+                                            <InlinePriceInput product={product} onUpdate={handleInlinePriceUpdate} />
                                         </td>
-                                        <td className="px-4 py-4">
+                                        <td className="px-4 py-4 text-xs text-warm-gray whitespace-nowrap">
+                                            {product.updatedAt ? (
+                                                <>
+                                                    {new Date(product.updatedAt).toLocaleDateString()}<br />
+                                                    {new Date(product.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </>
+                                            ) : '-'}
+                                        </td>
+                                        <td className="px-4 py-4 whitespace-nowrap">
                                             <button
                                                 onClick={() => handleToggleAvailability(product)}
-                                                className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
-                                                    product.isAvailable
-                                                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                }`}
+                                                className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${product.isAvailable
+                                                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                    }`}
                                             >
                                                 {product.isAvailable ? <><Check size={12} /> Available</> : <><X size={12} /> Unavailable</>}
                                             </button>
@@ -725,28 +845,37 @@ const ProductsManagement = () => {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Unit</label>
-                            <Select
+                            <Input
+                                type="text"
+                                required
                                 value={formData.unit}
                                 onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                                options={[
-                                    { value: 'kg', label: 'kg' },
-                                    { value: 'piece', label: 'piece' },
-                                    { value: 'bunch', label: 'bunch' },
-                                    { value: 'bag', label: 'bag' },
-                                    { value: 'box', label: 'box' }
-                                ]}
+                                placeholder="kg, bunch, piece, etc."
                             />
                         </div>
                         <div>
-                            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Price (cents)</label>
-                            <Input
-                                type="number"
-                                required
-                                min="0"
-                                value={formData.price}
-                                onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
-                                placeholder="5000"
-                            />
+                            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Price (R)</label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-light-gray">R</span>
+                                <Input
+                                    type="number"
+                                    required
+                                    min="0"
+                                    step="0.01"
+                                    className="pl-8"
+                                    value={priceInput}
+                                    onChange={(e) => setPriceInput(e.target.value)}
+                                    onBlur={(e) => {
+                                        if (e.target.value) {
+                                            const num = parseFloat(e.target.value);
+                                            if (!isNaN(num)) {
+                                                setPriceInput(num.toFixed(2));
+                                            }
+                                        }
+                                    }}
+                                    placeholder="0.00"
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -766,7 +895,7 @@ const ProductsManagement = () => {
                             <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Delivery Day</label>
                             <Select
                                 value={formData.deliveryDay || ''}
-                                onChange={(e) => setFormData({ ...formData, deliveryDay: (e.target.value as 'Wednesday' | 'Friday') || undefined })}
+                                onChange={(e) => setFormData({ ...formData, deliveryDay: e.target.value === '' ? undefined : (e.target.value as 'Wednesday' | 'Friday') })}
                                 options={[
                                     { value: '', label: 'Select delivery day' },
                                     { value: 'Wednesday', label: 'Wednesday' },
@@ -785,6 +914,62 @@ const ProductsManagement = () => {
                         </Button>
                     </div>
                 </form>
+            </Modal>
+
+            {/* Bulk Price Update Modal */}
+            <Modal
+                isOpen={isBulkPriceModalOpen}
+                onClose={() => {
+                    setIsBulkPriceModalOpen(false);
+                    setBulkPriceValue(0);
+                }}
+                title="Bulk Update Prices"
+                size="md"
+            >
+                <div className="space-y-4">
+                    <p className="text-body-sm text-warm-gray mb-4">
+                        Update prices for {selectedProducts.size} selected product{selectedProducts.size !== 1 ? 's' : ''}.
+                    </p>
+                    <div>
+                        <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Action</label>
+                        <Select
+                            value={bulkPriceAction}
+                            onChange={(e) => setBulkPriceAction(e.target.value)}
+                            options={[
+                                { value: 'set', label: 'Set exact price (Rs)' },
+                                { value: 'add', label: 'Add amount (+ Rs)' },
+                                { value: 'increase_percent', label: 'Increase by percentage (%)' }
+                            ]}
+                        />
+                    </div>
+                    <div>
+                        <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Value</label>
+                        <Input
+                            type="number"
+                            step={bulkPriceAction === 'increase_percent' ? "1" : "0.01"}
+                            value={bulkPriceValue === 0 ? '' : bulkPriceValue}
+                            onChange={(e) => setBulkPriceValue(parseFloat(e.target.value) || 0)}
+                            placeholder={bulkPriceAction === 'increase_percent' ? "e.g. 10 for +10%" : "e.g. 5.50"}
+                        />
+                    </div>
+                    <div className="flex justify-end gap-3 mt-6">
+                        <Button type="button" onClick={() => setIsBulkPriceModalOpen(false)} variant="secondary">
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="primary"
+                            onClick={() => bulkPriceMutation.mutate({
+                                ids: Array.from(selectedProducts),
+                                action: bulkPriceAction,
+                                value: bulkPriceValue
+                            })}
+                            disabled={bulkPriceMutation.isPending || (bulkPriceValue === 0 && bulkPriceAction !== 'set')}
+                        >
+                            {bulkPriceMutation.isPending ? 'Updating...' : 'Update Prices'}
+                        </Button>
+                    </div>
+                </div>
             </Modal>
 
             {/* Active Orders Popup for Single Product */}
@@ -841,8 +1026,8 @@ const ProductsManagement = () => {
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4">
-                        <Button 
-                            variant="secondary" 
+                        <Button
+                            variant="secondary"
                             onClick={() => {
                                 setShowOrdersPopup(false);
                                 setOrdersForProduct([]);
@@ -851,8 +1036,8 @@ const ProductsManagement = () => {
                         >
                             Cancel
                         </Button>
-                        <Button 
-                            variant="primary" 
+                        <Button
+                            variant="primary"
                             onClick={confirmToggleWithOrders}
                         >
                             Make Unavailable Anyway
@@ -915,14 +1100,14 @@ const ProductsManagement = () => {
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4">
-                        <Button 
-                            variant="secondary" 
+                        <Button
+                            variant="secondary"
                             onClick={cancelBulkUnavailable}
                         >
                             Cancel
                         </Button>
-                        <Button 
-                            variant="primary" 
+                        <Button
+                            variant="primary"
                             onClick={confirmBulkUnavailable}
                         >
                             Make Unavailable Anyway

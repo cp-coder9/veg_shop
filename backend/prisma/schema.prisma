@@ -19,11 +19,14 @@ model User {
   status             String    @default("active")
   birthday           DateTime?
   loyaltyPoints      Int       @default(0)
+  popiConsentGiven   Boolean   @default(false)
+  popiConsentDate    DateTime?
+  popiConsentVersion String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
   orders        Order[]
-  invoices      Invoice[]
+  invoices      Invoice[] @relation("CustomerInvoices")
   payments      Payment[]
   credits       Credit[]
   notifications Notification[]
@@ -63,6 +66,7 @@ model Product {
   imageUrl    String?
   isAvailable Boolean  @default(true)
   isSeasonal  Boolean  @default(false)
+  isPerishable Boolean @default(false) // Determines delivery grouping eligibility
   packingType String   @default("box") // "box", "bag", "fridge", "freezer"
   deliveryDay String?  // "Wednesday" | "Friday" - delivery day for the product
   supplierId  String?
@@ -70,12 +74,31 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  categoryRef   ProductCategory? @relation(fields: [category], references: [key]) // Kept existing relation
-  orderItems    OrderItem[] // Kept existing relation
-  priceHistory  PriceHistory[] // Kept existing relation
+  categoryRef        ProductCategory? @relation(fields: [category], references: [key])
+  orderItems         OrderItem[]
+  priceHistory       PriceHistory[]
+  weeklyAvailability WeeklyAvailability[]
 
   @@map("products")
   @@index([supplierId])
+}
+
+// Weekly availability toggle — admin confirms per-week product availability (Mon/Tue)
+model WeeklyAvailability {
+  id          String    @id @default(uuid())
+  productId   String
+  weekStart   DateTime  // Monday of the target week (ISO date, time 00:00:00)
+  isAvailable Boolean   @default(true)
+  confirmedBy String?   // Admin user ID who confirmed
+  confirmedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, weekStart])
+  @@index([weekStart])
+  @@map("weekly_availability")
 }
 
 model Supplier {
@@ -101,6 +124,8 @@ model Order {
   status              String    @default("pending")
   coolerBagOption     Boolean   @default(false)
   coolerBagStatus     String    @default("none") // "none", "taken", "returned"
+  groupDelivery       Boolean   @default(false)
+  deliveryInstruction String?   // "door", "hand_to_me", "inside_fridge", "inside_freezer"
   packerSignature     String?
   deliveryNotes       String?
   createdAt           DateTime  @default(now())
@@ -169,14 +194,19 @@ model Invoice {
   total         Decimal
   status        String    @default("unpaid")
   pdfUrl        String?
+  type          String    @default("proforma") // "proforma" | "final"
+  finalisedAt   DateTime?
+  finalisedBy   String?   // Admin user ID
   createdAt     DateTime  @default(now())
   dueDate       DateTime
 
   order    Order     @relation(fields: [orderId], references: [id])
-  customer User      @relation(fields: [customerId], references: [id])
+  customer User      @relation("CustomerInvoices", fields: [customerId], references: [id])
   payments Payment[]
 
-  @@index([customerId, status])
+  @@index([customerId])
+  @@index([status])
+  @@index([type])
   @@map("invoices")
 }
 

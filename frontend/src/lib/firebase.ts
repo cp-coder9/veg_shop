@@ -1,4 +1,6 @@
+// @ts-ignore
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+// @ts-ignore
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
 
 const firebaseConfig = {

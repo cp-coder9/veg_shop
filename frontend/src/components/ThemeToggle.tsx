@@ -1,4 +1,4 @@
-import { useThemeStore } from '../stores/themeStore';
+import { useThemeStore } from '../stores/themeStore.js';
 
 export default function ThemeToggle() {
     const { resolvedTheme, toggleTheme } = useThemeStore();
@@ -14,8 +14,8 @@ export default function ThemeToggle() {
             {/* Sun Icon */}
             <svg
                 className={`w-5 h-5 transition-all duration-300 ${isDark
-                        ? 'text-warm-gray scale-75 opacity-0'
-                        : 'text-warning scale-100 opacity-100'
+                    ? 'text-warm-gray scale-75 opacity-0'
+                    : 'text-warning scale-100 opacity-100'
                     } absolute inset-0 m-auto`}
                 fill="none"
                 stroke="currentColor"
@@ -32,8 +32,8 @@ export default function ThemeToggle() {
             {/* Moon Icon */}
             <svg
                 className={`w-5 h-5 transition-all duration-300 ${isDark
-                        ? 'text-sage-green scale-100 opacity-100'
-                        : 'text-warm-gray scale-75 opacity-0'
+                    ? 'text-sage-green scale-100 opacity-100'
+                    : 'text-warm-gray scale-75 opacity-0'
                     }`}
                 fill="none"
                 stroke="currentColor"

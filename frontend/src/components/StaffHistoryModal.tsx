@@ -1,7 +1,7 @@
 import { X, Package, Truck, Calendar } from 'lucide-react';
-import { useAdminOrders } from '../hooks/useAdminOrders';
-import { Order } from '../types';
-import { Modal, Badge } from '@/components/ui';
+import { useAdminOrders } from '../hooks/useAdminOrders.js';
+import { Order } from '../types/index.js';
+import { Modal, Badge } from './ui/index.js';
 
 interface StaffHistoryModalProps {
     user: {
@@ -55,8 +55,8 @@ export default function StaffHistoryModal({ user, onClose }: StaffHistoryModalPr
                         </p>
                     </div>
                 </div>
-                <button 
-                    onClick={onClose} 
+                <button
+                    onClick={onClose}
                     className="p-2 hover:bg-light-gray rounded-full text-warm-gray hover:text-primary-dark transition-colors"
                 >
                     <X size={20} />
@@ -75,8 +75,8 @@ export default function StaffHistoryModal({ user, onClose }: StaffHistoryModalPr
                 ) : (
                     <div className="space-y-4">
                         {completedOrders.map((order: Order) => (
-                            <div 
-                                key={order.id} 
+                            <div
+                                key={order.id}
                                 className="border border-light-gray rounded-lg p-4 hover:border-terracotta/30 hover:bg-cream/30 transition-colors"
                             >
                                 <div className="flex justify-between items-start mb-2">

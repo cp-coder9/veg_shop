@@ -107,6 +107,28 @@ class FirebaseService
     }
 
     /**
+     * List all documents in a collection
+     */
+    public function listDocuments(string $collection): array
+    {
+        $url = "https://firestore.googleapis.com/v1/projects/{$this->projectId}/databases/(default)/documents/{$collection}";
+        try {
+            $response = $this->request($url);
+            $results = [];
+            if (isset($response['documents'])) {
+                foreach ($response['documents'] as $doc) {
+                    $results[] = $this->formatFirestoreResponse($doc);
+                }
+            }
+            return $results;
+        } catch (\Exception $e) {
+            if (str_contains($e->getMessage(), '404'))
+                return [];
+            throw $e;
+        }
+    }
+
+    /**
      * Query Firestore documents (Simple filter)
      */
     public function query(string $collection, string $field, string $operator, $value): array
@@ -248,47 +270,4 @@ class FirebaseService
         }
         return null;
     }
-    // --- Admin Auth Operations (Simulated via REST or Service Account if available) ---
-    // Note: True Admin SDK requires service account. We are using REST API which has limits.
-    // For "seed_users.php" we need to interact with Identity Toolkit v1 (if we have permissions) 
-    // or we might need to rely on just "signUp" and "update" in Firestore.
-
-    // However, setCustomUserClaims and listing users typically requires the Private Key (Service Account).
-    // The current environment variable setup points to FIREBASE_PROJECT_ID and API_KEY only.
-    // IF we don't have the Service Account JSON or Private Key, we CANNOT use the full Admin SDK features easily.
-
-    // Let's modify seed_users.php to use public signUp/signIn and then update Firestore directly.
-    // We cannot set "Custom Claims" (auth.token.role) without the Admin SDK credentials.
-    // But our app seems to check Firestore for role (AuthService.php likely checks Firestore).
-
-    // Let's check AuthService.php to see how "role" is determined.
-
-    /**
-     * Get Auth (Placeholder for script compatibility)
-     */
-    public function getAuth()
-    {
-        return $this;
-    }
-
-    /**
-     * Mock getUserByEmail for seeding script (using REST/SignIn to check existence?)
-     * Actually, without Admin SDK, we can't easily check if a user exists without trying to sign in.
-     * We'll implement a helper that tries to sign in, or just tries to sign up.
-     */
-    public function getUserByEmail(string $email)
-    {
-        // This is a difficult one without Admin Privileges.
-        // We will throw UserNotFound if we can't find them, but we can't really look them up.
-        // For the purpose of the script, let's just try to Sign Up. If it fails (email exists), we assume existence.
-        throw new \Kreait\Firebase\Exception\Auth\UserNotFound("Cannot lookup by email with REST API key only.");
-    }
-
-    /*
-     * We need to change the approach in seed_users.php if we lack Admin SDK.
-     * But wait, `seed_users.php` tried to use $firebase->getAuth() returning a value compatible with `kreait/firebase-php`.
-     * The `FirebaseService` class shown IS NOT wrapping `kreait/firebase-php`, it's a custom REST implementation!
-     * So `seed_users.php` will fail because `getAuth()` returns the service itself (per my edit below) and calls methods that don't exist.
-     */
-
 }

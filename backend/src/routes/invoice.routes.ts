@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { invoiceService } from '../services/invoice.service.js';
+import { orderService } from '../services/order.service.js';
 import { authenticate, requireAdmin } from '../middleware/auth.middleware.js';
 import { auditLog } from '../middleware/audit.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
@@ -92,6 +93,28 @@ router.post('/generate/:orderId', authenticate, requireAdmin, auditLog('GENERATE
       error: {
         code: 'INTERNAL_ERROR',
         message: 'Failed to generate invoice',
+      },
+    });
+  }
+}));
+
+/**
+ * POST /api/invoices/:id/finalise
+ * Finalise a proforma invoice (admin only)
+ */
+router.post('/:id/finalise', authenticate, requireAdmin, auditLog('FINALISE', 'invoice'), asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const invoice = await invoiceService.finaliseInvoice(id, req.user!.userId);
+
+    return res.json(invoice);
+  } catch (error) {
+    console.error('Finalise invoice error:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to finalise invoice',
       },
     });
   }
@@ -221,6 +244,48 @@ router.get('/:id/pdf', authenticate, asyncHandler(async (req: Request, res: Resp
 }));
 
 /**
+ * GET /api/invoices/order/:orderId/proforma
+ * Download proforma invoice PDF
+ */
+router.get('/order/:orderId/proforma', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { orderId } = req.params;
+
+    // Check ownership/permission
+    const order = await orderService.getOrder(orderId);
+    if (!order) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Order not found' } });
+    }
+
+    const isStaff = ['admin', 'packer', 'driver'].includes(req.user!.role);
+    if (!isStaff && order.customerId !== req.user!.userId) {
+      return res.status(403).json({
+        error: {
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to view this proforma',
+        },
+      });
+    }
+
+    const pdfBuffer = await invoiceService.generateProforma(orderId);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="proforma-${orderId.substring(0, 8)}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    return res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Get proforma PDF error:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to generate proforma PDF',
+      },
+    });
+  }
+}));
+
+/**
  * GET /api/invoices/stats
  * Get invoice statistics (admin only)
  */
@@ -254,10 +319,11 @@ router.get('/stats', authenticate, requireAdmin, asyncHandler(async (req: Reques
  */
 router.get('/', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { customerId, customerName, status, startDate, endDate } = req.query as {
+    const { customerId, customerName, status, type, startDate, endDate } = req.query as {
       customerId?: string;
       customerName?: string;
       status?: string;
+      type?: string;
       startDate?: string;
       endDate?: string;
     };
@@ -266,6 +332,7 @@ router.get('/', authenticate, requireAdmin, asyncHandler(async (req: Request, re
       customerId?: string;
       customerName?: string;
       status?: string;
+      type?: string;
       startDate?: Date;
       endDate?: Date;
     } = {};
@@ -273,6 +340,7 @@ router.get('/', authenticate, requireAdmin, asyncHandler(async (req: Request, re
     if (customerId) filters.customerId = customerId;
     if (customerName) filters.customerName = customerName;
     if (status) filters.status = status;
+    if (type) filters.type = type;
     if (startDate) filters.startDate = new Date(startDate);
     if (endDate) filters.endDate = new Date(endDate);
 

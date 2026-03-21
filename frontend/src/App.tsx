@@ -2,41 +2,45 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useAuthStore } from './stores/authStore';
-import Layout from './components/layout/Layout';
-import AdminLayout from './components/layout/AdminLayout';
-import DriverLayout from './layouts/DriverLayout';
-import ProtectedRoute from './components/ProtectedRoute';
-import ProtectedAdminRoute from './components/ProtectedAdminRoute';
-import HomePage from './pages/HomePage';
-import AuthPage from './pages/AuthPage';
-import VerifyCodePage from './pages/VerifyCodePage';
-import ProductsPage from './pages/ProductsPage';
-import CartPage from './pages/CartPage';
-import OrdersPage from './pages/OrdersPage';
-import ProfilePage from './pages/ProfilePage';
-import DashboardPage from './pages/DashboardPage';
-import PaymentHistoryPage from './pages/PaymentHistoryPage';
-import PaymentPage from './pages/PaymentPage';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import ProductsManagement from './pages/admin/ProductsManagement';
-import SuppliersManagement from './pages/admin/SuppliersManagement';
-import OrdersManagement from './pages/admin/OrdersManagement';
-import InvoicesManagement from './pages/admin/InvoicesManagement';
-import PaymentsManagement from './pages/admin/PaymentsManagement';
-import ShortDeliveryManagement from './pages/admin/ShortDeliveryManagement';
-import PackingListsManagement from './pages/admin/PackingListsManagement';
-import NotificationsManagement from './pages/admin/NotificationsManagement';
-import ReportsManagement from './pages/admin/ReportsManagement';
-import CustomersManagement from './pages/admin/CustomersManagement';
-import AuditManagement from './pages/admin/AuditManagement';
-import CustomerDetail from './pages/admin/CustomerDetail';
-import AdminProfile from './pages/admin/AdminProfile';
-import SettingsPage from './pages/admin/SettingsPage';
-import StaffManagement from './pages/admin/StaffManagement';
-import DriverDashboard from './pages/driver/DriverDashboard';
-import LogbookPage from './pages/driver/LogbookPage';
-import PackerDashboard from './pages/packer/PackerDashboard';
+import { useAuthStore } from './stores/authStore.js';
+import Layout from './components/layout/Layout.js';
+import { PrivacyConsent } from './components/auth/PrivacyConsent.js';
+
+import AdminLayout from './components/layout/AdminLayout.js';
+import DriverLayout from './layouts/DriverLayout.js';
+import ProtectedRoute from './components/ProtectedRoute.js';
+import ProtectedAdminRoute from './components/ProtectedAdminRoute.js';
+import HomePage from './pages/HomePage.js';
+import AuthPage from './pages/AuthPage.js';
+import VerifyCodePage from './pages/VerifyCodePage.js';
+import ProductsPage from './pages/ProductsPage.js';
+import CartPage from './pages/CartPage.js';
+import OrdersPage from './pages/OrdersPage.js';
+import ProfilePage from './pages/ProfilePage.js';
+import DashboardPage from './pages/DashboardPage.js';
+import PaymentHistoryPage from './pages/PaymentHistoryPage.js';
+import PaymentPage from './pages/PaymentPage.js';
+import AdminDashboard from './pages/admin/AdminDashboard.js';
+import ProductsManagement from './pages/admin/ProductsManagement.js';
+import SuppliersManagement from './pages/admin/SuppliersManagement.js';
+import OrdersManagement from './pages/admin/OrdersManagement.js';
+import InvoicesManagement from './pages/admin/InvoicesManagement.js';
+import PaymentsManagement from './pages/admin/PaymentsManagement.js';
+import ShortDeliveryManagement from './pages/admin/ShortDeliveryManagement.js';
+import PackingListsManagement from './pages/admin/PackingListsManagement.js';
+import NotificationsManagement from './pages/admin/NotificationsManagement.js';
+import ReportsManagement from './pages/admin/ReportsManagement.js';
+import CustomersManagement from './pages/admin/CustomersManagement.js';
+import AuditManagement from './pages/admin/AuditManagement.js';
+import CustomerDetail from './pages/admin/CustomerDetail.js';
+import AdminProfile from './pages/admin/AdminProfile.js';
+import SettingsPage from './pages/admin/SettingsPage.js';
+import StaffManagement from './pages/admin/StaffManagement.js';
+import WeeklyAvailabilityManagement from './pages/admin/WeeklyAvailabilityManagement.js';
+import DriverDashboard from './pages/driver/DriverDashboard.js';
+import LogbookPage from './pages/driver/LogbookPage.js';
+import PackerDashboard from './pages/packer/PackerDashboard.js';
+import PublicProductList from './pages/PublicProductList.js';
 
 
 const queryClient = new QueryClient({
@@ -58,12 +62,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Toaster position="top-right" />
+      <PrivacyConsent />
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<AuthPage />} />
           <Route path="/verify" element={<VerifyCodePage />} />
           <Route path="/payment/:invoiceId" element={<PaymentPage />} />
           <Route path="/payment/:invoiceId/complete" element={<PaymentPage />} />
+          <Route path="/shop" element={<PublicProductList />} />
 
           {/* Customer Routes */}
           <Route element={<Layout />}>
@@ -146,6 +152,7 @@ function App() {
             <Route path="/admin/customers" element={<CustomersManagement />} />
             <Route path="/admin/customers/:customerId" element={<CustomerDetail />} />
             <Route path="/admin/staff" element={<StaffManagement />} />
+            <Route path="/admin/availability" element={<WeeklyAvailabilityManagement />} />
             <Route path="/admin/settings" element={<SettingsPage />} />
             <Route path="/admin/profile" element={<AdminProfile />} />
           </Route>

@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '../test/utils';
+import { render, screen } from '../test/utils.js';
 import userEvent from '@testing-library/user-event';
-import ProfilePage from './ProfilePage';
+import ProfilePage from './ProfilePage.js';
 
 const mockProfile = {
   id: '1',
@@ -39,7 +39,7 @@ vi.mock('../hooks/useCustomer', () => ({
   useCustomerInvoices: vi.fn(),
 }));
 
-import { useCustomerProfile, useCustomerInvoices } from '../hooks/useCustomer';
+import { useCustomerProfile, useCustomerInvoices } from '../hooks/useCustomer.js';
 
 describe('ProfilePage', () => {
   it('shows loading state', () => {
@@ -65,7 +65,7 @@ describe('ProfilePage', () => {
     } as any);
 
     render(<ProfilePage />);
-    
+
     expect(screen.getByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('john@example.com')).toBeInTheDocument();
     expect(screen.getByText('0821234567')).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe('ProfilePage', () => {
   });
 
   it('shows edit form when edit button is clicked', async () => {
-    const user = userEvent.setup();
+    const user = (userEvent as any).setup();
     vi.mocked(useCustomerProfile).mockReturnValue({
       data: mockProfile,
       isLoading: false,
@@ -83,10 +83,10 @@ describe('ProfilePage', () => {
     } as any);
 
     render(<ProfilePage />);
-    
+
     const editButton = screen.getByRole('button', { name: /edit/i });
     await user.click(editButton);
-    
+
     expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
   });
@@ -101,7 +101,7 @@ describe('ProfilePage', () => {
     } as any);
 
     render(<ProfilePage />);
-    
+
     expect(screen.getByText('Invoice History')).toBeInTheDocument();
     expect(screen.getByText('R90.00')).toBeInTheDocument();
     expect(screen.getByText('R10.00')).toBeInTheDocument();
@@ -118,7 +118,7 @@ describe('ProfilePage', () => {
     } as any);
 
     render(<ProfilePage />);
-    
+
     expect(screen.getByText(/no invoices yet/i)).toBeInTheDocument();
   });
 });

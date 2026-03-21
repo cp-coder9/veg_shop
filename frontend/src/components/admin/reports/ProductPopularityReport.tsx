@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useProductPopularityReport } from '../../../hooks/useReports';
-import { formatCurrency } from '../../../lib/utils';
+import { useProductPopularityReport } from '../../../hooks/useReports.js';
+import { formatCurrency } from '../../../lib/utils.js';
 
 interface ProductPopularity {
   productId: string;
@@ -39,7 +39,7 @@ export default function ProductPopularityReport() {
     );
   }
 
-  const maxQuantity = report?.products.reduce(
+  const maxQuantity = (report?.products || []).reduce(
     (max: number, p) => Math.max(max, p.totalQuantity),
     0
   ) || 1;

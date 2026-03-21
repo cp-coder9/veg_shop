@@ -3,9 +3,9 @@ import { appEvents } from '../lib/events.js';
 import { notificationService } from './notification.service.js';
 import { env } from '../config/env.js';
 import { orderRepository, Order } from '../repositories/order.repository.js';
-import { orderItemRepository } from '../repositories/order-item.repository.js';
-import { productRepository } from '../repositories/product.repository.js';
-import { userRepository } from '../repositories/user.repository.js';
+import { orderItemRepository, OrderItem as RepositoryOrderItem } from '../repositories/order-item.repository.js';
+import { productRepository, Product as RepositoryProduct } from '../repositories/product.repository.js';
+import { userRepository, User as RepositoryUser } from '../repositories/user.repository.js';
 import { invoiceRepository } from '../repositories/invoice.repository.js';
 
 export interface CreateOrderDto {
@@ -29,7 +29,10 @@ const DELIVERY_FEES = [
 ];
 
 export interface OrderWithItems extends Order {
-  items: any[];
+  items: (RepositoryOrderItem & { product?: RepositoryProduct })[];
+  customer?: RepositoryUser;
+  customerName?: string;
+  totalAmount?: number;
 }
 
 export interface BulkOrderItem {
@@ -56,11 +59,103 @@ export interface CollationItem {
   categoryId: string;
 }
 
+export interface CreateOrderData {
+  deliveryDate: Date;
+  deliveryMethod: 'delivery' | 'collection';
+  deliveryAddress?: string;
+  specialInstructions?: string;
+  deliveryFees?: number;
+  items: Array<{
+    productId: string;
+    quantity: number;
+  }>;
+  coolerBagOption?: boolean;
+  groupDelivery?: boolean;
+  deliveryInstruction?: 'door' | 'hand_to_me' | 'inside_fridge' | 'inside_freezer';
+}
+
 export class OrderService {
+  /**
+   * Check if the ordering window is currently open
+   * Window: Tuesday 00:00 to Friday 14:00
+   */
+  isOrderWindowOpen(): { isOpen: boolean; nextStatusChange: Date; message: string } {
+    const now = new Date();
+    const day = now.getDay(); // 0: Sun, 1: Mon, 2: Tue, 3: Wed, 4: Thu, 5: Fri, 6: Sat
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+
+    // Tuesday (2) to Friday (5)
+    // Friday cutoff is 14:00
+    let isOpen = false;
+    let nextStatusChange = new Date();
+    let message = '';
+
+    if (day >= 2 && day <= 5) {
+      if (day === 5 && (hour > 14 || (hour === 14 && minute > 0))) {
+        isOpen = false;
+      } else {
+        isOpen = true;
+      }
+    }
+
+    if (isOpen) {
+      // Find following Friday 14:00
+      nextStatusChange = new Date(now);
+      const diff = (5 - day + 7) % 7;
+      nextStatusChange.setDate(now.getDate() + diff);
+      nextStatusChange.setHours(14, 0, 0, 0);
+      message = 'Order window is open until Friday 14:00';
+    } else {
+      // Find following Tuesday 00:00
+      nextStatusChange = new Date(now);
+      const diff = (2 - day + 7) % 7;
+      nextStatusChange.setDate(now.getDate() + diff);
+      // If it's Tuesday but window is "closed" (meaning it hasn't reached Tue 00:00 yet? No, if day is 2 it should be open)
+      // Actually if day is 5, 6, 0, 1 it's closed (except Friday before 14:00)
+      if (day === 5 || day === 6 || day === 0 || day === 1) {
+        nextStatusChange.setHours(0, 0, 0, 0);
+        if (day === 5 || day === 6 || day === 0 || day === 1) {
+          // diff will correctly point to next Tuesday
+        }
+      }
+      message = 'Order window is closed. Opens Tuesday 00:00';
+    }
+
+    return { isOpen, nextStatusChange, message };
+  }
+
+  /**
+   * Determine if an order is eligible for delivery grouping
+   * (None of the products should be perishable)
+   */
+  async canGroupDelivery(items: { productId: string; quantity: number }[]): Promise<boolean> {
+    const productIds = items.map(i => i.productId);
+
+    if (env.USE_FIREBASE) {
+      const products = await Promise.all(productIds.map(id => productRepository.findById(id)));
+      return !products.some(p => p?.isPerishable);
+    } else {
+      const perishableCount = await prisma.product.count({
+        where: {
+          id: { in: productIds },
+          isPerishable: true,
+        },
+      });
+      return perishableCount === 0;
+    }
+  }
+
   /**
    * Create a new order with order items
    */
-  async createOrder(customerId: string, data: CreateOrderDto): Promise<any> {
+  async createOrder(customerId: string, data: CreateOrderData): Promise<OrderWithItems> {
+    // Validate order window
+    const window = this.isOrderWindowOpen();
+    if (!window.isOpen && env.NODE_ENV === 'production') {
+      throw new Error(window.message);
+    }
+
     // Validate delivery date
     const now = new Date();
     const deliveryDate = new Date(data.deliveryDate);
@@ -76,8 +171,8 @@ export class OrderService {
 
     if (env.USE_FIREBASE) {
       // Fetch products and customer
-      const productIds = data.items.map(item => item.productId);
-      const products = await Promise.all(productIds.map(id => productRepository.findById(id)));
+      const productIds = data.items.map((item: { productId: string }) => item.productId);
+      const products = await Promise.all(productIds.map((id: string) => productRepository.findById(id)));
 
       const unavailableProducts = products
         .filter((product): product is NonNullable<typeof product> => Boolean(product && !product.isAvailable))
@@ -122,10 +217,10 @@ export class OrderService {
         coolerBagOption: data.coolerBagOption ?? false,
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as any);
+      } as Order);
 
       // Create Order Items
-      const items = await Promise.all(data.items.map(item => {
+      const items = await Promise.all(data.items.map((item: { productId: string; quantity: number }) => {
         const product = products.find(p => p?.id === item.productId)!;
         return orderItemRepository.create({
           orderId: order.id,
@@ -138,16 +233,15 @@ export class OrderService {
       return { ...order, items };
     } else {
       // Simplify: Just check if products exist and are available
-      const productIds = data.items.map(item => item.productId);
-      type ProductSnapshot = { id: string; name: string; isAvailable: boolean; price: number };
+      const productIds = data.items.map((item: { productId: string }) => item.productId);
       const products = await prisma.product.findMany({
         where: {
           id: { in: productIds },
         },
-      }) as ProductSnapshot[];
+      });
 
-      const unavailableProducts = products.filter((product) => !product.isAvailable).map((product) => product.name);
-      const missingProducts = productIds.filter((id) => !products.some((product) => product.id === id));
+      const unavailableProducts = products.filter((p) => !p.isAvailable).map((p) => p.name);
+      const missingProducts = productIds.filter((id: string) => !products.some((p) => p.id === id));
 
       if (unavailableProducts.length > 0) {
         throw new Error(`Products not available: ${unavailableProducts.join(', ')}`);
@@ -172,18 +266,27 @@ export class OrderService {
       const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
       const customId = `${sanitizedName}-${dateStr}-${randomSuffix}`;
 
+      // Calculate delivery fee
+      let deliveryFees = data.deliveryFees ?? 0;
+      if (data.deliveryMethod === 'delivery' && data.deliveryAddress) {
+        const address = data.deliveryAddress.toLowerCase();
+        const matchedOption = DELIVERY_FEES.find(opt => address.includes(opt.keyword));
+        if (matchedOption) {
+          deliveryFees = matchedOption.fee;
+        }
+      }
+
+      // Validate group delivery eligibility
+      let groupDelivery = data.groupDelivery ?? false;
+      if (groupDelivery) {
+        const isEligible = await this.canGroupDelivery(data.items);
+        if (!isEligible) {
+          throw new Error('Order is not eligible for group delivery due to perishable items');
+        }
+      }
+
       // Create the order and items in a transaction
       const order = await prisma.$transaction(async (tx: any) => {
-        // Calculate delivery fee if not provided or to override
-        let deliveryFees = data.deliveryFees ?? 0;
-        if (data.deliveryMethod === 'delivery' && data.deliveryAddress) {
-          const address = data.deliveryAddress.toLowerCase();
-          const matchedOption = DELIVERY_FEES.find(opt => address.includes(opt.keyword));
-          if (matchedOption) {
-            deliveryFees = matchedOption.fee;
-          }
-        }
-
         const newOrder = await tx.order.create({
           data: {
             id: customId,
@@ -195,9 +298,10 @@ export class OrderService {
             deliveryFees: deliveryFees,
             status: 'pending',
             coolerBagOption: data.coolerBagOption ?? false,
+            groupDelivery,
             items: {
               create: data.items.map((item: { productId: string; quantity: number }) => {
-                const product = products.find((p: any) => p.id === item.productId)!;
+                const product = products.find((p) => p.id === item.productId)!;
                 return {
                   productId: item.productId,
                   quantity: item.quantity,
@@ -214,25 +318,25 @@ export class OrderService {
         return newOrder;
       });
 
-      // Send confirmation asynchronously
-      void this.sendOrderConfirmation(order.id).catch((error: unknown) => {
-        console.warn('Failed to send order confirmation:', error);
+      // Send confirmation independently
+      void this.sendOrderConfirmation(order.id).catch((err: unknown) => {
+        console.warn('Failed to send order confirmation:', err);
       });
 
-      return order;
+      return order as unknown as OrderWithItems;
     }
   }
 
   /**
    * Get a single order by ID with items
    */
-  async getOrder(id: string): Promise<any | null> {
+  async getOrder(id: string): Promise<OrderWithItems | null> {
     if (env.USE_FIREBASE) {
       const order = await orderRepository.findById(id);
       if (!order) return null;
       const items = await orderItemRepository.findByOrder(id);
       const customer = await userRepository.findById(order.customerId);
-      return { ...order, items, customer };
+      return { ...order, items, customer } as OrderWithItems;
     } else {
       const order = await prisma.order.findUnique({
         where: { id },
@@ -246,19 +350,19 @@ export class OrderService {
         },
       });
 
-      return order;
+      return order as OrderWithItems | null;
     }
   }
 
   /**
    * Get all orders for a specific customer
    */
-  async getCustomerOrders(customerId: string): Promise<any[]> {
+  async getCustomerOrders(customerId: string): Promise<OrderWithItems[]> {
     if (env.USE_FIREBASE) {
       const orders = await orderRepository.findByCustomer(customerId);
-      return Promise.all(orders.map(async (order: any) => {
+      return Promise.all(orders.map(async (order: Order) => {
         const items = await orderItemRepository.findByOrder(order.id);
-        const itemsWithProducts = await Promise.all(items.map(async (item: any) => {
+        const itemsWithProducts = await Promise.all(items.map(async (item: RepositoryOrderItem) => {
           const product = await productRepository.findById(item.productId);
           return { ...item, product: product || undefined };
         }));
@@ -279,14 +383,59 @@ export class OrderService {
         },
       });
 
-      return orders;
+      return orders as unknown as OrderWithItems[];
+    }
+  }
+
+  /**
+   * Get the most recent non-cancelled order for a customer
+   */
+  async getLastWeekOrder(customerId: string): Promise<OrderWithItems | null> {
+    if (env.USE_FIREBASE) {
+      const orders = await orderRepository.list([
+        { field: 'customerId', operator: '==', value: customerId },
+        { field: 'status', operator: '!=', value: 'cancelled' },
+      ]);
+
+      if (orders.length === 0) return null;
+
+      // Sort by delivery date descending manually as firestore-repo list might not support orderby yet
+      const sorted = orders.sort((a, b) => b.deliveryDate.getTime() - a.deliveryDate.getTime());
+      const lastOrder = sorted[0];
+
+      const items = await orderItemRepository.findByOrder(lastOrder.id);
+      const itemsWithProducts = await Promise.all(items.map(async (item: any) => {
+        const product = await productRepository.findById(item.productId);
+        return { ...item, product: product || undefined };
+      }));
+
+      return { ...lastOrder, items: itemsWithProducts };
+    } else {
+      const lastOrder = await prisma.order.findFirst({
+        where: {
+          customerId,
+          status: { not: 'cancelled' }
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+        orderBy: {
+          deliveryDate: 'desc',
+        },
+      });
+
+      return lastOrder as OrderWithItems | null;
     }
   }
 
   /**
    * Get all orders for a specific delivery date
    */
-  async getOrdersByDeliveryDate(date: Date): Promise<any[]> {
+  async getOrdersByDeliveryDate(date: Date): Promise<OrderWithItems[]> {
     if (env.USE_FIREBASE) {
       const startOfDay = new Date(date);
       startOfDay.setHours(0, 0, 0, 0);
@@ -337,20 +486,20 @@ export class OrderService {
         },
       });
 
-      return orders;
+      return orders as unknown as OrderWithItems[];
     }
   }
 
   /**
    * Get packing list grouped by delivery area
    */
-  async getPackingList(date: Date): Promise<Record<string, any[]>> {
+  async getPackingList(date: Date): Promise<Record<string, OrderWithItems[]>> {
     const orders = await this.getOrdersByDeliveryDate(date);
 
     // Group by area
     const grouped: Record<string, any[]> = {};
 
-    orders.forEach((order: any) => {
+    orders.forEach((order) => {
       const address = order.deliveryAddress || 'Unknown Area';
       const parts = address.split(',').map((p: string) => p.trim());
 
@@ -388,7 +537,7 @@ export class OrderService {
     signature?: string,
     deliveryNotes?: string,
     coolerBagStatus?: string
-  ): Promise<any> {
+  ): Promise<OrderWithItems> {
     const validStatuses = ['pending', 'confirmed', 'packed', 'delivered', 'cancelled', 'out_for_delivery'];
     if (!validStatuses.includes(status)) {
       throw new Error(`Invalid status: ${status}. Must be one of ${validStatuses.join(', ')}`);
@@ -444,7 +593,8 @@ export class OrderService {
         return prisma.order.update({
           where: { id },
           data: { status },
-        });
+          include: { items: { include: { product: true } }, customer: true }
+        }) as unknown as OrderWithItems;
       }
 
       updatedOrder = await prisma.$transaction(async (tx: any) => {
@@ -530,6 +680,7 @@ export class OrderService {
         return await tx.order.update({
           where: { id },
           data: updateData,
+          include: { items: { include: { product: true } }, customer: true }
         });
       });
     }
@@ -546,20 +697,43 @@ export class OrderService {
     // Emit event for real-time updates
     appEvents.emit('orderUpdated', { orderId: id, status });
 
-    return updatedOrder;
+    return updatedOrder as unknown as OrderWithItems;
   }
 
   /**
    * Update order details (generic)
    */
-  async updateOrder(id: string, data: any): Promise<any> {
+  async updateOrder(id: string, data: Partial<Order>): Promise<OrderWithItems> {
     if (env.USE_FIREBASE) {
-      return orderRepository.update(id, { ...data, updatedAt: new Date() });
+      return orderRepository.update(id, { ...data, updatedAt: new Date() }) as unknown as OrderWithItems;
     } else {
-      return prisma.order.update({
-        where: { id },
-        data,
+      const { items, ...rest } = data as any;
+
+      const updatedOrder = await prisma.$transaction(async (tx) => {
+        if (items) {
+          // If items are provided, replace existing items
+          await tx.orderItem.deleteMany({ where: { orderId: id } });
+          await tx.orderItem.createMany({
+            data: items.map((item: any) => ({
+              orderId: id,
+              productId: item.productId,
+              quantity: item.quantity,
+              priceAtOrder: item.priceAtOrder,
+            }))
+          });
+        }
+
+        return tx.order.update({
+          where: { id },
+          data: rest,
+          include: { items: { include: { product: true } }, customer: true }
+        });
       });
+
+      // Emit event for real-time updates
+      appEvents.emit('orderUpdated', { orderId: id, status: updatedOrder.status });
+
+      return updatedOrder as unknown as OrderWithItems;
     }
   }
 
@@ -591,8 +765,8 @@ export class OrderService {
 
     const productMap = new Map<string, BulkOrderItem>();
 
-    orders.forEach((order: any) => {
-      order.items.forEach((item: any) => {
+    orders.forEach((order) => {
+      order.items.forEach((item) => {
         const existing = productMap.get(item.productId);
         if (existing) {
           existing.totalQuantity += item.quantity;
@@ -610,7 +784,7 @@ export class OrderService {
       });
     });
 
-    const items = Array.from(productMap.values()).map((item: any) => {
+    const items = Array.from(productMap.values()).map((item: BulkOrderItem) => {
       item.bufferQuantity = Math.ceil(item.totalQuantity * (bufferPercentage / 100));
       item.finalQuantity = item.totalQuantity + item.bufferQuantity;
       return item;
@@ -631,7 +805,7 @@ export class OrderService {
     message += `📅 Week of: ${bulkOrder.weekStartDate.toLocaleDateString()}\n`;
     message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-    bulkOrder.items.forEach((item: any) => {
+    bulkOrder.items.forEach((item: BulkOrderItem) => {
       message += `• *${item.productName}*\n`;
       message += `  Base: ${item.totalQuantity}\n`;
       message += `  Buffer: ${item.bufferQuantity}\n`;
@@ -665,7 +839,7 @@ export class OrderService {
           <tbody>
     `;
 
-    bulkOrder.items.forEach((item: any) => {
+    bulkOrder.items.forEach((item: BulkOrderItem) => {
       html += `
         <tr>
           <td>${item.productName}</td>
@@ -684,6 +858,23 @@ export class OrderService {
     `;
 
     return html;
+  }
+
+  /**
+   * Format bulk order for email (Plain Text)
+   */
+  formatBulkOrderForEmailText(bulkOrder: BulkOrder): string {
+    let text = `Bulk Order Consolidation\n`;
+    text += `Week starting: ${bulkOrder.weekStartDate.toLocaleDateString()}\n`;
+    text += `Generated at: ${bulkOrder.generatedAt.toLocaleString()}\n\n`;
+    text += `Product | Order Qty | Buffer | Total\n`;
+    text += `------------------------------------------\n`;
+
+    bulkOrder.items.forEach((item: BulkOrderItem) => {
+      text += `${item.productName.padEnd(25)} | ${item.totalQuantity.toString().padStart(9)} | ${item.bufferQuantity.toString().padStart(6)} | ${item.finalQuantity}\n`;
+    });
+
+    return text;
   }
 
   /**
@@ -721,11 +912,11 @@ export class OrderService {
     customerId?: string;
     packerId?: string;
     driverId?: string;
-  } = {}): Promise<any[]> {
+  } = {}): Promise<OrderWithItems[]> {
     const { limit, status, deliveryDate, startDate, endDate, customerId, packerId, driverId } = options;
 
     if (env.USE_FIREBASE) {
-      const filters: any[] = [];
+      const filters: { field: string; operator: string; value: any }[] = [];
       if (status) filters.push({ field: 'status', operator: '==', value: status });
       if (deliveryDate) filters.push({ field: 'deliveryDate', operator: '==', value: new Date(deliveryDate) });
       if (startDate) filters.push({ field: 'deliveryDate', operator: '>=', value: new Date(startDate) });
@@ -734,17 +925,17 @@ export class OrderService {
       if (packerId) filters.push({ field: 'packerId', operator: '==', value: packerId });
       if (driverId) filters.push({ field: 'driverId', operator: '==', value: driverId });
 
-      const orders = await orderRepository.list(filters);
+      const orders = await orderRepository.list(filters as any[]);
       const topOrders = limit ? orders.slice(0, limit) : orders;
 
-      return Promise.all(topOrders.map(async (order: any) => {
+      return Promise.all(topOrders.map(async (order: Order) => {
         const items = await orderItemRepository.findByOrder(order.id);
         const customer = await userRepository.findById(order.customerId);
-        const totalAmount = items.reduce((sum: number, item: any) => sum + (item.priceAtOrder * item.quantity), order.deliveryFees || 0);
+        const totalAmount = items.reduce((sum: number, item: RepositoryOrderItem) => sum + (item.priceAtOrder * item.quantity), order.deliveryFees || 0);
         return {
           ...order,
           items,
-          customer,
+          customer: customer || undefined,
           customerName: customer?.name || 'Unknown',
           totalAmount,
         };
@@ -769,7 +960,7 @@ export class OrderService {
       if (driverId) where.driverId = driverId;
 
       const orders = await prisma.order.findMany({
-        where: where as any,
+        where: where as { [key: string]: any },
         take: limit,
         orderBy: {
           deliveryDate: 'desc',
@@ -784,16 +975,24 @@ export class OrderService {
         },
       });
 
-      return orders.map((order: any) => {
-        const totalAmount = order.items.reduce((sum: number, item: any) => {
+      return orders.map((order) => {
+        const totalAmount = order.items.reduce((sum: number, item) => {
           return sum + (Number(item.priceAtOrder) * item.quantity);
         }, Number(order.deliveryFees || 0));
 
         return {
           ...order,
-          customerName: (order as any).customer.name,
+          customerName: order.customer.name,
           totalAmount,
-        };
+          items: order.items.map(item => ({
+            ...item,
+            priceAtOrder: Number(item.priceAtOrder),
+            product: item.product ? {
+              ...item.product,
+              price: Number(item.product.price)
+            } : undefined
+          }))
+        } as unknown as OrderWithItems;
       });
     }
   }
@@ -815,7 +1014,11 @@ export class OrderService {
       include: {
         items: {
           include: {
-            product: true,
+            product: {
+              include: {
+                supplier: true,
+              },
+            },
           },
         },
       },
@@ -823,8 +1026,8 @@ export class OrderService {
 
     const collationMap = new Map<string, CollationItem>();
 
-    orders.forEach((order: any) => {
-      order.items.forEach((item: any) => {
+    orders.forEach((order) => {
+      order.items.forEach((item) => {
         const existing = collationMap.get(item.productId);
         if (existing) {
           existing.totalQuantity += item.quantity;
@@ -837,13 +1040,17 @@ export class OrderService {
             unit: item.product.unit,
             orderCount: 1,
             categoryId: item.product.category,
+            supplierId: item.product.supplierId || 'unassigned',
+            supplierName: item.product.supplier?.name || 'Unassigned',
           });
         }
       });
     });
 
     return Array.from(collationMap.values()).sort((a, b) =>
-      a.categoryId.localeCompare(b.categoryId) || a.productName.localeCompare(b.productName)
+      a.supplierName.localeCompare(b.supplierName) ||
+      a.categoryId.localeCompare(b.categoryId) ||
+      a.productName.localeCompare(b.productName)
     );
   }
 }

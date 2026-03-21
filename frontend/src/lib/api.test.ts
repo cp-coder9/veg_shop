@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
-import api from './api';
-import { useAuthStore } from '../stores/authStore';
+import api from './api.js';
+import { useAuthStore } from '../stores/authStore.js';
 
 describe('API Client', () => {
   let mock: MockAdapter;
 
   beforeEach(() => {
     // Mock the api axios instance directly
-    mock = new MockAdapter(api);
+    mock = new MockAdapter(api as any);
     useAuthStore.getState().logout();
     // Mock window.location for logout redirect
     delete (window as unknown as { location: unknown }).location;

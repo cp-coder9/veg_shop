@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useCustomerActivityReport } from '../../../hooks/useReports';
-import { formatCurrency } from '../../../lib/utils';
+import { useCustomerActivityReport } from '../../../hooks/useReports.js';
+import { formatCurrency } from '../../../lib/utils.js';
 
 interface CustomerActivity {
   customerId: string;
@@ -41,9 +41,10 @@ export default function CustomerActivityReport() {
   }
 
   // Calculate summary metrics
-  const totalCustomers = report?.customers.length || 0;
-  const totalRevenue = report?.customers.reduce((sum: number, c) => sum + c.totalSpent, 0) || 0;
-  const totalOrders = report?.customers.reduce((sum: number, c) => sum + c.orderCount, 0) || 0;
+  const customers = report?.customers || [];
+  const totalCustomers = customers.length;
+  const totalRevenue = customers.reduce((sum: number, c) => sum + c.totalSpent, 0);
+  const totalOrders = customers.reduce((sum: number, c) => sum + c.orderCount, 0);
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
   return (

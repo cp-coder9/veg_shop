@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../../lib/api';
-import { Plus, Edit2, CheckCircle, XCircle, Package, ChevronDown, ChevronUp } from 'lucide-react';
-import SupplierModal from '../../components/admin/SupplierModal';
-import { Button, Card, CardContent } from '@/components/ui';
+import api from '../../lib/api.js';
+import { Plus, Edit2, Package, ChevronDown, ChevronUp, LayoutDashboard } from 'lucide-react';
+import SupplierModal from '../../components/admin/SupplierModal.js';
+import { Button, Card, CardContent, Badge } from '../../components/ui/index.js';
 
 interface Supplier {
     id: string;
@@ -37,11 +37,11 @@ export default function SuppliersManagement() {
     });
 
     // Fetch products for expanded suppliers
-    const { data: productsData } = useQuery<{ data: { id: string; name: string; isAvailable: boolean; supplierId: string }[] }>({
+    const { data: productsData } = useQuery<{ id: string; name: string; isAvailable: boolean; supplierId: string }[]>({
         queryKey: ['products'],
         queryFn: async () => {
             const response = await api.get('/products');
-            return response;
+            return response.data;
         },
         enabled: !!expandedSupplier,
     });
@@ -92,8 +92,8 @@ export default function SuppliersManagement() {
 
     // Get products for a specific supplier
     const getSupplierProducts = (supplierId: string) => {
-        if (!productsData?.data) return [];
-        return productsData.data.filter((p: { supplierId: string }) => p.supplierId === supplierId);
+        if (!Array.isArray(productsData)) return [];
+        return productsData.filter((p: { supplierId: string }) => p.supplierId === supplierId);
     };
 
     if (isLoading) {
@@ -101,18 +101,21 @@ export default function SuppliersManagement() {
     }
 
     return (
-        <div>
-            <div className="flex justify-between items-center mb-6">
+        <div className="space-y-8 max-w-[1600px] mx-auto">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                 <div>
-                    <h1 className="font-display text-display-sm text-primary-dark">Suppliers Management</h1>
-                    <p className="font-body text-body-md text-warm-gray mt-1">Manage your product suppliers</p>
+                    <h1 className="font-display text-display-md text-primary-dark">Suppliers Management</h1>
+                    <p className="font-body text-body-md text-warm-gray mt-1 flex items-center gap-2">
+                        <LayoutDashboard size={16} /> Manage product sourcing and availability
+                    </p>
                 </div>
                 <Button
                     onClick={() => setIsModalOpen(true)}
-                    variant="primary"
+                    variant="harvest"
+                    size="md"
                     className="flex items-center gap-2"
+                    leftIcon={<Plus size={20} />}
                 >
-                    <Plus size={20} />
                     Add Supplier
                 </Button>
             </div>
@@ -152,32 +155,27 @@ export default function SuppliersManagement() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        <span className="font-accent text-caption text-warm-gray">
+                                        <Badge variant="outline" className="text-warm-gray font-accent">
                                             {(supplier._count?.products ?? supplier._aggr_count_products ?? 0)} products
-                                        </span>
+                                        </Badge>
                                         <button
-                                            onClick={() => toggleAvailabilityMutation.mutate({ 
-                                                id: supplier.id, 
-                                                isAvailable: !supplier.isAvailable 
+                                            onClick={() => toggleAvailabilityMutation.mutate({
+                                                id: supplier.id,
+                                                isAvailable: !supplier.isAvailable
                                             })}
-                                            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold ${
-                                                supplier.isAvailable
-                                                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                                    : 'bg-red-100 text-red-800 hover:bg-red-200'
-                                            }`}
                                         >
-                                            {supplier.isAvailable ? (
-                                                <><CheckCircle size={14} /> Active</>
-                                            ) : (
-                                                <><XCircle size={14} /> Inactive</>
-                                            )}
+                                            <Badge variant={supplier.isAvailable ? 'success' : 'error'} className="cursor-pointer hover:opacity-80 transition-opacity">
+                                                {supplier.isAvailable ? 'Active' : 'Inactive'}
+                                            </Badge>
                                         </button>
-                                        <button
+                                        <Button
                                             onClick={() => handleEdit(supplier)}
-                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-primary-dark hover:text-black"
                                         >
                                             <Edit2 size={18} />
-                                        </button>
+                                        </Button>
                                     </div>
                                 </div>
                             </div>
@@ -192,18 +190,17 @@ export default function SuppliersManagement() {
                                         {(supplier._count?.products ?? supplier._aggr_count_products ?? 0) > 0 ? (
                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                                 {getSupplierProducts(supplier.id).map((product) => (
-                                                    <div 
+                                                    <div
                                                         key={product.id}
                                                         className="flex items-center justify-between p-3 bg-white rounded-lg border border-light-gray"
                                                     >
                                                         <span className="font-body text-body-sm text-primary-dark">
                                                             {product.name}
                                                         </span>
-                                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                            product.isAvailable
-                                                                ? 'bg-green-100 text-green-800'
-                                                                : 'bg-gray-100 text-gray-600'
-                                                        }`}>
+                                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${product.isAvailable
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-gray-100 text-gray-600'
+                                                            }`}>
                                                             {product.isAvailable ? 'Available' : 'Unavailable'}
                                                         </span>
                                                     </div>

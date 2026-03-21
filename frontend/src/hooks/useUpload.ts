@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import api from '../lib/api';
+import api from '../lib/api.js';
 
 export interface UploadedImage {
   url: string;

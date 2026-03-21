@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import api from '../lib/api';
+import api from '../lib/api.js';
 import {
   SalesReport,
   PaymentStatusReport,
   ProductPopularityReport,
   CustomerActivityReport,
-} from '../types';
+} from '../types/index.js';
 
 export function useSalesReport(startDate: string, endDate: string) {
   return useQuery({

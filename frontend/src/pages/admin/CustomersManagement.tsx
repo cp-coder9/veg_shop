@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAdminCustomers, useCreateAdminCustomer, CreateCustomerRequest } from '../../hooks/useAdminCustomers';
+import { useAdminCustomers, useCreateAdminCustomer, CreateCustomerRequest } from '../../hooks/useAdminCustomers.js';
 
 export default function CustomersManagement() {
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ export default function CustomersManagement() {
     deliveryPreference: 'delivery',
   });
 
-  const filteredCustomers = customers?.filter((customer) => {
+  const filteredCustomers = customers?.filter((customer: any) => {
     const name = customer.name || '';
     const email = customer.email || '';
     const phone = customer.phone || '';
@@ -268,7 +268,7 @@ export default function CustomersManagement() {
                   </td>
                 </tr>
               ) : (
-                filteredCustomers?.map((customer) => (
+                filteredCustomers?.map((customer: any) => (
                   <tr key={customer.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
@@ -321,7 +321,7 @@ export default function CustomersManagement() {
             No customers found
           </div>
         ) : (
-          filteredCustomers?.map((customer) => (
+          filteredCustomers?.map((customer: any) => (
             <div key={customer.id} className="bg-white p-4 rounded-lg shadow space-y-3">
               <div className="flex justify-between items-start">
                 <div>

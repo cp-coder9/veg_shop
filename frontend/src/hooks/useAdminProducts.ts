@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../lib/api';
-import { Product } from '../types';
+import api from '../lib/api.js';
+import { Product } from '../types/index.js';
 
 interface CreateProductDto {
   name: string;

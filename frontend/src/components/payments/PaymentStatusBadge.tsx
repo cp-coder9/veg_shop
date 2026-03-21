@@ -1,4 +1,4 @@
-import { Badge, type BadgeVariant } from '../ui/Badge';
+import { Badge, type BadgeVariant } from '../ui/Badge.js';
 
 export type PaymentStatus = 'paid' | 'partial' | 'unpaid';
 

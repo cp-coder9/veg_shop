@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useCustomerOrders } from '../hooks/useOrders';
-import { useCustomerInvoices } from '../hooks/useCustomer';
-import { formatPrice } from '../lib/utils';
+import { useCustomerOrders } from '../hooks/useOrders.js';
+import { useCustomerInvoices } from '../hooks/useCustomer.js';
+import { formatPrice } from '../lib/utils.js';
 import { Package, ChevronDown, CreditCard, Truck, Calendar, CheckCircle2, Clock, XCircle, Info } from 'lucide-react';
 
 const RefreshCw = (props: any) => (
@@ -113,7 +113,7 @@ export default function OrdersPage() {
           const orderTotal = order.items.reduce(
             (sum, item) => sum + Number(item.priceAtOrder) * item.quantity,
             0
-          );
+          ) + Number(order.deliveryFees || 0);
           const invoice = invoiceMap.get(order.id);
           const paymentStatus = invoice?.status || 'unpaid';
           const config = statusConfig[order.status] || { label: order.status.toUpperCase(), color: 'var(--ink)', icon: Info };
@@ -232,6 +232,18 @@ export default function OrdersPage() {
                           <span>Settle Account</span>
                           <CreditCard size={18} />
                         </button>
+                      )}
+
+                      {!invoice && order.status !== 'cancelled' && (
+                        <a
+                          href={`/api/invoices/order/${order.id}/proforma`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full bg-[var(--pigment-green)]/10 text-[var(--pigment-green)] border border-[var(--pigment-green)]/20 py-4 font-bold uppercase tracking-[2px] hover:bg-[var(--pigment-green)]/20 transition-all shadow-sm flex items-center justify-between px-6 cursor-pointer"
+                        >
+                          <span>Proforma Invoice</span>
+                          <Info size={18} />
+                        </a>
                       )}
                     </div>
 

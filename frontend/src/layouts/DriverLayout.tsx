@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore } from '../stores/authStore.js';
 import logo from '../assets/our-harvest-tote-logo.png';
 
 export default function DriverLayout() {
@@ -121,8 +121,8 @@ export default function DriverLayout() {
               to={item.path}
               onClick={() => setIsMenuOpen(false)}
               className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${isActive(item.path)
-                  ? 'bg-cream text-primary-dark font-semibold'
-                  : 'text-warm-gray hover:bg-cream hover:text-primary-dark'
+                ? 'bg-cream text-primary-dark font-semibold'
+                : 'text-warm-gray hover:bg-cream hover:text-primary-dark'
                 }`}
             >
               <div className={isActive(item.path) ? 'text-primary-dark' : 'text-warm-gray'}>

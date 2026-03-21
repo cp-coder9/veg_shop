@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useAuthStore } from '../../stores/authStore';
-import api from '../../lib/api';
+import { useAuthStore } from '../../stores/authStore.js';
+import api from '../../lib/api.js';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button, Input, Card, CardHeader, CardContent, Textarea } from '@/components/ui';
+import { Button, Input, Card, CardHeader, CardContent, Textarea } from '../../components/ui/index.js';
 
 interface UpdateProfileData {
   name: string;
@@ -50,7 +50,7 @@ export default function AdminProfile() {
       </div>
 
       <Card>
-        <CardHeader 
+        <CardHeader
           title="Profile Information"
           action={!isEditing ? (
             <Button

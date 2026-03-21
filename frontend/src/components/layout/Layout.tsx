@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate, Link } from 'react-router-dom';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuthStore } from '../../stores/authStore.js';
 import { ShoppingCart, User as UserIcon, Menu, X, LogOut, ChevronRight } from 'lucide-react';
 import logo from '../../assets/our-harvest-tote-logo.png';
+import { OrderWindowBanner } from '../shop/OrderWindowBanner.js';
 
 export default function Layout() {
   const { user, logout } = useAuthStore();
@@ -32,6 +33,7 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-[var(--canvas)] text-[var(--ink)] font-sans selection:bg-[var(--pigment-green)] selection:text-[var(--canvas)] flex flex-col">
+      <OrderWindowBanner />
       {/* Universal Header */}
       <header className="sticky top-0 z-[100] px-8 py-6 flex justify-between items-center bg-[rgba(233,228,217,0.8)] backdrop-blur-md border-b border-[var(--pigment-ochre)]/10">
         <div className="flex items-center gap-6">

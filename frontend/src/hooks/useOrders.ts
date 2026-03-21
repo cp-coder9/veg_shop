@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAuthStore } from '../stores/authStore';
-import api from '../lib/api';
-import { Order, OrderItem } from '../types';
+import { useAuthStore } from '../stores/authStore.js';
+import api from '../lib/api.js';
+import { Order, OrderItem } from '../types/index.js';
 
 interface CreateOrderRequest {
   deliveryDate: string;
@@ -53,5 +53,26 @@ export function useOrder(id: string) {
       return response.data;
     },
     enabled: !!id,
+  });
+}
+
+export function useOrderWindowStatus() {
+  return useQuery({
+    queryKey: ['orders', 'window-status'],
+    queryFn: async () => {
+      const response = await api.get<{ isOpen: boolean; nextStatusChange: string; message: string }>('/orders/window-status');
+      return response.data;
+    },
+    refetchInterval: 60000, // Refresh every minute
+  });
+}
+
+export function useLastWeekOrder() {
+  return useQuery({
+    queryKey: ['orders', 'last-week'],
+    queryFn: async () => {
+      const response = await api.get<Order | null>('/orders/last-week');
+      return response.data;
+    },
   });
 }

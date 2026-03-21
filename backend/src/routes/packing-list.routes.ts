@@ -1,15 +1,15 @@
 import { Router, Request, Response } from 'express';
 import { packingListService, SortBy } from '../services/packing-list.service.js';
-import { authenticate, requireAdmin } from '../middleware/auth.middleware.js';
+import { authenticate, requireStaff } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
 
 const router = Router();
 
 /**
  * GET /api/packing-lists/order/:orderId
- * Get packing list for a specific order (admin only)
+ * Get packing list for a specific order (admin or packer)
  */
-router.get('/order/:orderId', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.get('/order/:orderId', authenticate, requireStaff, asyncHandler(async (req: Request, res: Response) => {
   try {
     const { orderId } = req.params;
 
@@ -40,10 +40,10 @@ router.get('/order/:orderId', authenticate, requireAdmin, asyncHandler(async (re
 
 /**
  * GET /api/packing-lists/date/:date
- * Get packing lists for all orders on a specific delivery date (admin only)
+ * Get packing lists for all orders on a specific delivery date (admin or packer)
  * Query params: sortBy (name|route)
  */
-router.get('/date/:date', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.get('/date/:date', authenticate, requireStaff, asyncHandler(async (req: Request, res: Response) => {
   try {
     const { date } = req.params;
     const sortBy = (req.query.sortBy as SortBy) || 'name';
@@ -88,10 +88,10 @@ router.get('/date/:date', authenticate, requireAdmin, asyncHandler(async (req: R
 
 /**
  * POST /api/packing-lists/pdf
- * Generate PDF for packing lists (admin only)
+ * Generate PDF for packing lists (admin or packer)
  * Body: { orderIds?: string[], date?: string, sortBy?: 'name'|'route' }
  */
-router.post('/pdf', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.post('/pdf', authenticate, requireStaff, asyncHandler(async (req: Request, res: Response) => {
   try {
     const { orderIds, date, sortBy = 'name' } = req.body as { orderIds?: string[]; date?: string; sortBy?: string };
 

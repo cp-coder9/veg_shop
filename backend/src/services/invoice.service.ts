@@ -25,6 +25,7 @@ interface OrderItem {
 
 interface OrderWithItems {
   items: OrderItem[];
+  deliveryFees?: number | string | Decimal;
 }
 
 interface CustomerInfo {
@@ -103,11 +104,13 @@ export class InvoiceService {
       if (!order) throw new Error('Order not found');
 
       const items = await orderItemRepository.findByOrder(orderId);
-      const subtotal = items.reduce((sum: number, item: any) => sum + (item.priceAtOrder * item.quantity), 0);
+      const itemsTotal = items.reduce((sum: number, item: any) => sum + (item.priceAtOrder * item.quantity), 0);
+      const deliveryFee = Number(order.deliveryFees || 0);
+      const subtotalWithDelivery = itemsTotal + deliveryFee;
 
       const creditBalance = await this.getCustomerCreditBalance(order.customerId);
-      const creditToApply = Math.min(creditBalance, subtotal);
-      const total = subtotal - creditToApply;
+      const creditToApply = Math.min(creditBalance, subtotalWithDelivery);
+      const total = subtotalWithDelivery - creditToApply;
 
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 14);
@@ -115,7 +118,7 @@ export class InvoiceService {
       const invoice = await invoiceRepository.create({
         orderId,
         customerId: order.customerId,
-        subtotal,
+        subtotal: itemsTotal,
         creditApplied: creditToApply,
         total,
         status: total === 0 ? 'paid' : 'unpaid',
@@ -163,18 +166,21 @@ export class InvoiceService {
       }
 
       // Calculate subtotal from order items
-      const subtotal = order.items.reduce((sum: number, item: any) => {
+      const itemsTotal = order.items.reduce((sum: number, item: any) => {
         return sum + Number(item.priceAtOrder) * item.quantity;
       }, 0);
+
+      const deliveryFee = Number(order.deliveryFees || 0);
+      const subtotalWithDelivery = itemsTotal + deliveryFee;
 
       // Get customer's current credit balance
       const creditBalance = await this.getCustomerCreditBalance(order.customerId);
 
-      // Calculate credit to apply (cannot exceed subtotal)
-      const creditToApply = Math.min(creditBalance, subtotal);
+      // Calculate credit to apply (cannot exceed the whole bill)
+      const creditToApply = Math.min(creditBalance, subtotalWithDelivery);
 
       // Calculate final total
-      const total = subtotal - creditToApply;
+      const total = subtotalWithDelivery - creditToApply;
 
       // Set due date (14 days from creation)
       const dueDate = new Date();
@@ -187,10 +193,11 @@ export class InvoiceService {
           data: {
             orderId,
             customerId: order.customerId,
-            subtotal: new Decimal(subtotal),
+            subtotal: new Decimal(itemsTotal),
             creditApplied: new Decimal(creditToApply),
             total: new Decimal(total),
             status: total === 0 ? 'paid' : 'unpaid',
+            type: 'proforma',
             dueDate,
           },
           include: {
@@ -255,6 +262,45 @@ export class InvoiceService {
     }
 
     return results;
+  }
+
+  /**
+   * Finalise an invoice (moving from proforma to final)
+   */
+  async finaliseInvoice(invoiceId: string, adminId: string): Promise<any> {
+    if (env.USE_FIREBASE) {
+      return invoiceRepository.update(invoiceId, {
+        type: 'final',
+        finalisedAt: new Date(),
+        finalisedBy: adminId,
+        updatedAt: new Date(),
+      } as any);
+    } else {
+      return prisma.invoice.update({
+        where: { id: invoiceId },
+        data: {
+          type: 'final',
+          finalisedAt: new Date(),
+          finalisedBy: adminId,
+        },
+        include: {
+          order: {
+            include: {
+              items: {
+                include: {
+                  product: true,
+                },
+              },
+            },
+          },
+          customer: true,
+        },
+      });
+    }
+  }
+
+  async bulkFinaliseInvoices(invoiceIds: string[], adminId: string): Promise<any[]> {
+    return Promise.all(invoiceIds.map(id => this.finaliseInvoice(id, adminId)));
   }
 
   /**
@@ -419,10 +465,14 @@ export class InvoiceService {
   /**
    * Generate PDF for an invoice
    */
-  async generateInvoicePDF(invoiceId: string): Promise<Buffer> {
+  async generateInvoicePDF(invoiceId: string, options?: { isProforma?: boolean }): Promise<Buffer> {
     const invoice = await this.getInvoice(invoiceId);
 
     if (!invoice) {
+      // If invoice doesn't exist, check if it's a proforma request for an order
+      if (options?.isProforma) {
+        return this.generateProforma(invoiceId);
+      }
       throw new Error('Invoice not found');
     }
 
@@ -437,7 +487,7 @@ export class InvoiceService {
       dueDate: invoice.dueDate,
       customerName: invoice.customer.name,
       customerAddress: invoice.customer.address,
-      items: invoice.order.items.map((item) => ({
+      items: invoice.order.items.map((item: any) => ({
         productName: item.product?.name ?? 'Unknown product',
         quantity: item.quantity,
         unit: item.product?.unit ?? '',
@@ -445,9 +495,11 @@ export class InvoiceService {
         total: Number(item.priceAtOrder) * item.quantity,
       })),
       subtotal: Number(invoice.subtotal),
+      deliveryFee: Number(invoice.order?.deliveryFees || 0),
       creditApplied: Number(invoice.creditApplied),
       total: Number(invoice.total),
       status: invoice.status,
+      isProforma: options?.isProforma,
     };
 
     // Generate PDF
@@ -507,6 +559,56 @@ export class InvoiceService {
 
     // Generate new PDF
     return await this.generateInvoicePDF(invoiceId);
+  }
+
+  /**
+   * Generate a proforma invoice PDF for an order without creating an invoice record
+   */
+  async generateProforma(orderId: string): Promise<Buffer> {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+        customer: true,
+      },
+    });
+
+    if (!order) throw new Error('Order not found');
+
+    const itemsTotal = order.items.reduce((sum, item) => sum + Number(item.priceAtOrder) * item.quantity, 0);
+    const deliveryFee = Number(order.deliveryFees || 0);
+    const subtotalWithDelivery = itemsTotal + deliveryFee;
+
+    const creditBalance = await this.getCustomerCreditBalance(order.customerId);
+    const creditToApply = Math.min(creditBalance, subtotalWithDelivery);
+    const total = subtotalWithDelivery - creditToApply;
+
+    const pdfData: InvoicePDFData = {
+      invoiceId: `PRO-${order.id.substring(0, 8)}`,
+      invoiceDate: new Date(),
+      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      customerName: order.customer.name,
+      customerAddress: order.deliveryAddress,
+      items: order.items.map((item) => ({
+        productName: item.product.name,
+        quantity: item.quantity,
+        unit: item.product.unit,
+        pricePerUnit: Number(item.priceAtOrder),
+        total: Number(item.priceAtOrder) * item.quantity,
+      })),
+      subtotal: itemsTotal,
+      deliveryFee,
+      creditApplied: creditToApply,
+      total,
+      status: 'proforma',
+      isProforma: true,
+    };
+
+    return await pdfGenerator.generateInvoicePDF(pdfData);
   }
 
   /**

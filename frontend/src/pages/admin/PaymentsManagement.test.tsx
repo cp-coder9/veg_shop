@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '../../test/utils';
+import { render, screen, waitFor } from '../../test/utils.js';
 import { fireEvent } from '@testing-library/react';
-import PaymentsManagement from './PaymentsManagement';
+import PaymentsManagement from './PaymentsManagement.js';
 
 const mockInvoices = [
   {
@@ -52,23 +52,23 @@ vi.mock('../../hooks/useAdminPayments', () => ({
   useRecordPayment: vi.fn(),
 }));
 
-import { useAdminInvoices } from '../../hooks/useAdminInvoices';
-import { useCustomerPayments, useRecordPayment } from '../../hooks/useAdminPayments';
+import { useAdminInvoices } from '../../hooks/useAdminInvoices.js';
+import { useCustomerPayments, useRecordPayment } from '../../hooks/useAdminPayments.js';
 
 describe('PaymentsManagement', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     vi.mocked(useAdminInvoices).mockReturnValue({
       data: [],
       isLoading: false,
     } as any);
-    
+
     vi.mocked(useCustomerPayments).mockReturnValue({
       data: [],
       isLoading: false,
     } as any);
-    
+
     vi.mocked(useRecordPayment).mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
@@ -77,7 +77,7 @@ describe('PaymentsManagement', () => {
 
   it('renders payments management page', () => {
     render(<PaymentsManagement />);
-    
+
     expect(screen.getByText('Payments Management')).toBeInTheDocument();
     expect(screen.getByText('Record Payment')).toBeInTheDocument();
   });
@@ -94,7 +94,7 @@ describe('PaymentsManagement', () => {
     });
 
     render(<PaymentsManagement />);
-    
+
     expect(screen.getByText('Outstanding Invoices')).toBeInTheDocument();
     // Check for invoice IDs in the table
     const invoiceCells = document.querySelectorAll('td.px-6.py-4.whitespace-nowrap.text-sm.font-medium.text-gray-900');
@@ -104,16 +104,16 @@ describe('PaymentsManagement', () => {
 
   it('shows empty state when no outstanding invoices', () => {
     render(<PaymentsManagement />);
-    
+
     expect(screen.getByText('No outstanding invoices')).toBeInTheDocument();
   });
 
   it('opens payment modal', () => {
     render(<PaymentsManagement />);
-    
+
     const recordButtons = screen.getAllByText('Record Payment');
     fireEvent.click(recordButtons[0]);
-    
+
     expect(screen.getByText('Record Payment', { selector: 'h2' })).toBeInTheDocument();
   });
 
@@ -123,7 +123,7 @@ describe('PaymentsManagement', () => {
       mutateAsync: mockRecord,
       isPending: false,
     } as any);
-    
+
     vi.mocked(useAdminInvoices).mockReturnValue({
       data: mockInvoices,
       isLoading: false,
@@ -132,27 +132,27 @@ describe('PaymentsManagement', () => {
     window.alert = vi.fn();
 
     render(<PaymentsManagement />);
-    
+
     const recordButtons = screen.getAllByText('Record Payment');
     fireEvent.click(recordButtons[0]);
-    
+
     // Fill in form
     const customerIdInput = screen.getByPlaceholderText(/enter customer id/i);
     fireEvent.change(customerIdInput, { target: { value: 'customer-1' } });
-    
+
     await waitFor(() => {
       const invoiceSelects = screen.getAllByRole('combobox');
       const invoiceSelect = invoiceSelects[invoiceSelects.length - 1];
       fireEvent.change(invoiceSelect, { target: { value: 'invoice-1' } });
     });
-    
+
     const amountInput = screen.getByRole('spinbutton');
     fireEvent.change(amountInput, { target: { value: '100' } });
-    
+
     const submitButtons = screen.getAllByText('Record Payment');
     const submitButton = submitButtons[submitButtons.length - 1];
     fireEvent.click(submitButton);
-    
+
     await waitFor(() => {
       expect(mockRecord).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -171,22 +171,22 @@ describe('PaymentsManagement', () => {
     } as any);
 
     render(<PaymentsManagement />);
-    
+
     const recordButtons = screen.getAllByText('Record Payment');
     fireEvent.click(recordButtons[0]);
-    
+
     const customerIdInput = screen.getByPlaceholderText(/enter customer id/i);
     fireEvent.change(customerIdInput, { target: { value: 'customer-1' } });
-    
+
     await waitFor(() => {
       const invoiceSelects = screen.getAllByRole('combobox');
       const invoiceSelect = invoiceSelects[invoiceSelects.length - 1];
       fireEvent.change(invoiceSelect, { target: { value: 'invoice-1' } });
     });
-    
+
     const amountInput = screen.getByRole('spinbutton');
     fireEvent.change(amountInput, { target: { value: '150' } });
-    
+
     await waitFor(() => {
       expect(screen.getByText(/overpayment of R 50.00/i)).toBeInTheDocument();
     });
@@ -197,7 +197,7 @@ describe('PaymentsManagement', () => {
       data: mockPayments,
       isLoading: false,
     } as any);
-    
+
     vi.mocked(useAdminInvoices).mockImplementation((filters: any) => {
       if (filters?.status === 'unpaid') {
         return { data: [mockInvoices[0]], isLoading: false } as any;
@@ -206,11 +206,11 @@ describe('PaymentsManagement', () => {
     });
 
     render(<PaymentsManagement />);
-    
+
     // Click record payment on an invoice to select customer
     const recordPaymentButtons = screen.getAllByText('Record Payment');
     fireEvent.click(recordPaymentButtons[1]);
-    
+
     expect(screen.getByText(/Payment History - Customer/)).toBeInTheDocument();
   });
 
@@ -221,18 +221,18 @@ describe('PaymentsManagement', () => {
     } as any);
 
     render(<PaymentsManagement />);
-    
+
     const recordButtons = screen.getAllByText('Record Payment');
     fireEvent.click(recordButtons[0]);
-    
+
     const cashRadio = screen.getByRole('radio', { name: /cash/i });
     const yocoRadio = screen.getByRole('radio', { name: /yoco/i });
     const eftRadio = screen.getByRole('radio', { name: /eft/i });
-    
+
     expect(cashRadio).toBeInTheDocument();
     expect(yocoRadio).toBeInTheDocument();
     expect(eftRadio).toBeInTheDocument();
-    
+
     fireEvent.click(yocoRadio);
     expect(yocoRadio).toBeChecked();
   });

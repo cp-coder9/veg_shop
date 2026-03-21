@@ -20,6 +20,8 @@ import adminRoutes from './routes/admin.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import driverRoutes from './routes/driver.routes.js';
 import stockOrderRoutes from './routes/stock-order.routes.js';
+import weeklyAvailabilityRoutes from './routes/weekly-availability.routes.js';
+import publicProductsRoutes from './routes/public-products.routes.js';
 import { schedulerService } from './services/scheduler.service.js';
 
 // Log configuration on startup
@@ -69,9 +71,11 @@ app.use('/api/audit-logs', auditRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/driver', driverRoutes);
 app.use('/api/stock-orders', stockOrderRoutes);
+app.use('/api/availability', weeklyAvailabilityRoutes);
+app.use('/api/public/products', publicProductsRoutes);
 
 // Start server
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`📝 Environment: ${env.NODE_ENV}`);
   console.log(`🔗 CORS Origin: ${env.CORS_ORIGIN}`);

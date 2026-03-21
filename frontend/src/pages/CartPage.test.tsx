@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '../test/utils';
+import { render, screen, fireEvent } from '../test/utils.js';
 import userEvent from '@testing-library/user-event';
-import CartPage from './CartPage';
+import CartPage from './CartPage.js';
 
 const mockProducts = [
   {
@@ -53,7 +53,7 @@ vi.mock('../hooks/useOrders', () => ({
   }),
 }));
 
-import { useCartStore } from '../stores/cartStore';
+import { useCartStore } from '../stores/cartStore.js';
 
 describe('CartPage', () => {
   it('shows empty cart message when cart is empty', () => {
@@ -79,7 +79,7 @@ describe('CartPage', () => {
   });
 
   it('shows checkout form when proceed to checkout is clicked', async () => {
-    const user = userEvent.setup();
+    const user = (userEvent as any).setup();
     vi.mocked(useCartStore).mockImplementation((selector: any) => {
       const state = {
         items: [{ productId: '1', quantity: 2 }],
@@ -97,7 +97,7 @@ describe('CartPage', () => {
   });
 
   it('shows delivery address field when delivery method is selected', async () => {
-    const user = userEvent.setup();
+    const user = (userEvent as any).setup();
     vi.mocked(useCartStore).mockImplementation((selector: any) => {
       const state = {
         items: [{ productId: '1', quantity: 2 }],
@@ -119,7 +119,7 @@ describe('CartPage', () => {
   });
 
   it('hides delivery address field when collection method is selected', async () => {
-    const user = userEvent.setup();
+    const user = (userEvent as any).setup();
     vi.mocked(useCartStore).mockImplementation((selector: any) => {
       const state = {
         items: [{ productId: '1', quantity: 2 }],

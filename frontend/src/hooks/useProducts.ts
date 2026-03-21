@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import api from '../lib/api';
-import { Product } from '../types';
+import api from '../lib/api.js';
+import { Product } from '../types/index.js';
 
 export function useProducts() {
   return useQuery({
@@ -31,3 +31,18 @@ export function useProduct(id: string) {
     enabled: !!id,
   });
 }
+
+export function useSearchProducts(query: string) {
+  return useQuery({
+    queryKey: ['products', 'search', query],
+    queryFn: async () => {
+      const response = await api.get<Product[]>('/products/search', {
+        params: { q: query },
+      });
+      return response.data;
+    },
+    enabled: !!query && query.length > 2,
+    placeholderData: [],
+  });
+}
+

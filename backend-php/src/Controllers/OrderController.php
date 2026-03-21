@@ -54,37 +54,37 @@ class OrderController
         // Fetch orders. We fetch based on the most exclusive criteria if possible
         $orders = [];
         if ($role === 'customer') {
-            $orders = $this->firebase->query('orders', 'customer_id', '==', $userId);
+            $orders = $this->firebase->query('orders', 'customerId', '==', $userId);
         } elseif ($customerId) {
-            $orders = $this->firebase->query('orders', 'customer_id', '==', $customerId);
+            $orders = $this->firebase->query('orders', 'customerId', '==', $customerId);
         } elseif ($status) {
             $orders = $this->firebase->query('orders', 'status', '==', $status);
         } elseif ($deliveryDate) {
-            $orders = $this->firebase->query('orders', 'delivery_date', '==', $deliveryDate);
+            $orders = $this->firebase->query('orders', 'deliveryDate', '==', $deliveryDate);
         } else {
-            // Fetch all (with dummy query)
-            $orders = $this->firebase->query('orders', 'status', '>', '');
+            // Fetch all from catalogues
+            $orders = $this->firebase->listDocuments('orders');
         }
 
         // Apply remaining filters in PHP
         $orders = array_values(array_filter($orders, function ($o) use ($status, $deliveryDate, $startDate, $endDate, $packerId, $driverId) {
             if ($status && $o['status'] !== $status)
                 return false;
-            if ($deliveryDate && $o['delivery_date'] !== $deliveryDate)
+            if ($deliveryDate && $o['deliveryDate'] !== $deliveryDate)
                 return false;
-            if ($startDate && $o['delivery_date'] < $startDate)
+            if ($startDate && $o['deliveryDate'] < $startDate)
                 return false;
-            if ($endDate && $o['delivery_date'] > $endDate)
+            if ($endDate && $o['deliveryDate'] > $endDate)
                 return false;
-            if ($packerId && ($o['packer_id'] ?? null) !== $packerId)
+            if ($packerId && ($o['packerId'] ?? null) !== $packerId)
                 return false;
-            if ($driverId && ($o['driver_id'] ?? null) !== $driverId)
+            if ($driverId && ($o['driverId'] ?? null) !== $driverId)
                 return false;
             return true;
         }));
 
-        // Sort by delivery_date DESC
-        usort($orders, fn($a, $b) => ($b['delivery_date'] ?? '') <=> ($a['delivery_date'] ?? ''));
+        // Sort by deliveryDate DESC
+        usort($orders, fn($a, $b) => ($b['deliveryDate'] ?? '') <=> ($a['deliveryDate'] ?? ''));
 
         if ($limit > 0) {
             $orders = array_slice($orders, 0, $limit);
@@ -92,25 +92,25 @@ class OrderController
 
         // Get items and customer names
         foreach ($orders as &$order) {
-            $order['items'] = $this->firebase->query('order_items', 'order_id', '==', $order['id']);
+            $order['items'] = $this->firebase->query('order_items', 'orderId', '==', $order['id']);
 
             // Add product details to items
             foreach ($order['items'] as &$item) {
-                $product = $this->firebase->getDocument('products', $item['product_id']);
-                $item['product_name'] = $product['name'] ?? 'Unknown';
+                $product = $this->firebase->getDocument('products', $item['productId']);
+                $item['productName'] = $product['name'] ?? 'Unknown';
                 $item['unit'] = $product['unit'] ?? '';
             }
 
             // Fetch customer name
-            $customer = $this->firebase->getDocument('users', $order['customer_id']);
-            $order['customer_name'] = $customer['name'] ?? 'Unknown';
+            $customer = $this->firebase->getDocument('users', $order['customerId']);
+            $order['customerName'] = $customer['name'] ?? 'Unknown';
 
             // Calculate total amount
             $total = 0;
             foreach ($order['items'] as $item) {
-                $total += ($item['quantity'] ?? 0) * ($item['price_at_order'] ?? 0);
+                $total += ($item['quantity'] ?? 0) * ($item['priceAtOrder'] ?? 0);
             }
-            $order['total_amount'] = (float) $total;
+            $order['totalAmount'] = (float) $total;
         }
 
         Response::json($orders);
@@ -132,21 +132,21 @@ class OrderController
         // Check authorization
         $role = Request::userRole();
         $userId = Request::userId();
-        if ($role === 'customer' && $order['customer_id'] !== $userId) {
+        if ($role === 'customer' && $order['customerId'] !== $userId) {
             Response::forbidden('Cannot access this order');
         }
 
         // Fetch customer info
-        $customer = $this->firebase->getDocument('users', $order['customer_id']);
-        $order['customer_name'] = $customer['name'] ?? 'Unknown';
-        $order['customer_phone'] = $customer['phone'] ?? null;
-        $order['customer_email'] = $customer['email'] ?? null;
+        $customer = $this->firebase->getDocument('users', $order['customerId']);
+        $order['customerName'] = $customer['name'] ?? 'Unknown';
+        $order['customerPhone'] = $customer['phone'] ?? null;
+        $order['customerEmail'] = $customer['email'] ?? null;
 
         // Get order items
-        $order['items'] = $this->firebase->query('order_items', 'order_id', '==', $order['id']);
+        $order['items'] = $this->firebase->query('order_items', 'orderId', '==', $order['id']);
         foreach ($order['items'] as &$item) {
-            $product = $this->firebase->getDocument('products', $item['product_id']);
-            $item['product_name'] = $product['name'] ?? 'Unknown';
+            $product = $this->firebase->getDocument('products', $item['productId']);
+            $item['productName'] = $product['name'] ?? 'Unknown';
             $item['unit'] = $product['unit'] ?? '';
             $item['category'] = $product['category'] ?? '';
         }
@@ -183,16 +183,16 @@ class OrderController
 
             $orderData = [
                 'id' => $orderId,
-                'customer_id' => $customerId,
-                'delivery_date' => $data['deliveryDate'],
-                'delivery_method' => $data['deliveryMethod'] ?? 'delivery',
-                'delivery_address' => $data['deliveryAddress'] ?? null,
-                'special_instructions' => $data['specialInstructions'] ?? null,
-                'delivery_fees' => (float) ($data['deliveryFees'] ?? $deliveryFees),
-                'cooler_bag_option' => isset($data['coolerBagOption']) ? (bool) $data['coolerBagOption'] : false,
+                'customerId' => $customerId,
+                'deliveryDate' => $data['deliveryDate'],
+                'deliveryMethod' => $data['deliveryMethod'] ?? 'delivery',
+                'deliveryAddress' => $data['deliveryAddress'] ?? null,
+                'specialInstructions' => $data['specialInstructions'] ?? null,
+                'deliveryFees' => (float) ($data['deliveryFees'] ?? $deliveryFees),
+                'coolerBagOption' => isset($data['coolerBagOption']) ? (bool) $data['coolerBagOption'] : false,
                 'status' => 'pending',
-                'created_at' => date('c'),
-                'updated_at' => date('c')
+                'createdAt' => date('c'),
+                'updatedAt' => date('c')
             ];
 
             $this->firebase->createDocument('orders', $orderId, $orderData);
@@ -209,14 +209,14 @@ class OrderController
                 $itemId = Uuid::uuid4()->toString();
                 $itemData = [
                     'id' => $itemId,
-                    'order_id' => $orderId,
-                    'product_id' => $item['productId'],
+                    'orderId' => $orderId,
+                    'productId' => $item['productId'],
                     'quantity' => (float) $item['quantity'],
-                    'price_at_order' => (float) $product['price']
+                    'priceAtOrder' => (float) $product['price']
                 ];
                 $this->firebase->createDocument('order_items', $itemId, $itemData);
 
-                $itemData['product_name'] = $product['name'];
+                $itemData['productName'] = $product['name'];
                 $itemsSummary[] = $itemData;
             }
 
@@ -253,17 +253,17 @@ class OrderController
 
         $updates = [];
         $fieldMap = [
-            'deliveryDate' => 'delivery_date',
-            'deliveryMethod' => 'delivery_method',
-            'deliveryAddress' => 'delivery_address',
-            'specialInstructions' => 'special_instructions',
-            'deliveryFees' => 'delivery_fees',
-            'coolerBagOption' => 'cooler_bag_option',
-            'driverId' => 'driver_id',
-            'packerId' => 'packer_id',
-            'deliveryNotes' => 'delivery_notes',
-            'packerNotes' => 'packer_notes',
-            'driverNotes' => 'driver_notes'
+            'deliveryDate' => 'deliveryDate',
+            'deliveryMethod' => 'deliveryMethod',
+            'deliveryAddress' => 'deliveryAddress',
+            'specialInstructions' => 'specialInstructions',
+            'deliveryFees' => 'deliveryFees',
+            'coolerBagOption' => 'coolerBagOption',
+            'driverId' => 'driverId',
+            'packerId' => 'packerId',
+            'deliveryNotes' => 'deliveryNotes',
+            'packerNotes' => 'packerNotes',
+            'driverNotes' => 'driverNotes'
         ];
 
         foreach ($fieldMap as $jsonKey => $dbField) {
@@ -281,7 +281,7 @@ class OrderController
             Response::error('No fields to update', 400);
         }
 
-        $updates['updated_at'] = date('c');
+        $updates['updatedAt'] = date('c');
         $this->firebase->updateDocument('orders', $id, $updates);
 
         AuditService::log('UPDATE', 'order', $id, json_encode($data));
@@ -313,23 +313,23 @@ class OrderController
         $userId = Request::userId();
 
         if ($data['status'] === 'packing' && in_array($role, ['admin', 'packer'])) {
-            $updates['packer_id'] = $userId;
+            $updates['packerId'] = $userId;
         }
 
         if (isset($data['packerSignature']))
-            $updates['packer_signature'] = $data['packerSignature'];
+            $updates['packerSignature'] = $data['packerSignature'];
         if (isset($data['packerNotes']))
-            $updates['packer_notes'] = $data['packerNotes'];
+            $updates['packerNotes'] = $data['packerNotes'];
         if (isset($data['deliveryProof']))
-            $updates['delivery_proof'] = $data['deliveryProof'];
+            $updates['deliveryProof'] = $data['deliveryProof'];
         if (isset($data['driverNotes']))
-            $updates['driver_notes'] = $data['driverNotes'];
+            $updates['driverNotes'] = $data['driverNotes'];
         if (isset($data['coolerBagStatus']))
-            $updates['cooler_bag_status'] = $data['coolerBagStatus'];
+            $updates['coolerBagStatus'] = $data['coolerBagStatus'];
         if (isset($data['deliveryNotes']))
-            $updates['delivery_notes'] = $data['deliveryNotes'];
+            $updates['deliveryNotes'] = $data['deliveryNotes'];
 
-        $updates['updated_at'] = date('c');
+        $updates['updatedAt'] = date('c');
         $this->firebase->updateDocument('orders', $id, $updates);
 
         AuditService::log('STATUS_UPDATE', 'order', $id, json_encode(['status' => $data['status']]));
@@ -353,49 +353,146 @@ class OrderController
         }
 
         // Fetch orders in date range
-        $orders = $this->firebase->query('orders', 'delivery_date', '>=', $startDate);
+        $orders = $this->firebase->query('orders', 'deliveryDate', '>=', $startDate);
         $orders = array_filter($orders, function ($o) use ($endDate) {
-            return ($o['delivery_date'] ?? '') <= $endDate && ($o['status'] ?? '') !== 'cancelled';
+            return ($o['deliveryDate'] ?? '') <= $endDate && ($o['status'] ?? '') !== 'cancelled';
         });
 
         $aggregation = [];
         foreach ($orders as $order) {
-            $items = $this->firebase->query('order_items', 'order_id', '==', $order['id']);
+            $items = $this->firebase->query('order_items', 'orderId', '==', $order['id']);
             foreach ($items as $item) {
-                $pid = $item['product_id'];
+                $pid = $item['productId'];
                 if (!isset($aggregation[$pid])) {
                     $product = $this->firebase->getDocument('products', $pid);
                     $aggregation[$pid] = [
-                        'product_id' => $pid,
-                        'product_name' => $product['name'] ?? 'Unknown',
+                        'productId' => $pid,
+                        'productName' => $product['name'] ?? 'Unknown',
                         'unit' => $product['unit'] ?? '',
-                        'category_id' => $product['category'] ?? '',
-                        'total_quantity' => 0,
-                        'order_count' => 0,
-                        'order_ids' => []
+                        'categoryId' => $product['category'] ?? '',
+                        'totalQuantity' => 0,
+                        'orderCount' => 0,
+                        'orderIds' => []
                     ];
                 }
-                $aggregation[$pid]['total_quantity'] += (float) ($item['quantity'] ?? 0);
-                if (!in_array($order['id'], $aggregation[$pid]['order_ids'])) {
-                    $aggregation[$pid]['order_count']++;
-                    $aggregation[$pid]['order_ids'][] = $order['id'];
+                $aggregation[$pid]['totalQuantity'] += (float) ($item['quantity'] ?? 0);
+                if (!in_array($order['id'], $aggregation[$pid]['orderIds'])) {
+                    $aggregation[$pid]['orderCount']++;
+                    $aggregation[$pid]['orderIds'][] = $order['id'];
                 }
             }
         }
 
-        // Remove order_ids helper and convert to indexed array
+        // Remove orderIds helper and convert to indexed array
         $result = array_map(function ($a) {
-            unset($a['order_ids']);
+            unset($a['orderIds']);
             return $a;
         }, array_values($aggregation));
 
         // Sort by category then name
         usort($result, function ($a, $b) {
-            if ($a['category_id'] !== $b['category_id'])
-                return $a['category_id'] <=> $b['category_id'];
-            return $a['product_name'] <=> $b['product_name'];
+            if ($a['categoryId'] !== $b['categoryId'])
+                return $a['categoryId'] <=> $b['categoryId'];
+            return $a['productName'] <=> $b['productName'];
         });
 
         Response::json($result);
+    }
+
+    /**
+     * GET /api/orders/window-status
+     * Order window: open Sunday through Tuesday midnight (for Friday delivery).
+     */
+    public function windowStatus(): void
+    {
+        AuthMiddleware::check();
+
+        // Day of week: 0 = Sunday, 1 = Monday, 2 = Tuesday, ..., 6 = Saturday
+        $dayOfWeek = (int) date('w');
+
+        // Window is open on Sunday (0), Monday (1), Tuesday (2)
+        $isOpen = $dayOfWeek <= 2;
+
+        if ($isOpen) {
+            // Next change: end of Tuesday (Wednesday 00:00)
+            $daysUntilWednesday = 3 - $dayOfWeek;
+            $nextChange = date('Y-m-d\T00:00:00\Z', strtotime("+$daysUntilWednesday days"));
+            $message = 'Ordering is open. Place your order by Tuesday midnight for Friday delivery.';
+        } else {
+            // Next change: next Sunday 00:00
+            $daysUntilSunday = 7 - $dayOfWeek;
+            $nextChange = date('Y-m-d\T00:00:00\Z', strtotime("+$daysUntilSunday days"));
+            $message = 'Ordering window is closed. It opens again on Sunday.';
+        }
+
+        Response::json([
+            'isOpen' => $isOpen,
+            'nextStatusChange' => $nextChange,
+            'message' => $message,
+        ]);
+    }
+
+    /**
+     * GET /api/orders/customer/{id}
+     */
+    public function byCustomer(array $params): void
+    {
+        AuthMiddleware::check();
+
+        $customerId = $params['id'];
+        if ($customerId === 'me') {
+            $customerId = Request::userId();
+        }
+
+        $role = Request::userRole();
+        $userId = Request::userId();
+
+        if ($role === 'customer' && $customerId !== $userId) {
+            Response::forbidden('Cannot access these orders');
+        }
+
+        $orders = $this->firebase->query('orders', 'customerId', '==', $customerId);
+
+        // Sort by deliveryDate DESC
+        usort($orders, fn($a, $b) => ($b['deliveryDate'] ?? '') <=> ($a['deliveryDate'] ?? ''));
+
+        // Attach items to each order
+        foreach ($orders as &$order) {
+            $order['items'] = $this->firebase->query('order_items', 'orderId', '==', $order['id']);
+            foreach ($order['items'] as &$item) {
+                $product = $this->firebase->getDocument('products', $item['productId'] ?? '');
+                $item['productName'] = $product['name'] ?? 'Unknown';
+            }
+        }
+
+        Response::json($orders);
+    }
+
+    /**
+     * GET /api/orders/last-week
+     */
+    public function lastWeek(): void
+    {
+        AuthMiddleware::check();
+        $userId = Request::userId();
+
+        $orders = $this->firebase->query('orders', 'customerId', '==', $userId);
+        usort($orders, fn($a, $b) => ($b['deliveryDate'] ?? '') <=> ($a['deliveryDate'] ?? ''));
+
+        if (empty($orders)) {
+            Response::json(null);
+            return;
+        }
+
+        $order = $orders[0];
+        $order['items'] = $this->firebase->query('order_items', 'orderId', '==', $order['id']);
+        foreach ($order['items'] as &$item) {
+            $product = $this->firebase->getDocument('products', $item['productId'] ?? '');
+            $item['productName'] = $product['name'] ?? 'Unknown';
+            $item['unit'] = $product['unit'] ?? '';
+            $item['category'] = $product['category'] ?? '';
+        }
+
+        Response::json($order);
     }
 }

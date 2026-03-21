@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import SalesReport from '../../components/admin/reports/SalesReport';
-import PaymentStatusReport from '../../components/admin/reports/PaymentStatusReport';
-import ProductPopularityReport from '../../components/admin/reports/ProductPopularityReport';
-import CustomerActivityReport from '../../components/admin/reports/CustomerActivityReport';
+import SalesReport from '../../components/admin/reports/SalesReport.js';
+import PaymentStatusReport from '../../components/admin/reports/PaymentStatusReport.js';
+import ProductPopularityReport from '../../components/admin/reports/ProductPopularityReport.js';
+import CustomerActivityReport from '../../components/admin/reports/CustomerActivityReport.js';
 
 type ReportTab = 'sales' | 'payments' | 'products' | 'customers';
 
@@ -30,10 +30,9 @@ export default function ReportsManagement() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`
                   px-6 py-4 text-sm font-medium border-b-2 transition-colors
-                  ${
-                    activeTab === tab.id
-                      ? 'border-green-600 text-green-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ${activeTab === tab.id
+                    ? 'border-green-600 text-green-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }
                 `}
               >

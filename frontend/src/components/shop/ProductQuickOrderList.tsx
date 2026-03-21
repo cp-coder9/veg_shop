@@ -1,22 +1,25 @@
-import { Product, CATEGORY_LABELS } from '../../types';
-import { useCartStore } from '../../stores/cartStore';
-import { formatPrice } from '../../lib/utils';
-import { Plus, Minus, Calendar } from 'lucide-react';
+import { Product, CATEGORY_LABELS } from '../../types/index.js';
+import { useCartStore } from '../../stores/cartStore.js';
+import { formatPrice } from '../../lib/utils.js';
+import { Plus, Minus, Calendar, Info } from 'lucide-react';
 
 interface ProductQuickOrderListProps {
   products: Product[];
   category: string;
   onProductClick: (product: Product) => void;
+  isDisabled?: boolean;
 }
 
 export function ProductQuickOrderList({
   products,
   category,
   onProductClick,
+  isDisabled = false,
 }: ProductQuickOrderListProps) {
   const { addItem, getItemQuantity, updateQuantity } = useCartStore();
 
   const handleAddClick = (e: React.MouseEvent, product: Product) => {
+    if (isDisabled) return;
     e.stopPropagation();
     addItem(product.id, 1);
   };
@@ -76,10 +79,11 @@ export function ProductQuickOrderList({
               {/* Add/Quantity Action */}
               <div className="md:col-span-3 flex justify-end" onClick={(e) => e.stopPropagation()}>
                 {qty > 0 ? (
-                  <div className="flex items-center gap-4 bg-white border border-[var(--pigment-green)]/10 p-1">
+                  <div className={`flex items-center gap-4 bg-white border border-[var(--pigment-green)]/10 p-1 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
                     <button
-                      onClick={() => updateQuantity(product.id, qty - 1)}
-                      className="p-2 text-[var(--ink)] hover:text-[var(--pigment-oxide)] hover:bg-[var(--canvas)] transition-all"
+                      onClick={() => !isDisabled && updateQuantity(product.id, qty - 1)}
+                      disabled={isDisabled}
+                      className="p-2 text-[var(--ink)] hover:text-[var(--pigment-oxide)] hover:bg-[var(--canvas)] transition-all disabled:opacity-50"
                       aria-label="Decrease"
                     >
                       <Minus size={14} />
@@ -88,8 +92,9 @@ export function ProductQuickOrderList({
                       {qty}
                     </span>
                     <button
-                      onClick={() => addItem(product.id, 1)}
-                      className="p-2 text-[var(--ink)] hover:text-[var(--pigment-green)] hover:bg-[var(--canvas)] transition-all"
+                      onClick={() => !isDisabled && addItem(product.id, 1)}
+                      disabled={isDisabled}
+                      className="p-2 text-[var(--ink)] hover:text-[var(--pigment-green)] hover:bg-[var(--canvas)] transition-all disabled:opacity-50"
                       aria-label="Increase"
                     >
                       <Plus size={14} />
@@ -97,13 +102,28 @@ export function ProductQuickOrderList({
                   </div>
                 ) : (
                   <button
-                    onClick={(e) => handleAddClick(e, product)}
-                    className="flex justify-between items-center gap-4 px-6 py-3 border border-[var(--pigment-green)]/20 hover:border-[var(--pigment-green)] hover:bg-[var(--pigment-green)] hover:text-[var(--canvas)] transition-all duration-300 font-bold uppercase tracking-widest text-xs"
+                    onClick={(e) => !isDisabled && handleAddClick(e, product)}
+                    disabled={isDisabled}
+                    className={`flex justify-between items-center gap-4 px-6 py-3 border border-[var(--pigment-green)]/20 transition-all duration-300 font-bold uppercase tracking-widest text-xs
+                      ${isDisabled
+                        ? 'opacity-50 cursor-not-allowed grayscale'
+                        : 'hover:border-[var(--pigment-green)] hover:bg-[var(--pigment-green)] hover:text-[var(--canvas)]'
+                      }`}
                   >
-                    <span>Add</span>
+                    <span>{isDisabled ? 'Window Closed' : 'Add'}</span>
                     <Plus size={14} />
                   </button>
                 )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRowClick(product);
+                  }}
+                  className="p-2 ml-2 text-[var(--ink)] opacity-20 hover:opacity-100 hover:text-[var(--pigment-green)] transition-all"
+                  title="View Details"
+                >
+                  <Info size={18} />
+                </button>
               </div>
             </div>
           );

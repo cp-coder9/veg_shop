@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../lib/api';
-import { Order } from '../types';
+import api from '../lib/api.js';
+import { Order } from '../types/index.js';
 
 interface BulkOrderItem {
   productId: string;
@@ -24,6 +24,8 @@ export interface CollationItem {
   unit: string;
   orderCount: number;
   categoryId: string;
+  supplierId: string;
+  supplierName: string;
 }
 
 export function useAdminOrders(filters?: {
@@ -91,7 +93,13 @@ export function useUpdateOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...data }: { id: string; packerId?: string | null; driverId?: string | null; status?: Order['status'] }) => {
+    mutationFn: async ({ id, ...data }: {
+      id: string;
+      packerId?: string | null;
+      driverId?: string | null;
+      status?: Order['status'];
+      items?: any[];
+    }) => {
       const response = await api.patch(`/orders/${id}`, data);
       return response.data;
     },
@@ -106,7 +114,14 @@ export function useGenerateBulkOrder() {
   return useMutation({
     mutationFn: async (weekStartDate: string) => {
       const response = await api.post('/orders/bulk', { weekStartDate });
-      return response.data as BulkOrder;
+      return response.data as {
+        bulkOrder: BulkOrder;
+        formatted: {
+          whatsapp: string;
+          email: string;
+          emailText: string;
+        };
+      };
     },
   });
 }

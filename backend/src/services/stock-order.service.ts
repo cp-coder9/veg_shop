@@ -5,8 +5,8 @@ const prisma = new PrismaClient();
 
 export interface CreateStockOrderInput {
   weekStartDate: Date;
-  supplierId?: string;
-  supplierName?: string;
+  supplierId?: string | null;
+  supplierName?: string | null;
   items: Array<{
     productId: string;
     productName: string;
@@ -38,10 +38,10 @@ export const stockOrderService = {
    */
   async createStockOrder(input: CreateStockOrderInput): Promise<StockOrderWithItems> {
     const { items, ...orderData } = input;
-    
+
     // Calculate totals
     const totalItems = items.length;
-    const totalOrdered = items.reduce((sum, item) => 
+    const totalOrdered = items.reduce((sum, item) =>
       sum + (item.orderedQuantity * item.pricePerUnit), 0
     );
 
@@ -84,7 +84,7 @@ export const stockOrderService = {
     status?: string;
   }): Promise<StockOrderWithItems[]> {
     const where: any = {};
-    
+
     if (filters?.weekStartDate) {
       where.weekStartDate = filters.weekStartDate;
     }
@@ -123,7 +123,7 @@ export const stockOrderService = {
    * Update received quantities for stock order items
    */
   async updateReceivedQuantities(
-    stockOrderId: string, 
+    stockOrderId: string,
     input: UpdateReceivedQuantityInput
   ): Promise<StockOrderWithItems> {
     // Update each item's received quantity
@@ -157,13 +157,13 @@ export const stockOrderService = {
       totalReceived = totalReceived.add(
         new Decimal(item.receivedQuantity).mul(item.pricePerUnit)
       );
-      
+
       // Calculate short deliveries and credits
       const shortQty = item.orderedQuantity - item.receivedQuantity;
       if (shortQty > 0) {
         const creditAmount = new Decimal(shortQty).mul(item.pricePerUnit);
         totalCredits = totalCredits.add(creditAmount);
-        
+
         // Update the item with short delivery info
         await prisma.stockOrderItem.update({
           where: { id: item.id },
@@ -180,7 +180,7 @@ export const stockOrderService = {
     let status = 'pending';
     const hasShortDeliveries = order.items.some(item => item.receivedQuantity < item.orderedQuantity && item.receivedQuantity > 0);
     const allReceived = order.items.every(item => item.receivedQuantity > 0);
-    
+
     if (allReceived && !hasShortDeliveries) {
       status = 'received';
     } else if (hasShortDeliveries) {
@@ -282,7 +282,7 @@ export const stockOrderService = {
     status?: string;
   }): Promise<WeeklyCollationHistory[]> {
     const where: any = {};
-    
+
     if (filters?.startDate && filters?.endDate) {
       where.weekStartDate = {
         gte: filters.startDate,

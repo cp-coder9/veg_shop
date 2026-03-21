@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../lib/api';
+import api from '../lib/api.js';
 
 // Types for Stock Orders
 export interface StockOrderItem {
@@ -54,8 +54,8 @@ export interface WeeklyCollationHistory {
 
 export interface CreateStockOrderInput {
   weekStartDate: string;
-  supplierId?: string;
-  supplierName?: string;
+  supplierId?: string | null;
+  supplierName?: string | null;
   items: Array<{
     productId: string;
     productName: string;
@@ -139,12 +139,12 @@ export function useUpdateReceivedQuantities() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      stockOrderId, 
-      items 
-    }: { 
-      stockOrderId: string; 
-      items: Array<{ stockOrderItemId: string; receivedQuantity: number }> 
+    mutationFn: async ({
+      stockOrderId,
+      items
+    }: {
+      stockOrderId: string;
+      items: Array<{ stockOrderItemId: string; receivedQuantity: number }>
     }) => {
       const response = await api.patch(`/stock-orders/${stockOrderId}/received`, { items });
       return response.data as StockOrder;

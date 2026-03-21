@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useAdminOrders } from '../../hooks/useAdminOrders';
-import { useCustomerCredits, useRecordShortDelivery } from '../../hooks/useAdminCredits';
-import { useProducts } from '../../hooks/useProducts';
-import { toNumber } from '../../lib/utils';
+import { useAdminOrders } from '../../hooks/useAdminOrders.js';
+import { useCustomerCredits, useRecordShortDelivery } from '../../hooks/useAdminCredits.js';
+import { useProducts } from '../../hooks/useProducts.js';
+import { toNumber } from '../../lib/utils.js';
 
 export default function ShortDeliveryManagement() {
   const [showShortDeliveryModal, setShowShortDeliveryModal] = useState(false);
@@ -27,7 +27,7 @@ export default function ShortDeliveryManagement() {
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
           Recent Delivered Orders
         </h2>
-        
+
         {!deliveredOrders || deliveredOrders.length === 0 ? (
           <p className="text-gray-500">No delivered orders</p>
         ) : (
@@ -127,7 +127,7 @@ function ShortDeliveryHistorySection({ customerId }: ShortDeliveryHistorySection
       <h2 className="text-xl font-semibold text-gray-900 mb-4">
         Short Delivery History - Customer {customerId.slice(0, 8)}...
       </h2>
-      
+
       <div className="mb-4 p-4 bg-green-50 rounded-lg">
         <p className="text-lg font-semibold text-gray-900">
           Current Credit Balance: R {(creditData?.balance || 0).toFixed(2)}
@@ -283,7 +283,7 @@ function ShortDeliveryModal({ preselectedCustomerId, onClose }: ShortDeliveryMod
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="font-semibold text-gray-900 mb-2">Order Items</h3>
               <ul className="text-sm text-gray-600 space-y-1">
-                {selectedOrder.items.map((item) => (
+                {selectedOrder.items.map((item: any) => (
                   <li key={item.id}>
                     {item.product.name} - {item.quantity} {item.product.unit}
                   </li>
@@ -295,7 +295,7 @@ function ShortDeliveryModal({ preselectedCustomerId, onClose }: ShortDeliveryMod
           {/* Add Short Items */}
           <div className="border-t pt-4">
             <h3 className="font-semibold text-gray-900 mb-3">Short Items</h3>
-            
+
             <div className="grid grid-cols-3 gap-3 mb-3">
               <div className="col-span-2">
                 <select
@@ -304,7 +304,7 @@ function ShortDeliveryModal({ preselectedCustomerId, onClose }: ShortDeliveryMod
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 >
                   <option value="">Select product</option>
-                  {selectedOrder?.items.map((item) => (
+                  {selectedOrder?.items.map((item: any) => (
                     <option key={item.productId} value={item.productId}>
                       {item.product.name} (R {toNumber(item.product.price).toFixed(2)})
                     </option>
@@ -322,7 +322,7 @@ function ShortDeliveryModal({ preselectedCustomerId, onClose }: ShortDeliveryMod
                 />
               </div>
             </div>
-            
+
             <button
               type="button"
               onClick={handleAddItem}

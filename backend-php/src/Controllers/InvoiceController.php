@@ -39,12 +39,12 @@ class InvoiceController
 
         $invoices = [];
         if ($role === 'customer') {
-            $invoices = $this->firebase->query('invoices', 'customer_id', '==', $userId);
+            $invoices = $this->firebase->query('invoices', 'customerId', '==', $userId);
         } elseif ($customerId) {
-            $invoices = $this->firebase->query('invoices', 'customer_id', '==', $customerId);
+            $invoices = $this->firebase->query('invoices', 'customerId', '==', $customerId);
         } else {
-            // Fetch all (with dummy query)
-            $invoices = $this->firebase->query('invoices', 'status', '>', '');
+            // Fetch all from catalogues
+            $invoices = $this->firebase->listDocuments('invoices');
         }
 
         // Apply status filter in PHP
@@ -52,21 +52,21 @@ class InvoiceController
             $invoices = array_values(array_filter($invoices, fn($i) => ($i['status'] ?? '') === $status));
         }
 
-        // Sort by created_at DESC
-        usort($invoices, fn($a, $b) => ($b['created_at'] ?? '') <=> ($a['created_at'] ?? ''));
+        // Sort by createdAt DESC
+        usort($invoices, fn($a, $b) => ($b['createdAt'] ?? '') <=> ($a['createdAt'] ?? ''));
 
         // Attach customer name and order info
         foreach ($invoices as &$inv) {
             $inv['subtotal'] = (float) ($inv['subtotal'] ?? 0);
-            $inv['credit_applied'] = (float) ($inv['credit_applied'] ?? 0);
+            $inv['creditApplied'] = (float) ($inv['creditApplied'] ?? 0);
             $inv['total'] = (float) ($inv['total'] ?? 0);
 
-            $customer = $this->firebase->getDocument('users', $inv['customer_id']);
-            $inv['customer_name'] = $customer['name'] ?? 'Unknown';
-            $inv['customer_email'] = $customer['email'] ?? 'Unknown';
+            $customer = $this->firebase->getDocument('users', $inv['customerId']);
+            $inv['customerName'] = $customer['name'] ?? 'Unknown';
+            $inv['customerEmail'] = $customer['email'] ?? 'Unknown';
 
-            $order = $this->firebase->getDocument('orders', $inv['order_id']);
-            $inv['delivery_date'] = $order['delivery_date'] ?? null;
+            $order = $this->firebase->getDocument('orders', $inv['orderId']);
+            $inv['deliveryDate'] = $order['deliveryDate'] ?? null;
         }
 
         Response::json($invoices);
@@ -89,39 +89,39 @@ class InvoiceController
             Response::notFound('Invoice not found');
         }
 
-        if ($role === 'customer' && ($invoice['customer_id'] ?? '') !== $userId) {
+        if ($role === 'customer' && ($invoice['customerId'] ?? '') !== $userId) {
             Response::forbidden('Cannot access this invoice');
         }
 
         // Attach user info
-        $customer = $this->firebase->getDocument('users', $invoice['customer_id']);
-        $invoice['customer_name'] = $customer['name'] ?? 'Unknown';
-        $invoice['customer_email'] = $customer['email'] ?? 'Unknown';
-        $invoice['customer_phone'] = $customer['phone'] ?? 'Unknown';
-        $invoice['customer_address'] = $customer['address'] ?? 'Unknown';
+        $customer = $this->firebase->getDocument('users', $invoice['customerId']);
+        $invoice['customerName'] = $customer['name'] ?? 'Unknown';
+        $invoice['customerEmail'] = $customer['email'] ?? 'Unknown';
+        $invoice['customerPhone'] = $customer['phone'] ?? 'Unknown';
+        $invoice['customerAddress'] = $customer['address'] ?? 'Unknown';
 
         // Attach order info
-        $order = $this->firebase->getDocument('orders', $invoice['order_id']);
-        $invoice['delivery_date'] = $order['delivery_date'] ?? null;
-        $invoice['delivery_method'] = $order['delivery_method'] ?? 'delivery';
-        $invoice['delivery_address'] = $order['delivery_address'] ?? null;
+        $order = $this->firebase->getDocument('orders', $invoice['orderId']);
+        $invoice['deliveryDate'] = $order['deliveryDate'] ?? null;
+        $invoice['deliveryMethod'] = $order['deliveryMethod'] ?? 'delivery';
+        $invoice['deliveryAddress'] = $order['deliveryAddress'] ?? null;
 
         // Get order items
-        $items = $this->firebase->query('order_items', 'order_id', '==', $invoice['order_id']);
+        $items = $this->firebase->query('order_items', 'orderId', '==', $invoice['orderId']);
         foreach ($items as &$item) {
-            $product = $this->firebase->getDocument('products', $item['product_id']);
-            $item['product_name'] = $product['name'] ?? 'Unknown';
+            $product = $this->firebase->getDocument('products', $item['productId']);
+            $item['productName'] = $product['name'] ?? 'Unknown';
             $item['unit'] = $product['unit'] ?? null;
         }
         $invoice['items'] = $items;
 
         // Get payments
-        $payments = $this->firebase->query('payments', 'invoice_id', '==', $id);
-        usort($payments, fn($a, $b) => ($b['payment_date'] ?? '') <=> ($a['payment_date'] ?? ''));
+        $payments = $this->firebase->query('payments', 'invoiceId', '==', $id);
+        usort($payments, fn($a, $b) => ($b['paymentDate'] ?? '') <=> ($a['paymentDate'] ?? ''));
         $invoice['payments'] = $payments;
 
         $invoice['subtotal'] = (float) ($invoice['subtotal'] ?? 0);
-        $invoice['credit_applied'] = (float) ($invoice['credit_applied'] ?? 0);
+        $invoice['creditApplied'] = (float) ($invoice['creditApplied'] ?? 0);
         $invoice['total'] = (float) ($invoice['total'] ?? 0);
 
         Response::json($invoice);
@@ -137,7 +137,7 @@ class InvoiceController
         $data = Request::validate(['orderId']);
 
         // Check if invoice already exists for this order
-        $existing = $this->firebase->query('invoices', 'order_id', '==', $data['orderId']);
+        $existing = $this->firebase->query('invoices', 'orderId', '==', $data['orderId']);
 
         if (!empty($existing)) {
             Response::error('Invoice already exists for this order', 400);
@@ -151,13 +151,13 @@ class InvoiceController
         }
 
         // Calculate subtotal from order items
-        $items = $this->firebase->query('order_items', 'order_id', '==', $data['orderId']);
+        $items = $this->firebase->query('order_items', 'orderId', '==', $data['orderId']);
         $subtotalAmount = 0;
         foreach ($items as $item) {
-            $subtotalAmount += ($item['quantity'] ?? 0) * ($item['price_at_order'] ?? 0);
+            $subtotalAmount += ($item['quantity'] ?? 0) * ($item['priceAtOrder'] ?? 0);
         }
 
-        $deliveryFees = (float) ($order['delivery_fees'] ?? 0);
+        $deliveryFees = (float) ($order['deliveryFees'] ?? 0);
         $creditApplied = (float) ($data['creditApplied'] ?? 0);
         $total = $subtotalAmount + $deliveryFees - $creditApplied;
 
@@ -166,15 +166,15 @@ class InvoiceController
 
         $invoiceData = [
             'id' => $invoiceId,
-            'order_id' => $data['orderId'],
-            'customer_id' => $order['customer_id'],
+            'orderId' => $data['orderId'],
+            'customerId' => $order['customerId'],
             'subtotal' => (float) ($subtotalAmount + $deliveryFees),
-            'credit_applied' => (float) $creditApplied,
+            'creditApplied' => (float) $creditApplied,
             'total' => (float) $total,
             'status' => 'unpaid',
-            'due_date' => $dueDate,
-            'created_at' => date('c'),
-            'updated_at' => date('c')
+            'dueDate' => $dueDate,
+            'createdAt' => date('c'),
+            'updatedAt' => date('c')
         ];
 
         $this->firebase->createDocument('invoices', $invoiceId, $invoiceData);
@@ -204,15 +204,15 @@ class InvoiceController
         if (isset($data['status']))
             $updates['status'] = $data['status'];
         if (isset($data['pdfUrl']))
-            $updates['pdf_url'] = $data['pdfUrl'];
+            $updates['pdfUrl'] = $data['pdfUrl'];
         if (isset($data['dueDate']))
-            $updates['due_date'] = $data['dueDate'];
+            $updates['dueDate'] = $data['dueDate'];
 
         if (empty($updates)) {
             Response::error('No fields to update', 400);
         }
 
-        $updates['updated_at'] = date('c');
+        $updates['updatedAt'] = date('c');
         $this->firebase->updateDocument('invoices', $id, $updates);
 
         AuditService::log('UPDATE', 'invoice', $id, json_encode($data));
@@ -231,7 +231,7 @@ class InvoiceController
         $orderId = $params['orderId'];
 
         // Check if invoice already exists
-        $existing = $this->firebase->query('invoices', 'order_id', '==', $orderId);
+        $existing = $this->firebase->query('invoices', 'orderId', '==', $orderId);
 
         if (!empty($existing)) {
             Response::error('Invoice already exists for this order', 400);
@@ -241,5 +241,32 @@ class InvoiceController
         $data = ['orderId' => $orderId];
         Request::setBody(['orderId' => $orderId]);
         $this->store();
+    }
+
+    /**
+     * GET /api/invoices/customer/{id}
+     */
+    public function byCustomer(array $params): void
+    {
+        AuthMiddleware::check();
+
+        $customerId = $params['id'];
+        if ($customerId === 'me') {
+            $customerId = Request::userId();
+        }
+
+        $role = Request::userRole();
+        $userId = Request::userId();
+
+        if ($role === 'customer' && $customerId !== $userId) {
+            Response::forbidden('Cannot access these invoices');
+        }
+
+        $invoices = $this->firebase->query('invoices', 'customerId', '==', $customerId);
+
+        // Sort by createdAt DESC
+        usort($invoices, fn($a, $b) => ($b['createdAt'] ?? '') <=> ($a['createdAt'] ?? ''));
+
+        Response::json($invoices);
     }
 }

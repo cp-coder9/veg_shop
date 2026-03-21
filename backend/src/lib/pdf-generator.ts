@@ -15,9 +15,11 @@ export interface InvoicePDFData {
     total: number;
   }[];
   subtotal: number;
+  deliveryFee?: number;
   creditApplied: number;
   total: number;
   status: string;
+  isProforma?: boolean;
 }
 
 export class PDFGenerator {
@@ -38,7 +40,7 @@ export class PDFGenerator {
         // Header
         doc
           .fontSize(20)
-          .text('INVOICE', { align: 'center' })
+          .text(data.isProforma ? 'PROFORMA INVOICE' : 'INVOICE', { align: 'center' })
           .moveDown();
 
         // Business info (left side)
@@ -51,7 +53,7 @@ export class PDFGenerator {
         // Invoice details (right side)
         doc
           .fontSize(10)
-          .text(`Invoice #: ${data.invoiceId.substring(0, 8).toUpperCase()}`, 350, 120)
+          .text(`${data.isProforma ? 'Proforma' : 'Invoice'} #: ${data.invoiceId.substring(0, 8).toUpperCase()}`, 350, 120)
           .text(`Date: ${data.invoiceDate.toLocaleDateString('en-ZA')}`, 350, 135)
           .text(`Due Date: ${data.dueDate.toLocaleDateString('en-ZA')}`, 350, 150)
           .text(`Status: ${data.status.toUpperCase()}`, 350, 165);
@@ -390,7 +392,7 @@ export class PDFGenerator {
     // Header
     doc
       .fontSize(20)
-      .text('INVOICE', { align: 'center' })
+      .text(data.isProforma ? 'PROFORMA INVOICE' : 'INVOICE', { align: 'center' })
       .moveDown();
 
     // Business info (left side)
@@ -403,7 +405,7 @@ export class PDFGenerator {
     // Invoice details (right side)
     doc
       .fontSize(10)
-      .text(`Invoice #: ${data.invoiceId.substring(0, 8).toUpperCase()}`, 350, 120)
+      .text(`${data.isProforma ? 'Proforma' : 'Invoice'} #: ${data.invoiceId.substring(0, 8).toUpperCase()}`, 350, 120)
       .text(`Date: ${data.invoiceDate.toLocaleDateString('en-ZA')}`, 350, 135)
       .text(`Due Date: ${data.dueDate.toLocaleDateString('en-ZA')}`, 350, 150)
       .text(`Status: ${data.status.toUpperCase()}`, 350, 165);
@@ -470,6 +472,13 @@ export class PDFGenerator {
       .fontSize(10)
       .text('Subtotal:', 400, yPosition)
       .text(`R${data.subtotal.toFixed(2)}`, 480, yPosition, { align: 'right' });
+
+    if (data.deliveryFee && data.deliveryFee > 0) {
+      yPosition += 20;
+      doc
+        .text('Delivery Fee:', 400, yPosition)
+        .text(`R${data.deliveryFee.toFixed(2)}`, 480, yPosition, { align: 'right' });
+    }
 
     if (data.creditApplied > 0) {
       yPosition += 20;

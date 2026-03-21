@@ -4,8 +4,8 @@ import {
   useSendProductList,
   useSendPaymentReminder,
   useSendSeasonalPoll,
-} from '../../hooks/useAdminNotifications';
-import { useAdminInvoices } from '../../hooks/useAdminInvoices';
+} from '../../hooks/useAdminNotifications.js';
+import { useAdminInvoices } from '../../hooks/useAdminInvoices.js';
 
 export default function NotificationsManagement() {
   const [showProductListModal, setShowProductListModal] = useState(false);

@@ -41,15 +41,15 @@ class ProductController
         if ($category) {
             $products = $this->firebase->query('products', 'category', '==', $category);
         } else {
-            // Fetch all (using a dummy query as FirebaseService lacks listDocuments)
-            $products = $this->firebase->query('products', 'name', '>', '');
+            // Fetch all from catalogues
+            $products = $this->firebase->listDocuments('products');
         }
 
         // Apply local filtering for 'available' and 'search'
         if ($available !== null || $search) {
             $products = array_values(array_filter($products, function ($p) use ($available, $search) {
                 if ($available !== null) {
-                    $isAvailable = $p['is_available'] ?? true;
+                    $isAvailable = $p['isAvailable'] ?? true;
                     if ($available === 'true' && !$isAvailable)
                         return false;
                     if ($available === 'false' && $isAvailable)
@@ -84,9 +84,9 @@ class ProductController
         }
 
         // Add supplier name if needed (would need another fetch)
-        if (isset($product['supplier_id'])) {
-            $supplier = $this->firebase->getDocument('suppliers', $product['supplier_id']);
-            $product['supplier_name'] = $supplier['name'] ?? 'Unknown';
+        if (isset($product['supplierId'])) {
+            $supplier = $this->firebase->getDocument('suppliers', $product['supplierId']);
+            $product['supplierName'] = $supplier['name'] ?? 'Unknown';
         }
 
         Response::json($product);
@@ -117,11 +117,11 @@ class ProductController
             'category' => $data['category'],
             'unit' => $data['unit'],
             'description' => $data['description'] ?? null,
-            'image_url' => $data['imageUrl'] ?? null,
-            'is_available' => isset($data['isAvailable']) ? (bool) $data['isAvailable'] : true,
-            'is_seasonal' => isset($data['isSeasonal']) ? (bool) $data['isSeasonal'] : false,
-            'packing_type' => $data['packingType'] ?? 'box',
-            'supplier_id' => $data['supplierId'] ?? null,
+            'imageUrl' => $data['imageUrl'] ?? null,
+            'isAvailable' => isset($data['isAvailable']) ? (bool) $data['isAvailable'] : true,
+            'isSeasonal' => isset($data['isSeasonal']) ? (bool) $data['isSeasonal'] : false,
+            'packingType' => $data['packingType'] ?? 'box',
+            'supplierId' => $data['supplierId'] ?? null,
             'createdAt' => date('c'),
             'updatedAt' => date('c')
         ];
@@ -165,11 +165,11 @@ class ProductController
             'category' => 'category',
             'unit' => 'unit',
             'description' => 'description',
-            'imageUrl' => 'image_url',
-            'isAvailable' => 'is_available',
-            'isSeasonal' => 'is_seasonal',
-            'packingType' => 'packing_type',
-            'supplierId' => 'supplier_id'
+            'imageUrl' => 'imageUrl',
+            'isAvailable' => 'isAvailable',
+            'isSeasonal' => 'isSeasonal',
+            'packingType' => 'packingType',
+            'supplierId' => 'supplierId'
         ];
 
         foreach ($fieldMap as $jsonKey => $dbField) {
@@ -223,7 +223,7 @@ class ProductController
 
         if (!empty($orderItems)) {
             // Soft delete
-            $this->firebase->updateDocument('products', $id, ['is_available' => false]);
+            $this->firebase->updateDocument('products', $id, ['isAvailable' => false]);
             AuditService::log('SOFT_DELETE', 'product', $id);
             Response::success(['message' => 'Product marked as unavailable']);
             return;

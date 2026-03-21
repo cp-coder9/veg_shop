@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useSalesReport } from '../../../hooks/useReports';
-import { formatCurrency } from '../../../lib/utils';
+import { useSalesReport } from '../../../hooks/useReports.js';
+import { formatCurrency } from '../../../lib/utils.js';
 
 export default function SalesReport() {
   // Default to last 30 days
@@ -31,7 +31,7 @@ export default function SalesReport() {
     );
   }
 
-  const maxRevenue = report?.productsSold.reduce(
+  const maxRevenue = (report?.productsSold || []).reduce(
     (max: number, p) => Math.max(max, p.revenue),
     0
   ) || 1;

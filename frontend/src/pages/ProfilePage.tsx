@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCustomerProfile, useUpdateCustomer, useCustomerInvoices, useCustomerPayments } from '../hooks/useCustomer';
-import { formatPrice } from '../lib/utils';
+import { useCustomerProfile, useUpdateCustomer, useCustomerInvoices, useCustomerPayments } from '../hooks/useCustomer.js';
+import { formatPrice } from '../lib/utils.js';
 import { toast } from 'react-hot-toast';
 import { User, MapPin, CreditCard, Receipt, History, Edit3, Save, ChevronRight, AlertCircle } from 'lucide-react';
 

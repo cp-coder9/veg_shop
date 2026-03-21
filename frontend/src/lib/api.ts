@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore } from '../stores/authStore.js';
 
 // Use environment variable for API URL in production, fallback to /api for dev proxy
 // Use environment variable for API URL in production, fallback to /api for dev proxy

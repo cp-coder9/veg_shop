@@ -30,6 +30,7 @@ export interface CreateProductDto {
   packingType?: string;
   deliveryDay?: string | null;
   supplierId?: string | null;
+  isPerishable: boolean;
 }
 
 export interface UpdateProductDto {
@@ -44,6 +45,7 @@ export interface UpdateProductDto {
   packingType?: string;
   deliveryDay?: string | null;
   supplierId?: string | null;
+  isPerishable?: boolean;
 }
 
 export interface ProductFilters {
@@ -269,6 +271,33 @@ export class ProductService {
     }
   }
 
+  async searchProducts(query: string): Promise<any[]> {
+    if (env.USE_FIREBASE) {
+      // Basic text search for Firebase (starting with query)
+      const fsFilters = [
+        { field: 'name', operator: '>=' as any, value: query },
+        { field: 'name', operator: '<=' as any, value: query + '\uf8ff' }
+      ];
+      return productRepository.list(fsFilters);
+    } else {
+      return prisma.product.findMany({
+        where: {
+          OR: [
+            { name: { contains: query } },
+            { description: { contains: query } },
+          ],
+          isAvailable: true,
+        },
+        include: {
+          supplier: true,
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      });
+    }
+  }
+
   async getAvailableProducts(): Promise<any[]> {
     if (env.USE_FIREBASE) {
       return productRepository.listAvailable();
@@ -281,13 +310,13 @@ export class ProductService {
             { supplier: { isAvailable: true } }
           ]
         },
+        include: {
+          supplier: true,
+        },
         orderBy: [
           { category: 'asc' },
           { name: 'asc' },
         ],
-        include: {
-          supplier: true,
-        },
       });
     }
   }

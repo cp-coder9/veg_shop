@@ -1,7 +1,18 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../../lib/api';
+import api from '../../lib/api.js';
 import { toast } from 'react-hot-toast';
+
+interface DriverOrderItem {
+    id: string;
+    quantity: number;
+    product: {
+        id: string;
+        name: string;
+        price: number;
+        unit?: string;
+    };
+}
 
 interface DriverOrder {
     id: string;
@@ -14,6 +25,7 @@ interface DriverOrder {
     driverNotes?: string;
     coolerBagOption: boolean;
     coolerBagStatus: 'none' | 'taken' | 'returned';
+    items?: DriverOrderItem[];
     customer: {
         name: string;
         address: string;
@@ -25,6 +37,7 @@ interface DriverOrder {
 export default function DriverDashboard() {
     const queryClient = useQueryClient();
     const [selectedOrder, setSelectedOrder] = useState<DriverOrder | null>(null);
+    const [activeTab, setActiveTab] = useState<'orders' | 'summary'>('orders');
 
     // Fetch Orders
     const { data: orders, isLoading } = useQuery<DriverOrder[]>({
@@ -35,6 +48,24 @@ export default function DriverDashboard() {
         },
         refetchInterval: 30000, // Refresh every 30s
     });
+
+    const summaryItems = orders?.reduce((acc, order) => {
+        if (order.status === 'delivered' || order.status === 'cancelled') return acc;
+        order.items?.forEach(item => {
+            const existing = acc.find(i => i.productId === item.product.id);
+            if (existing) {
+                existing.totalQuantity += item.quantity;
+            } else {
+                acc.push({
+                    productId: item.product.id,
+                    productName: item.product.name,
+                    totalQuantity: item.quantity,
+                    unit: item.product.unit || 'unit',
+                });
+            }
+        });
+        return acc;
+    }, [] as { productId: string; productName: string; totalQuantity: number; unit: string }[]).sort((a, b) => a.productName.localeCompare(b.productName));
 
     // Update Status Mutation
     const updateStatus = useMutation({
@@ -121,13 +152,37 @@ export default function DriverDashboard() {
                                         key={status}
                                         onClick={() => setSelectedOrder(prev => prev ? { ...prev, coolerBagStatus: status } : null)}
                                         className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors ${selectedOrder.coolerBagStatus === status
-                                                ? 'bg-soft-black text-white'
-                                                : 'bg-white border border-sage-green/30 text-sage-green'
+                                            ? 'bg-soft-black text-white'
+                                            : 'bg-white border border-sage-green/30 text-sage-green'
                                             }`}
                                     >
                                         {status.toUpperCase()}
                                     </button>
                                 ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Order Items Section */}
+                    {selectedOrder.items && selectedOrder.items.length > 0 && (
+                        <div className="bg-white p-4 rounded-lg mb-6 border border-light-gray">
+                            <h3 className="font-semibold text-primary-dark mb-3">📦 Order Items</h3>
+                            <div className="space-y-2">
+                                {selectedOrder.items.map((item) => (
+                                    <div key={item.id} className="flex justify-between items-center py-2 border-b border-light-gray/50 last:border-0">
+                                        <div>
+                                            <p className="font-medium text-primary-dark">{item.product?.name}</p>
+                                            <p className="text-xs text-warm-gray">{item.quantity} {item.product?.unit || 'unit'}</p>
+                                        </div>
+                                        <span className="font-bold text-sage-green">
+                                            R{Number(item.product?.price || 0).toFixed(2)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-light-gray flex justify-between items-center">
+                                <span className="font-bold text-primary-dark">Total Items:</span>
+                                <span className="font-bold text-sage-green">{selectedOrder.items.length}</span>
                             </div>
                         </div>
                     )}
@@ -169,36 +224,101 @@ export default function DriverDashboard() {
         <div className="space-y-4">
             {/* Sticky Header */}
             <div className="sticky top-0 bg-sage-green/10 -mx-4 px-4 py-3 -mt-4 shadow-sm z-10 border-b border-sage-green/20">
-                <h1 className="text-xl font-bold text-primary-dark">Today's Deliveries</h1>
-                <p className="text-base text-sage-green">{orders?.length || 0} stops remaining</p>
+                <div className="flex justify-between items-center mb-3">
+                    <div>
+                        <h1 className="text-xl font-bold text-primary-dark">Today's Deliveries</h1>
+                        <p className="text-base text-sage-green">{orders?.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length || 0} stops remaining</p>
+                    </div>
+                </div>
+
+                <div className="flex gap-2 bg-white/50 p-1 rounded-lg border border-sage-green/20">
+                    <button
+                        onClick={() => setActiveTab('orders')}
+                        className={`flex-1 py-1.5 rounded-md font-bold text-sm transition-all ${activeTab === 'orders' ? 'bg-sage-green text-white shadow-md' : 'text-sage-green hover:bg-sage-green/10'}`}
+                    >
+                        🚚 Delivery List
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('summary')}
+                        className={`flex-1 py-1.5 rounded-md font-bold text-sm transition-all ${activeTab === 'summary' ? 'bg-sage-green text-white shadow-md' : 'text-sage-green hover:bg-sage-green/10'}`}
+                    >
+                        📋 Vehicle Summary
+                    </button>
+                </div>
             </div>
 
-            {orders?.length === 0 && (
-                <div className="bg-white p-8 rounded-lg shadow text-center text-warm-gray text-lg">
-                    🎉 No deliveries remaining for today!
+            {activeTab === 'orders' ? (
+                <>
+                    {orders?.length === 0 && (
+                        <div className="bg-white p-8 rounded-lg shadow text-center text-warm-gray text-lg">
+                            🎉 No deliveries remaining for today!
+                        </div>
+                    )}
+
+                    {orders?.map(order => (
+                        <div
+                            key={order.id}
+                            onClick={() => setSelectedOrder(order)}
+                            className="bg-white p-5 rounded-xl shadow active:scale-[0.98] transition-transform cursor-pointer border-l-4 border-light-gray hover:border-sage-green"
+                        >
+                            <div className="flex justify-between items-start mb-3">
+                                <h3 className="font-bold text-lg text-primary-dark">{order.customer.name}</h3>
+                                <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${order.status === 'pending' ? 'bg-warning/20 text-warning' :
+                                    order.status === 'out_for_delivery' ? 'bg-sage-green/20 text-sage-green' : 'bg-light-gray text-warm-gray'
+                                    }`}>
+                                    {order.status.replace('_', ' ').toUpperCase()}
+                                </span>
+                            </div>
+                            <p className="text-warm-gray text-base leading-snug">{order.customer.address || order.deliveryAddress}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                                {order.items && order.items.length > 0 && (
+                                    <span className="text-xs bg-sage-green/20 text-sage-green px-2 py-0.5 rounded-full font-medium">
+                                        📦 {order.items.length} items
+                                    </span>
+                                )}
+                                {order.specialInstructions && (
+                                    <p className="text-warning text-sm font-medium">⚠️ {order.specialInstructions}</p>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </>
+            ) : (
+                <div className="space-y-3">
+                    <div className="bg-warning/10 border border-warning/30 p-4 rounded-xl mb-4">
+                        <p className="text-sm font-bold text-warning flex items-center gap-2">
+                            <span>📦</span> Manifest Summary
+                        </p>
+                        <p className="text-xs text-warning/80 mt-1">Total items to carry across all {orders?.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length} remaining orders.</p>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-card overflow-hidden border border-light-gray">
+                        <table className="min-w-full divide-y divide-light-gray">
+                            <thead className="bg-cream/50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-bold text-primary-dark uppercase">Product</th>
+                                    <th className="px-4 py-3 text-right text-xs font-bold text-primary-dark uppercase">Total Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-light-gray">
+                                {summaryItems?.map((item) => (
+                                    <tr key={item.productId} className="hover:bg-cream/20 transition-colors">
+                                        <td className="px-4 py-3 text-sm font-medium text-primary-dark">{item.productName}</td>
+                                        <td className="px-4 py-3 text-sm text-right font-bold text-sage-green">
+                                            {item.totalQuantity} <span className="text-xs text-warm-gray font-normal">{item.unit}</span>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {summaryItems?.length === 0 && (
+                                    <tr>
+                                        <td colSpan={2} className="px-4 py-12 text-center text-warm-gray italic">No items found.</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
-
-            {orders?.map(order => (
-                <div
-                    key={order.id}
-                    onClick={() => setSelectedOrder(order)}
-                    className="bg-white p-5 rounded-xl shadow active:scale-[0.98] transition-transform cursor-pointer border-l-4 border-light-gray hover:border-sage-green"
-                >
-                    <div className="flex justify-between items-start mb-3">
-                        <h3 className="font-bold text-lg text-primary-dark">{order.customer.name}</h3>
-                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${order.status === 'pending' ? 'bg-warning/20 text-warning' :
-                            order.status === 'out_for_delivery' ? 'bg-sage-green/20 text-sage-green' : 'bg-light-gray text-warm-gray'
-                            }`}>
-                            {order.status.replace('_', ' ').toUpperCase()}
-                        </span>
-                    </div>
-                    <p className="text-warm-gray text-base leading-snug">{order.customer.address || order.deliveryAddress}</p>
-                    {order.specialInstructions && (
-                        <p className="text-warning text-sm mt-2 font-medium">⚠️ {order.specialInstructions}</p>
-                    )}
-                </div>
-            ))}
         </div>
     );
 }

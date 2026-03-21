@@ -18,6 +18,8 @@ const createOrderSchema = z.object({
     quantity: z.number().int().positive(),
   })).min(1, 'At least one item is required'),
   coolerBagOption: z.boolean().optional(),
+  groupDelivery: z.boolean().optional(),
+  deliveryInstruction: z.enum(['door', 'hand_to_me', 'inside_fridge', 'inside_freezer']).optional(),
 });
 
 const updateOrderStatusSchema = z.object({
@@ -39,6 +41,15 @@ const sendBulkOrderSchema = z.object({
 });
 
 /**
+ * GET /api/orders/window-status
+ * Check if the ordering window is currently open
+ */
+router.get('/window-status', authenticate, asyncHandler(async (_req: Request, res: Response) => {
+  const status = orderService.isOrderWindowOpen();
+  return res.json(status);
+}));
+
+/**
  * POST /api/orders
  * Create a new order (authenticated customer)
  */
@@ -57,7 +68,9 @@ router.post('/', authenticate, asyncHandler(async (req: Request, res: Response) 
         productId: item.productId!,
         quantity: item.quantity!
       })),
-      coolerBagOption: data.coolerBagOption
+      coolerBagOption: data.coolerBagOption,
+      groupDelivery: data.groupDelivery,
+      deliveryInstruction: data.deliveryInstruction
     });
 
     return res.status(201).json(order);
@@ -132,6 +145,90 @@ router.get('/collation', authenticate, requireAdmin, asyncHandler(async (req: Re
 }));
 
 /**
+ * GET /api/orders/customer/:customerId
+ * Get all orders for a specific customer
+ */
+router.get('/customer/:customerId', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { customerId } = req.params;
+
+    // Customers can only view their own orders, admins can view all
+    if (req.user!.role !== 'admin' && customerId !== req.user!.userId) {
+      return res.status(403).json({
+        error: {
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to view these orders',
+        },
+      });
+    }
+
+    const orders = await orderService.getCustomerOrders(customerId);
+
+    return res.json(orders);
+  } catch (error) {
+    console.error('Get customer orders error:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to fetch customer orders',
+      },
+    });
+  }
+}));
+
+/**
+ * GET /api/orders/last-week
+ * Get the customer's most recent order
+ */
+router.get('/last-week', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const customerId = req.user!.userId;
+    const order = await orderService.getLastWeekOrder(customerId);
+    return res.json(order);
+  } catch (error) {
+    console.error('Get last week order error:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to fetch last week order',
+      },
+    });
+  }
+}));
+
+/**
+ * GET /api/orders/delivery/:date
+ * Get all orders for a specific delivery date (admin only)
+ */
+router.get('/delivery/:date', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { date } = req.params;
+    const deliveryDate = new Date(date);
+
+    if (isNaN(deliveryDate.getTime())) {
+      return res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid date format',
+        },
+      });
+    }
+
+    const orders = await orderService.getOrdersByDeliveryDate(deliveryDate);
+
+    return res.json(orders);
+  } catch (error) {
+    console.error('Get orders by delivery date error:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to fetch orders',
+      },
+    });
+  }
+}));
+
+/**
  * GET /api/orders/:id
  * Get a single order by ID
  */
@@ -174,70 +271,6 @@ router.get('/:id', authenticate, asyncHandler(async (req: Request, res: Response
 }));
 
 /**
- * GET /api/orders/customer/:customerId
- * Get all orders for a specific customer
- */
-router.get('/customer/:customerId', authenticate, asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const { customerId } = req.params;
-
-    // Customers can only view their own orders, admins can view all
-    if (req.user!.role !== 'admin' && customerId !== req.user!.userId) {
-      return res.status(403).json({
-        error: {
-          code: 'FORBIDDEN',
-          message: 'You do not have permission to view these orders',
-        },
-      });
-    }
-
-    const orders = await orderService.getCustomerOrders(customerId);
-
-    return res.json(orders);
-  } catch (error) {
-    console.error('Get customer orders error:', error);
-    return res.status(500).json({
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Failed to fetch customer orders',
-      },
-    });
-  }
-}));
-
-/**
- * GET /api/orders/delivery/:date
- * Get all orders for a specific delivery date (admin only)
- */
-router.get('/delivery/:date', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const { date } = req.params;
-    const deliveryDate = new Date(date);
-
-    if (isNaN(deliveryDate.getTime())) {
-      return res.status(400).json({
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid date format',
-        },
-      });
-    }
-
-    const orders = await orderService.getOrdersByDeliveryDate(deliveryDate);
-
-    return res.json(orders);
-  } catch (error) {
-    console.error('Get orders by delivery date error:', error);
-    return res.status(500).json({
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Failed to fetch orders',
-      },
-    });
-  }
-}));
-
-/**
  * POST /api/orders/bulk
  * Generate bulk order consolidation (admin only)
  */
@@ -253,12 +286,14 @@ router.post('/bulk', authenticate, requireAdmin, asyncHandler(async (req: Reques
     // Generate formatted outputs
     const whatsappMessage = orderService.formatBulkOrderForWhatsApp(bulkOrder);
     const emailHtml = orderService.formatBulkOrderForEmail(bulkOrder);
+    const emailText = orderService.formatBulkOrderForEmailText(bulkOrder);
 
     return res.json({
       bulkOrder,
       formatted: {
         whatsapp: whatsappMessage,
         email: emailHtml,
+        emailText: emailText,
       },
     });
   } catch (error) {

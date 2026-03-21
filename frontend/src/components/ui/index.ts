@@ -12,17 +12,17 @@
  */
 
 // Button component
-export { Button, type ButtonVariant, type ButtonSize } from './Button';
-export { default as ButtonDefault } from './Button';
+export { Button, type ButtonVariant, type ButtonSize } from './Button.js';
+export { default as ButtonDefault } from './Button.js';
 
 // Input component
-export { Input, type InputSize } from './Input';
+export { Input, type InputSize } from './Input.js';
 
 // Select component
-export { Select, type SelectSize } from './Select';
+export { Select, type SelectSize } from './Select.js';
 
 // Textarea component
-export { Textarea, type TextareaSize } from './Textarea';
+export { Textarea, type TextareaSize } from './Textarea.js';
 
 // Card component
 export {
@@ -32,13 +32,13 @@ export {
   CardFooter,
   type CardVariant,
   type CardPadding
-} from './Card';
+} from './Card.js';
 
 // Modal component
-export { Modal, type ModalSize } from './Modal';
+export { Modal, type ModalSize } from './Modal.js';
 
 // Badge component
-export { Badge, type BadgeVariant } from './Badge';
+export { Badge, type BadgeVariant } from './Badge.js';
 
 // Icons component
-export { UserIcon, CartIcon, BackIcon } from './Icons';
+export { UserIcon, CartIcon, BackIcon } from './Icons.js';

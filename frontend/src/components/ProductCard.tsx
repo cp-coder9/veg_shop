@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Product } from '../types';
-import { useCartStore } from '../stores/cartStore';
-import { formatPrice } from '../lib/utils';
+import { Product } from '../types/index.js';
+import { useCartStore } from '../stores/cartStore.js';
+import { formatPrice } from '../lib/utils.js';
+import { ProductDetailModal } from './shop/ProductDetailModal.js';
+import { Info } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
@@ -20,8 +22,12 @@ export default function ProductCard({ product }: ProductCardProps) {
     if (quantity > 1) {
       updateQuantity(product.id, quantity - 1);
     } else {
-      updateQuantity(product.id, 0); // This will remove the item
+      updateQuantity(product.id, 0);
     }
+  };
+
+  const handleCloseModal = () => {
+    setShowInfo(false);
   };
 
   return (
@@ -71,10 +77,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               className="bg-white text-gray-600 hover:text-organic-green-600 rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition-colors"
               title="View Details"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
+              <Info size={18} />
             </button>
           </div>
         </div>
@@ -136,39 +139,11 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
 
       {/* Info Modal */}
-      {showInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowInfo(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
-            <div className="relative h-48 bg-gray-100">
-              {product.imageUrl ? (
-                <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400">
-                  <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-              )}
-              <button onClick={() => setShowInfo(false)} className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">{product.name}</h2>
-              <p className="text-xl text-green-600 font-bold mb-4">R{formatPrice(product.price)} / {product.unit}</p>
-
-              <div className="prose prose-sm text-gray-600 mb-6 max-h-60 overflow-y-auto">
-                <p>{product.description || "No description available."}</p>
-              </div>
-
-              <div className="flex gap-3">
-                <button onClick={() => setShowInfo(false)} className="flex-1 py-3 border border-gray-300 rounded-xl font-semibold hover:bg-gray-50">Close</button>
-                <button onClick={() => { handleAddToCart(); setShowInfo(false); }} className="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700">Add to Cart</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ProductDetailModal
+        product={product}
+        isOpen={showInfo}
+        onClose={handleCloseModal}
+      />
     </>
   );
 }

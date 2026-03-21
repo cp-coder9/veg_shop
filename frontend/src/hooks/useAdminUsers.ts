@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import api from '../lib/api';
-import { User } from '../types'; // Assuming User type is compatible or similar to Customer
+import api from '../lib/api.js';
+import { User } from '../types/index.js'; // Assuming User type is compatible or similar to Customer
 
 export function useAdminUsers(role: string) {
     return useQuery<User[]>({

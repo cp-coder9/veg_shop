@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import api from '../lib/api';
+import api from '../lib/api.js';
 
 interface SalesReport {
   startDate: string;
@@ -56,7 +56,7 @@ export function useSalesReport(startDate?: string, endDate?: string) {
       const params = new URLSearchParams();
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
-      
+
       const response = await api.get(`/reports/sales?${params.toString()}`);
       return response.data;
     },
@@ -81,7 +81,7 @@ export function useProductPopularityReport(startDate?: string, endDate?: string)
       const params = new URLSearchParams();
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
-      
+
       const response = await api.get(`/reports/products?${params.toString()}`);
       return response.data;
     },
@@ -96,7 +96,7 @@ export function useCustomerActivityReport(startDate?: string, endDate?: string) 
       const params = new URLSearchParams();
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
-      
+
       const response = await api.get(`/reports/customers?${params.toString()}`);
       return response.data;
     },

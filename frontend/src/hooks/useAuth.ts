@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
-import api from '../lib/api';
-import { useAuthStore } from '../stores/authStore';
+import api from '../lib/api.js';
+import { useAuthStore } from '../stores/authStore.js';
 
 interface SendCodeRequest {
   contact: string;

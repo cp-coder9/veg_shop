@@ -1,6 +1,6 @@
-import { Product } from '../types';
-import { useCartStore } from '../stores/cartStore';
-import { toNumber } from '../lib/utils';
+import { Product } from '../types/index.js';
+import { useCartStore } from '../stores/cartStore.js';
+import { toNumber } from '../lib/utils.js';
 
 interface CartItemProps {
   product: Product;

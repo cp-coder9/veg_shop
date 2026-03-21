@@ -1,29 +1,32 @@
 /**
  * Converts a Prisma Decimal value (which is serialized as string) to a number
- * @param value - The value to convert (can be number or string)
- * @returns The numeric value
+ * @param value - The value to convert (can be number, string, null, or undefined)
+ * @returns The numeric value (defaults to 0 for null/undefined)
  */
-export function toNumber(value: number | string): number {
+export function toNumber(value: number | string | null | undefined): number {
+  if (value === null || value === undefined) {
+    return 0;
+  }
   return typeof value === 'string' ? parseFloat(value) : value;
 }
 
 /**
  * Formats a price value for display
- * @param value - The price value (can be number or string)
+ * @param value - The price value (can be number, string, null, or undefined)
  * @param decimals - Number of decimal places (default: 2)
  * @returns Formatted price string
  */
-export function formatPrice(value: number | string, decimals: number = 2): string {
+export function formatPrice(value: number | string | null | undefined, decimals: number = 2): string {
   return toNumber(value).toFixed(decimals);
 }
 
 /**
  * Formats a currency value with the currency symbol
- * @param value - The currency value (can be number or string)
+ * @param value - The currency value (can be number, string, null, or undefined)
  * @param decimals - Number of decimal places (default: 2)
  * @returns Formatted currency string with R symbol
  */
-export function formatCurrency(value: number | string, decimals: number = 2): string {
+export function formatCurrency(value: number | string | null | undefined, decimals: number = 2): string {
   return `R ${toNumber(value).toFixed(decimals)}`;
 }
 

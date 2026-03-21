@@ -58,6 +58,23 @@ export interface WebhookVerificationResult {
   errorMessage?: string;
 }
 
+export interface ChargeResult {
+  success: boolean;
+  chargeId?: string;
+  errorMessage?: string;
+}
+
+/**
+ * Create a charge using a Yoco token
+ * Uses the Yoco Realtime API: https://developer.yoco.com/api-reference/yoco-api
+ */
+export interface CreateChargeRequest {
+  token: string; // The payment token from Yoco SDK
+  amount: number; // Amount in cents
+  currency?: string;
+  metadata?: Record<string, string>;
+}
+
 export class YocoService {
   private getSecretKey(): string {
     if (!YOCO_SECRET_KEY) {
@@ -276,6 +293,66 @@ export class YocoService {
   getPaymentPageUrl(invoiceId: string, amount: number): string {
     const baseUrl = process.env.CORS_ORIGIN?.replace('http://localhost:5173', 'http://localhost:5173') || 'http://localhost:5173';
     return `${baseUrl}/payment/${invoiceId}?amount=${amount}`;
+  }
+
+  /**
+   * Create a charge using a Yoco token
+   * Note: This uses the Yoco Realtime API for card charges
+   */
+  async createCharge(token: string, amount: number): Promise<ChargeResult> {
+    // If no Yoco keys configured, return mock response for development
+    if (!YOCO_SECRET_KEY) {
+      console.warn('[DEV MODE] Yoco Secret Key not configured, simulating charge');
+      return {
+        success: true,
+        chargeId: `mock_charge_${Date.now()}`,
+      };
+    }
+
+    try {
+      const response = await axios.post(
+        YOCO_REALTIME_API_URL,
+        {
+          token: token,
+          amount: amount,
+          currency: 'ZAR',
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${this.getSecretKey()}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const data = response.data;
+
+      if (data.status === 'succeeded' || data.status === 'successful') {
+        return {
+          success: true,
+          chargeId: data.id,
+        };
+      } else {
+        return {
+          success: false,
+          errorMessage: data.message || 'Payment failed',
+        };
+      }
+    } catch (error) {
+      console.error('Yoco Charge Error:', error);
+      
+      if (axios.isAxiosError<{ message?: string }>(error) && error.response) {
+        return {
+          success: false,
+          errorMessage: error.response.data?.message || 'Payment gateway error',
+        };
+      }
+      
+      return {
+        success: false,
+        errorMessage: error instanceof Error ? error.message : 'Connection to payment gateway failed',
+      };
+    }
   }
 
   /**

@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '../../test/utils';
+import { render, screen, fireEvent, waitFor } from '../../test/utils.js';
 import userEvent from '@testing-library/user-event';
-import ProductsManagement from './ProductsManagement';
+import ProductsManagement from './ProductsManagement.js';
 
 const mockProducts = [
   {
@@ -52,9 +52,9 @@ import {
   useUpdateProduct,
   useDeleteProduct,
   useWhatsAppProductList,
-} from '../../hooks/useAdminProducts';
-import { useCategories } from '../../hooks/useCategories';
-import { useSuppliers } from '../../hooks/useSuppliers';
+} from '../../hooks/useAdminProducts.js';
+import { useCategories } from '../../hooks/useCategories.js';
+import { useSuppliers } from '../../hooks/useSuppliers.js';
 
 describe('ProductsManagement', () => {
   beforeEach(() => {
@@ -129,7 +129,7 @@ describe('ProductsManagement', () => {
     render(<ProductsManagement />);
 
     const categorySelect = screen.getByRole('combobox', { name: /Category/i });
-    await userEvent.selectOptions(categorySelect, 'vegetables');
+    await (userEvent as any).selectOptions(categorySelect, 'vegetables');
 
     expect(useAdminProducts).toHaveBeenCalledWith(
       expect.objectContaining({ category: 'vegetables' })
@@ -145,7 +145,7 @@ describe('ProductsManagement', () => {
     render(<ProductsManagement />);
 
     const availabilitySelect = screen.getByRole('combobox', { name: /Availability/i });
-    await userEvent.selectOptions(availabilitySelect, 'true');
+    await (userEvent as any).selectOptions(availabilitySelect, 'true');
 
     expect(useAdminProducts).toHaveBeenCalledWith(
       expect.objectContaining({ isAvailable: true })

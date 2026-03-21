@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAdminAudit, AuditFilters } from '../../hooks/useAdminAudit';
+import { useAdminAudit, AuditFilters } from '../../hooks/useAdminAudit.js';
 
 export default function AuditManagement() {
     const [filters, setFilters] = useState<AuditFilters>({

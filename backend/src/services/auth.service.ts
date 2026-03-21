@@ -14,6 +14,7 @@ export interface AuthToken {
     id: string;
     name: string;
     role: string;
+    popiConsentGiven: boolean;
   };
 }
 
@@ -294,8 +295,37 @@ export class AuthService {
         id: user.id,
         name: user.name,
         role: user.role,
+        popiConsentGiven: (user as any).popiConsentGiven || false,
       },
     };
+  }
+
+  /**
+   * Accept the POPI Act privacy consent
+   */
+  async acceptPrivacyConsent(userId: string, version: string): Promise<void> {
+    const data = {
+      popiConsentGiven: true,
+      popiConsentDate: new Date(),
+      popiConsentVersion: version,
+      updatedAt: new Date(),
+    };
+
+    if (env.USE_FIREBASE) {
+      await userRepository.update(userId, data as any);
+    } else {
+      await prisma.user.update({
+        where: { id: userId },
+        data,
+      });
+    }
+
+    await auditService.log({
+      userId,
+      action: 'POPI_CONSENT_ACCEPTED',
+      resource: 'user',
+      details: JSON.stringify({ version }),
+    });
   }
 
   /**
@@ -344,13 +374,13 @@ export class AuthService {
     // }
 
     let user;
-    
+
     // Check if Firebase is properly initialized (credentials provided)
-    const firebaseConfigured = env.USE_FIREBASE && 
-      env.FIREBASE_PROJECT_ID && 
-      env.FIREBASE_CLIENT_EMAIL && 
+    const firebaseConfigured = env.USE_FIREBASE &&
+      env.FIREBASE_PROJECT_ID &&
+      env.FIREBASE_CLIENT_EMAIL &&
       env.FIREBASE_PRIVATE_KEY;
-    
+
     if (firebaseConfigured) {
       // Use Firestore repository when Firebase is enabled and configured
       try {

@@ -316,8 +316,9 @@ async function main() {
         ...(item.description ? { description: item.description } : {}),
         isAvailable: true,
         isSeasonal: false,
+        isPerishable: false,
       } as any;
-      
+
       await prisma.product.upsert({
         where: { name: item.name },
         update: productData,

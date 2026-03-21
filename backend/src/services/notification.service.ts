@@ -55,14 +55,7 @@ interface OrderWithDetails {
   items: OrderItemWithProduct[];
 }
 
-interface ProductInfo {
-  id: string;
-  name: string;
-  price: number | string | Decimal;
-  unit: string;
-  category: string;
-  isSeasonal: boolean;
-}
+
 
 
 export class NotificationService {
@@ -764,6 +757,11 @@ export class NotificationService {
         where: { id: orderId },
         include: {
           customer: true,
+          items: {
+            include: {
+              product: true
+            }
+          }
         },
       });
     }
@@ -771,7 +769,7 @@ export class NotificationService {
     if (!order) return;
 
     const customer = order.customer;
-    const statusMessage = this.getStatusMessage(status, order.id, order.deliveryMethod);
+    const statusMessage = this.getStatusMessage(status, order);
 
     if (customer.phone) {
       await this.sendWhatsAppMessage(customer.phone, statusMessage);
@@ -787,11 +785,24 @@ export class NotificationService {
     }
   }
 
-  private getStatusMessage(status: string, orderId: string, deliveryMethod: string): string {
+  private getStatusMessage(status: string, order: any): string {
+    const orderId = order.id;
+    const deliveryMethod = order.deliveryMethod;
     const method = deliveryMethod === 'delivery' ? 'delivery' : 'collection';
+    const items = order.items || [];
+
     switch (status) {
       case 'packed':
-        return `📦 Order #${orderId.substring(0, 8)} has been packed and is ready for ${method}!`;
+        let message = `📦 Order #${orderId.substring(0, 8)} has been packed and is ready for ${method}!\n\n`;
+        message += `Total Items: ${items.length}\n`;
+
+        // Mention short-packed items if any
+        const shortPacked = items.filter((i: any) => i.quantity === 0);
+        if (shortPacked.length > 0) {
+          message += `⚠️ Note: ${shortPacked.length} item(s) were out of stock and have been credited to your account.\n`;
+        }
+
+        return message;
       case 'out_for_delivery':
         return `🚚 Order #${orderId.substring(0, 8)} is out for delivery! See you soon.`;
       case 'delivered':
@@ -917,18 +928,21 @@ export class NotificationService {
    * Send product list to customers
    */
   async sendProductList(customerIds: string[]): Promise<void> {
-    const products = (await prisma.product.findMany({
-      where: {
-        isAvailable: true,
-      },
-      orderBy: [
-        { category: 'asc' },
-        { name: 'asc' },
-      ],
-    })) as unknown as ProductInfo[];
-
-    const productListWhatsApp = this.generateProductListWhatsApp(products);
-    const productListEmail = this.generateProductListEmail(products);
+    // Send product list link to customers
+    const shopUrl = `${env.CORS_ORIGIN}/shop`;
+    const productListWhatsApp = `Hi! Our fresh harvest list for this week is now available! 🥬🥕\n\nView the full list and place your order here:\n${shopUrl}\n\nOrdering window: Tuesday 08:00 to Friday 14:00.`;
+    const productListEmail = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #2e7d32;">Our Fresh Harvest is Ready!</h2>
+        <p>Hi there,</p>
+        <p>Our fresh harvest list for this week is now available. We have some amazing organic produce waiting for you!</p>
+        <div style="margin: 30px 0; text-align: center;">
+          <a href="${shopUrl}" style="background-color: #2e7d32; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">View Fresh List & Order</a>
+        </div>
+        <p><strong>Ordering window:</strong> Tuesday 08:00 to Friday 14:00.</p>
+        <p>Thank you for supporting organic farming!</p>
+      </div>
+    `;
 
     for (const customerId of customerIds) {
       const customer = await prisma.user.findUnique({
@@ -999,7 +1013,7 @@ export class NotificationService {
 
       const notification = await this.createNotification(
         customer.id,
-        'payment_reminder',
+        'other', // Changed from 'payment_reminder'
         'whatsapp',
         message
       );
@@ -1016,16 +1030,17 @@ export class NotificationService {
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           <h2>Payment Link</h2>
           <p>Hi ${customer.name},</p>
-          <p>Please click the button below to pay for Invoice #${invoice.id.substring(0, 8)} (R${formattedAmount}):</p>
-          <a href="${link}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Pay Now (R${formattedAmount})</a>
-          <p>Or use this link: <a href="${link}">${link}</a></p>
-          <p>Thank you!</p>
+          <p>Please find your payment link for Invoice #${invoice.id.substring(0, 8)} (R${formattedAmount}):</p>
+          <div style="margin: 30px 0;">
+            <a href="${link}" style="background-color: #2e7d32; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Pay R${formattedAmount} Now</a>
+          </div>
+          <p>Thank you for your business!</p>
         </div>
       `;
 
       const notification = await this.createNotification(
         customer.id,
-        'payment_reminder',
+        'other', // Changed from 'payment_reminder'
         'email',
         htmlContent
       );
@@ -1040,101 +1055,6 @@ export class NotificationService {
     } else {
       throw new Error(`Customer does not have a ${method} contact set up.`);
     }
-  }
-
-  /**
-   * Generate WhatsApp product list
-   */
-  private generateProductListWhatsApp(products: ProductInfo[]): string {
-    let message = `🌱 *Weekly Product List* 🌱\n\n`;
-
-    const categories = [
-      { key: 'vegetables', name: '🥕 Vegetables' },
-      { key: 'fruits', name: '🍎 Fruits' },
-      { key: 'dairy_eggs', name: '🥛 Dairy & Eggs' },
-      { key: 'bread_bakery', name: '🍞 Bread & Bakery' },
-      { key: 'pantry', name: '🥫 Pantry Items' },
-      { key: 'meat_protein', name: '🥩 Meat & Protein' },
-    ];
-
-    categories.forEach((category) => {
-      const categoryProducts = products.filter((p) => p.category === category.key);
-      if (categoryProducts.length > 0) {
-        message += `*${category.name}*\n`;
-        categoryProducts.forEach((product) => {
-          const seasonal = product.isSeasonal ? ' 🌟' : '';
-          message += `• ${product.name} - R${Number(product.price).toFixed(2)}/${product.unit}${seasonal}\n`;
-        });
-        message += `\n`;
-      }
-    });
-
-    message += `🌟 = Seasonal item\n\n`;
-    message += `Place your order by Friday for next week's delivery!`;
-
-    return message;
-  }
-
-  /**
-   * Generate email product list
-   */
-  private generateProductListEmail(products: ProductInfo[]): string {
-    let html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #4CAF50;">🌱 Weekly Product List 🌱</h2>
-        <p>Here are this week's available products:</p>
-    `;
-
-    const categories = [
-      { key: 'vegetables', name: '🥕 Vegetables' },
-      { key: 'fruits', name: '🍎 Fruits' },
-      { key: 'dairy_eggs', name: '🥛 Dairy & Eggs' },
-      { key: 'bread_bakery', name: '🍞 Bread & Bakery' },
-      { key: 'pantry', name: '🥫 Pantry Items' },
-      { key: 'meat_protein', name: '🥩 Meat & Protein' },
-    ];
-
-    categories.forEach((category) => {
-      const categoryProducts = products.filter((p) => p.category === category.key);
-      if (categoryProducts.length > 0) {
-        html += `
-          <h3 style="color: #333; margin-top: 20px;">${category.name}</h3>
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-            <thead>
-              <tr style="background-color: #f5f5f5;">
-                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Product</th>
-                <th style="padding: 10px; text-align: right; border: 1px solid #ddd;">Price</th>
-              </tr>
-            </thead>
-            <tbody>
-        `;
-
-        categoryProducts.forEach((product) => {
-          const seasonal = product.isSeasonal ? ' <span style="color: #ffc107;">🌟</span>' : '';
-          html += `
-            <tr>
-              <td style="padding: 10px; border: 1px solid #ddd;">${product.name}${seasonal}</td>
-              <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">R${Number(product.price).toFixed(2)}/${product.unit}</td>
-            </tr>
-          `;
-        });
-
-        html += `
-            </tbody>
-          </table>
-        `;
-      }
-    });
-
-    html += `
-        <p style="margin-top: 20px;"><span style="color: #ffc107;">🌟</span> = Seasonal item</p>
-        <p style="background-color: #e8f5e9; padding: 15px; border-radius: 5px; border-left: 4px solid #4CAF50;">
-          <strong>Place your order by Friday for next week's delivery!</strong>
-        </p>
-      </div>
-    `;
-
-    return html;
   }
 
   /**
@@ -1250,6 +1170,35 @@ export class NotificationService {
         await this.updateNotificationStatus(notification.id, 'sent', new Date());
       } catch (error) {
         console.error(`Failed to send order reminder to ${order.customer.id}`, error);
+      }
+    }
+  }
+  /**
+   * Send a general notification to an admin
+   */
+  async sendAdminNotification(adminId: string, title: string, content: string): Promise<void> {
+    const admin = await prisma.user.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin) return;
+
+    const message = `*${title}*\n\n${content}`;
+
+    if (admin.phone) {
+      const notification = await this.createNotification(
+        admin.id,
+        'other',
+        'whatsapp',
+        message
+      );
+
+      try {
+        await this.sendWhatsAppMessage(admin.phone, message);
+        await this.updateNotificationStatus(notification.id, 'sent', new Date());
+      } catch (error) {
+        console.error(`Failed to send admin notification to ${admin.id}:`, error);
+        await this.updateNotificationStatus(notification.id, 'failed');
       }
     }
   }

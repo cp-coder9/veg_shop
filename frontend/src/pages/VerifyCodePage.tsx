@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useVerifyCode } from '../hooks/useAuth';
+import { useVerifyCode } from '../hooks/useAuth.js';
 import logo from '../assets/our-harvest-tote-logo.png';
 import { ShieldCheck, ArrowLeft, RotateCcw } from 'lucide-react';
 

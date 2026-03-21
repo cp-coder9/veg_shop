@@ -18,8 +18,11 @@
     "deploy:push": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1 -Push"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.5.0",
+    "@types/request": "^2.48.13",
     "baseline-browser-mapping": "^2.9.11",
+    "concurrently": "^8.2.2",
     "prettier": "^3.1.1"
   }
 }

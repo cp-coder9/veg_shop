@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useClientDashboard } from '../hooks/useClientDashboard';
-import { useProducts } from '../hooks/useProducts';
-import { useCartStore } from '../stores/cartStore';
-import api from '../lib/api';
+import { useClientDashboard } from '../hooks/useClientDashboard.js';
+import { useProducts } from '../hooks/useProducts.js';
+import { useCartStore } from '../stores/cartStore.js';
+import api from '../lib/api.js';
 import { toast } from 'react-hot-toast';
-import { formatPrice } from '../lib/utils';
-import { Button, Input, Card, Badge } from '../components/ui';
+import { formatPrice } from '../lib/utils.js';
+import { Button, Input, Card, Badge } from '../components/ui/index.js';
 
 export default function DashboardPage() {
     const navigate = useNavigate();

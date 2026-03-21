@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Product, CATEGORY_LABELS } from '../../types';
-import { Modal } from '../ui/Modal';
-import { Button } from '../ui/Button';
-import { useCartStore } from '../../stores/cartStore';
-import { formatPrice } from '../../lib/utils';
+import { Product, CATEGORY_LABELS } from '../../types/index.js';
+import { Modal } from '../ui/Modal.js';
+import { Button } from '../ui/Button.js';
+import { useCartStore } from '../../stores/cartStore.js';
+import { formatPrice } from '../../lib/utils.js';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -109,6 +109,31 @@ export function ProductDetailModal({
             {product.description || 'No description available for this product.'}
           </p>
         </div>
+
+        {/* Delivery & Supplier Info */}
+        {(product.deliveryDay || product.supplierId) && (
+          <div className="bg-cream/50 p-4 rounded-lg space-y-3">
+            <h3 className="font-display text-caption font-bold text-primary-dark uppercase tracking-wider">
+              Harvest Information
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              {product.deliveryDay && (
+                <div>
+                  <p className="text-[10px] font-mono text-warm-gray uppercase tracking-widest">Delivery Day</p>
+                  <p className="text-body-sm font-semibold text-primary-dark">{product.deliveryDay}</p>
+                </div>
+              )}
+              {(product.supplierId || product.supplier) && (
+                <div>
+                  <p className="text-[10px] font-mono text-warm-gray uppercase tracking-widest">Provenance</p>
+                  <p className="text-body-sm font-semibold text-primary-dark">
+                    {product.supplier?.name || 'Local Farm Partner'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Add to Cart Section */}
         <div className="border-t border-light-gray pt-4">

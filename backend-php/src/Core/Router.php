@@ -39,6 +39,14 @@ class Router
     }
 
     /**
+     * Add a PATCH route
+     */
+    public function patch(string $path, callable|array $handler, array $middleware = []): self
+    {
+        return $this->addRoute('PATCH', $path, $handler, $middleware);
+    }
+
+    /**
      * Add a DELETE route
      */
     public function delete(string $path, callable|array $handler, array $middleware = []): self

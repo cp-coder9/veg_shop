@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '../../test/utils';
+import { render, screen, waitFor } from '../../test/utils.js';
 import { fireEvent } from '@testing-library/react';
-import OrdersManagement from './OrdersManagement';
+import OrdersManagement from './OrdersManagement.js';
 
 const mockOrders = [
   {
@@ -71,7 +71,7 @@ import {
   useUpdateOrder,
   useOrderWeeklyCollation,
   useGenerateBulkOrder,
-} from '../../hooks/useAdminOrders';
+} from '../../hooks/useAdminOrders.js';
 
 describe('OrdersManagement', () => {
   beforeEach(() => {

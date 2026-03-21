@@ -7,9 +7,9 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "module": "ESNext",
+    "module": "Node16",
     "skipLibCheck": true,
-    "moduleResolution": "bundler",
+    "moduleResolution": "node16",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -25,7 +25,8 @@
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "vite": ["./node_modules/vite"]
     }
   },
   "include": [

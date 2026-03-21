@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAdminCustomer, useUpdateAdminCustomer, CustomerProfile } from '../../hooks/useAdminCustomers';
-import { Button, Input, Card, CardContent, Badge, Select, Textarea } from '@/components/ui';
+import { useAdminCustomer, useUpdateAdminCustomer, CustomerProfile } from '../../hooks/useAdminCustomers.js';
+import { Button, Input, Card, CardContent, Badge, Select, Textarea } from '../../components/ui/index.js';
 import { ArrowLeft, User, Package, DollarSign, CreditCard, Gift } from 'lucide-react';
 
 type TabType = 'info' | 'orders' | 'invoices' | 'payments' | 'credits';
@@ -10,7 +10,7 @@ export default function CustomerDetail() {
   const { customerId } = useParams<{ customerId: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('info');
-  
+
   const { data: customer, isLoading } = useAdminCustomer(customerId!, true);
 
   if (isLoading) {
@@ -56,7 +56,7 @@ export default function CustomerDetail() {
           <ArrowLeft size={18} />
           Back to Customers
         </button>
-        
+
         <div className="flex justify-between items-start">
           <div>
             <h1 className="font-display text-display-sm text-primary-dark">{customerProfile.name}</h1>
@@ -64,7 +64,7 @@ export default function CustomerDetail() {
               {customerProfile.phone || customerProfile.email}
             </p>
           </div>
-          
+
           {/* Credit Balance Badge */}
           <Card className="bg-sage-green/10 border-2 border-sage-green">
             <CardContent className="p-4 text-center">
@@ -86,10 +86,9 @@ export default function CustomerDetail() {
               onClick={() => setActiveTab(tab.id)}
               className={`
                 py-4 px-1 border-b-2 font-accent text-caption uppercase tracking-wide flex items-center gap-2 transition-colors
-                ${
-                  activeTab === tab.id
-                    ? 'border-terracotta text-terracotta'
-                    : 'border-transparent text-warm-gray hover:text-primary-dark hover:border-light-gray'
+                ${activeTab === tab.id
+                  ? 'border-terracotta text-terracotta'
+                  : 'border-transparent text-warm-gray hover:text-primary-dark hover:border-light-gray'
                 }
               `}
             >
@@ -134,7 +133,7 @@ function InfoTab({ customer }: InfoTabProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       await updateCustomer.mutateAsync({
         customerId: customer.id,
@@ -152,7 +151,7 @@ function InfoTab({ customer }: InfoTabProps) {
       <Card>
         <CardContent className="p-6">
           <h2 className="font-display text-body-lg text-primary-dark mb-4">Edit Customer Info</h2>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">
@@ -619,15 +618,15 @@ function CreditsTab({ creditBalance }: CreditsTabProps) {
           <h2 className="font-display text-body-lg text-primary-dark mb-4">About Credits</h2>
           <div className="space-y-3 font-body text-body-sm text-warm-gray">
             <p>
-              <strong className="text-primary-dark">Overpayments:</strong> When a customer pays more than the invoice amount, 
+              <strong className="text-primary-dark">Overpayments:</strong> When a customer pays more than the invoice amount,
               the excess is automatically added to their credit balance.
             </p>
             <p>
-              <strong className="text-primary-dark">Short Deliveries:</strong> When products are not delivered as ordered, 
+              <strong className="text-primary-dark">Short Deliveries:</strong> When products are not delivered as ordered,
               credits are issued for the missing items.
             </p>
             <p>
-              <strong className="text-primary-dark">Automatic Application:</strong> Credits are automatically applied to new 
+              <strong className="text-primary-dark">Automatic Application:</strong> Credits are automatically applied to new
               invoices, reducing the amount due.
             </p>
           </div>
@@ -637,7 +636,7 @@ function CreditsTab({ creditBalance }: CreditsTabProps) {
       {/* Credit History Note */}
       <div className="bg-info/10 border border-info/30 rounded-lg p-4">
         <p className="font-body text-body-sm text-primary-dark">
-          💡 <strong>Tip:</strong> View the Payments and Invoices tabs to see how credits 
+          💡 <strong>Tip:</strong> View the Payments and Invoices tabs to see how credits
           have been applied and earned over time.
         </p>
       </div>

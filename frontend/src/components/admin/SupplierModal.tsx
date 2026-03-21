@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Modal, Button, Input, Textarea } from '@/components/ui';
+import { Modal, Button, Input, Textarea } from '../ui/index.js';
 
 interface Supplier {
     id: string;

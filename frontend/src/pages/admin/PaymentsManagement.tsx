@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useAdminInvoices } from '../../hooks/useAdminInvoices';
-import { useCustomerPayments, useRecordPayment } from '../../hooks/useAdminPayments';
-import { toNumber } from '../../lib/utils';
+import { useAdminInvoices } from '../../hooks/useAdminInvoices.js';
+import { useCustomerPayments, useRecordPayment } from '../../hooks/useAdminPayments.js';
+import { toNumber } from '../../lib/utils.js';
 
 export default function PaymentsManagement() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);

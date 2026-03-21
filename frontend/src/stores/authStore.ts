@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import api from '../lib/api';
+import api from '../lib/api.js';
 
 interface User {
   id: string;
@@ -9,6 +9,7 @@ interface User {
   address: string | null;
   role: 'customer' | 'admin' | 'driver' | 'packer';
   loyaltyPoints?: number;
+  popiConsentGiven?: boolean;
 }
 
 interface AuthState {
@@ -20,6 +21,7 @@ interface AuthState {
   setTokens: (accessToken: string, refreshToken: string) => void;
   logout: () => void;
   initialize: () => Promise<void>;
+  confirmPopiConsent: (version: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -60,6 +62,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     } else {
       set({ isLoading: false });
+    }
+  },
+
+  confirmPopiConsent: async (version: string) => {
+    try {
+      await api.post('/auth/accept-privacy', { version });
+      const user = get().user;
+      if (user) {
+        set({ user: { ...user, popiConsentGiven: true } });
+      }
+    } catch (error) {
+      console.error('Failed to confirm POPI consent:', error);
+      throw error;
     }
   },
 }));

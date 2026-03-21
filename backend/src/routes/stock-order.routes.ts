@@ -9,8 +9,8 @@ const router = Router();
 // Validation schemas
 const createStockOrderSchema = z.object({
   weekStartDate: z.string().transform(str => new Date(str)),
-  supplierId: z.string().optional(),
-  supplierName: z.string().optional(),
+  supplierId: z.string().nullable().optional(),
+  supplierName: z.string().nullable().optional(),
   items: z.array(z.object({
     productId: z.string(),
     productName: z.string(),
@@ -31,12 +31,6 @@ const updateReceivedSchema = z.object({
   })).min(1),
 });
 
-const historySchema = z.object({
-  startDate: z.string().transform(str => new Date(str)).optional(),
-  endDate: z.string().transform(str => new Date(str)).optional(),
-  status: z.string().optional(),
-});
-
 /**
  * POST /api/stock-orders
  * Create a new stock order from collation (admin only)
@@ -44,7 +38,7 @@ const historySchema = z.object({
 router.post('/', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
   try {
     const data = createStockOrderSchema.parse(req.body);
-    
+
     const stockOrder = await stockOrderService.createStockOrder({
       ...data,
       createdById: req.user?.userId,

@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../stores/authStore';
-import { useCartStore } from '../../stores/cartStore';
-import ThemeToggle from '../ThemeToggle';
+import { useAuthStore } from '../../stores/authStore.js';
+import { useCartStore } from '../../stores/cartStore.js';
+import ThemeToggle from '../ThemeToggle.js';
 import { useState } from 'react';
 import logo from '../../assets/our-harvest-tote-logo.png';
 

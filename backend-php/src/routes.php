@@ -17,7 +17,10 @@ use App\Controllers\PackingListController;
 use App\Controllers\PaymentController;
 use App\Controllers\ProductController;
 use App\Controllers\ReportController;
+use App\Controllers\StockOrderController;
+use App\Controllers\SupplierController;
 use App\Controllers\UploadController;
+use App\Controllers\WeeklyAvailabilityController;
 
 /** @var \App\Core\Router $router */
 
@@ -42,28 +45,37 @@ $router->get('/api/products', [ProductController::class, 'index'])
     ->get('/api/products/{id}', [ProductController::class, 'show'])
     ->post('/api/products', [ProductController::class, 'store'])
     ->put('/api/products/{id}', [ProductController::class, 'update'])
+    ->patch('/api/products/{id}', [ProductController::class, 'update'])
     ->delete('/api/products/{id}', [ProductController::class, 'destroy'])
     ->get('/api/products/{id}/price-history', [ProductController::class, 'priceHistory']);
 
 // Order Routes
-$router->get('/api/orders', [OrderController::class, 'index'])
-    ->post('/api/orders', [OrderController::class, 'store'])
+// NOTE: specific paths must come BEFORE wildcard {id} routes
+$router->get('/api/orders/window-status', [OrderController::class, 'windowStatus'])
     ->get('/api/orders/collation', [OrderController::class, 'collation'])
+    ->get('/api/orders/last-week', [OrderController::class, 'lastWeek'])
+    ->get('/api/orders/customer/{id}', [OrderController::class, 'byCustomer'])
+    ->get('/api/orders', [OrderController::class, 'index'])
+    ->post('/api/orders', [OrderController::class, 'store'])
     ->get('/api/orders/{id}', [OrderController::class, 'show'])
     ->put('/api/orders/{id}', [OrderController::class, 'update'])
     ->put('/api/orders/{id}/status', [OrderController::class, 'updateStatus']);
 
 // Invoice Routes
-$router->get('/api/invoices', [InvoiceController::class, 'index'])
+$router->get('/api/invoices/customer/{id}', [InvoiceController::class, 'byCustomer'])
+    ->get('/api/invoices', [InvoiceController::class, 'index'])
     ->post('/api/invoices', [InvoiceController::class, 'store'])
     ->get('/api/invoices/{id}', [InvoiceController::class, 'show'])
     ->put('/api/invoices/{id}', [InvoiceController::class, 'update'])
     ->post('/api/invoices/generate-for-order/{orderId}', [InvoiceController::class, 'generateForOrder']);
 
 // Payment Routes
-$router->get('/api/payments', [PaymentController::class, 'index'])
-    ->post('/api/payments', [PaymentController::class, 'store'])
-    ->get('/api/payments/customer/{id}', [PaymentController::class, 'byCustomer']);
+// NOTE: specific paths must come BEFORE wildcard {id} routes
+$router->get('/api/payments/stats', [PaymentController::class, 'stats'])
+    ->get('/api/payments/recent', [PaymentController::class, 'recent'])
+    ->get('/api/payments/customer/{id}', [PaymentController::class, 'byCustomer'])
+    ->get('/api/payments', [PaymentController::class, 'index'])
+    ->post('/api/payments', [PaymentController::class, 'store']);
 
 // Credit Routes
 $router->get('/api/credits', [CreditController::class, 'index'])
@@ -79,22 +91,31 @@ $router->get('/api/notifications', [NotificationController::class, 'index'])
     ->post('/api/notifications/send', [NotificationController::class, 'send']);
 
 // Report Routes
-$router->get('/api/reports/sales', [ReportController::class, 'sales'])
+$router->get('/api/reports/dashboard', [ReportController::class, 'dashboard'])
+    ->get('/api/reports/sales', [ReportController::class, 'sales'])
+    ->get('/api/reports/payments', [ReportController::class, 'payments'])
+    ->get('/api/reports/products', [ReportController::class, 'products'])
     ->get('/api/reports/customers', [ReportController::class, 'customers']);
 
 // Customer Routes
+// ⚠️ IMPORTANT: static /me/* routes MUST come before /{id} wildcard routes
 $router->get('/api/customers', [CustomerController::class, 'index'])
+    ->get('/api/customers/me/dashboard', [CustomerController::class, 'dashboard'])
+    ->get('/api/customers/me/payments', [CustomerController::class, 'myPayments'])
     ->get('/api/customers/{id}', [CustomerController::class, 'show'])
     ->put('/api/customers/{id}', [CustomerController::class, 'update'])
     ->get('/api/customers/{id}/orders', [CustomerController::class, 'orders'])
     ->get('/api/customers/{id}/balance', [CustomerController::class, 'balance'])
-    ->get('/api/customers/{id}/quick-reorder', [CustomerController::class, 'quickReorder'])
-    ->get('/api/customers/me/dashboard', [CustomerController::class, 'dashboard']);
+    ->get('/api/customers/{id}/quick-reorder', [CustomerController::class, 'quickReorder']);
 
 // Admin Routes
 $router->get('/api/admin/users', [AdminController::class, 'index'])
     ->post('/api/admin/users', [AdminController::class, 'store'])
-    ->put('/api/admin/users/{id}/role', [AdminController::class, 'updateRole']);
+    ->put('/api/admin/users/{id}/role', [AdminController::class, 'updateRole'])
+    ->get('/api/admin/suppliers', [SupplierController::class, 'index'])
+    ->post('/api/admin/suppliers', [SupplierController::class, 'store'])
+    ->put('/api/admin/suppliers/{id}', [SupplierController::class, 'update'])
+    ->patch('/api/admin/suppliers/{id}/availability', [SupplierController::class, 'updateAvailability']);
 
 // Driver Routes
 $router->post('/api/driver/log', [DriverController::class, 'log'])
@@ -106,7 +127,25 @@ $router->post('/api/upload', [UploadController::class, 'store']);
 // Audit Routes
 $router->get('/api/audit-logs', [AuditController::class, 'index']);
 
+// Weekly Availability Routes
+// NOTE: specific sub-paths (confirm, copy-previous) must come BEFORE the bare /{weekStart} route
+$router->post('/api/availability/{weekStart}/confirm', [WeeklyAvailabilityController::class, 'confirm'])
+    ->post('/api/availability/{weekStart}/copy-previous', [WeeklyAvailabilityController::class, 'copyPrevious'])
+    ->get('/api/availability/{weekStart}', [WeeklyAvailabilityController::class, 'index'])
+    ->put('/api/availability/{weekStart}', [WeeklyAvailabilityController::class, 'bulkUpdate'])
+    ->patch('/api/availability/{weekStart}/{productId}', [WeeklyAvailabilityController::class, 'toggle']);
+
+// Stock Order Routes
+$router->get('/api/stock-orders', [StockOrderController::class, 'index'])
+    ->post('/api/stock-orders', [StockOrderController::class, 'store'])
+    ->get('/api/stock-orders/{id}', [StockOrderController::class, 'show']);
+
+// Dev Seeder Source
+$router->get('/api/dev/seed', [\App\Controllers\SeedController::class, 'run'])
+    ->get('/api/dev/migrate-products', [\App\Controllers\SeedController::class, 'migrateProducts']);
+
 // Health Check
 $router->get('/api/health', function () {
     \App\Core\Response::success(['status' => 'ok', 'timestamp' => date('c')]);
 });
+

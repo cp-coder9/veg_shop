@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSendCode, useDevLogin } from '../hooks/useAuth';
+import { useSendCode, useDevLogin } from '../hooks/useAuth.js';
 import logo from '../assets/our-harvest-tote-logo.png';
 import { ArrowLeft } from 'lucide-react';
 

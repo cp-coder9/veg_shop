@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Card, CardHeader, CardContent } from '@/components/ui';
+import { Button, Input, Card, CardHeader, CardContent } from '../../components/ui/index.js';
 
 export default function SettingsPage() {
     const [yocoPublicKey, setYocoPublicKey] = useState(localStorage.getItem('YOCO_PUBLIC_KEY') || '');

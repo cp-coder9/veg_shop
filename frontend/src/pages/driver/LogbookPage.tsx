@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useTodayLog, useCreateLog, useUpdateLog } from '../../hooks/useDriverLogs';
+import { useTodayLog, useCreateLog, useUpdateLog } from '../../hooks/useDriverLogs.js';
 import { toast } from 'react-hot-toast';
 
 export default function LogbookPage() {

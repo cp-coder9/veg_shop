@@ -1,17 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
-import { 
-    Package, 
-    Users, 
-    DollarSign, 
-    ShoppingCart, 
+import {
+    Package,
+    Users,
+    DollarSign,
+    ShoppingCart,
     TrendingUp,
     Clock,
     CreditCard,
     Banknote,
     Building
 } from 'lucide-react';
-import { Card, CardContent, CardHeader } from '@/components/ui';
-import api from '../../lib/api';
+import { Card, CardContent, CardHeader } from '../../components/ui/index.js';
+import api from '../../lib/api.js';
 
 interface DashboardStats {
     totalCustomers: number;
@@ -47,7 +47,8 @@ const AdminDashboard = () => {
         queryFn: async () => {
             const response = await api.get('/reports/dashboard');
             return response;
-        }
+        },
+        retry: false, // Don't retry on 404 errors
     });
 
     const { data: recentOrders } = useQuery<{ data: unknown[] }>({
@@ -55,7 +56,8 @@ const AdminDashboard = () => {
         queryFn: async () => {
             const response = await api.get('/orders?limit=5&status=pending');
             return response;
-        }
+        },
+        retry: false,
     });
 
     const { data: paymentStats, isLoading: paymentLoading } = useQuery<PaymentStats>({
@@ -63,7 +65,8 @@ const AdminDashboard = () => {
         queryFn: async () => {
             const response = await api.get('/payments/stats');
             return response.data;
-        }
+        },
+        retry: false,
     });
 
     const { data: recentPayments } = useQuery<{ data: RecentPayment[] }>({
@@ -71,7 +74,8 @@ const AdminDashboard = () => {
         queryFn: async () => {
             const response = await api.get('/payments/recent?limit=10');
             return response;
-        }
+        },
+        retry: false,
     });
 
     const statCards = [
@@ -131,7 +135,7 @@ const AdminDashboard = () => {
         }
     };
 
-    if (isLoading) {
+    if (isLoading || paymentLoading) {
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-terracotta"></div>
@@ -172,8 +176,8 @@ const AdminDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Payment Stats Card */}
                 <Card>
-                    <CardHeader 
-                        title="Payment Methods" 
+                    <CardHeader
+                        title="Payment Methods"
                         subtitle="Today's payment breakdown"
                     />
                     <CardContent>
@@ -202,8 +206,8 @@ const AdminDashboard = () => {
                                         </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded-full h-2">
-                                        <div 
-                                            className="bg-purple-600 h-2 rounded-full" 
+                                        <div
+                                            className="bg-purple-600 h-2 rounded-full"
                                             style={{ width: `${yocoPercent}%` }}
                                         ></div>
                                     </div>
@@ -222,8 +226,8 @@ const AdminDashboard = () => {
                                         </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded-full h-2">
-                                        <div 
-                                            className="bg-green-600 h-2 rounded-full" 
+                                        <div
+                                            className="bg-green-600 h-2 rounded-full"
                                             style={{ width: `${cashPercent}%` }}
                                         ></div>
                                     </div>
@@ -242,8 +246,8 @@ const AdminDashboard = () => {
                                         </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded-full h-2">
-                                        <div 
-                                            className="bg-blue-600 h-2 rounded-full" 
+                                        <div
+                                            className="bg-blue-600 h-2 rounded-full"
                                             style={{ width: `${eftPercent}%` }}
                                         ></div>
                                     </div>
@@ -265,8 +269,8 @@ const AdminDashboard = () => {
 
                 {/* Recent Payments Activity */}
                 <Card>
-                    <CardHeader 
-                        title="Recent Payments" 
+                    <CardHeader
+                        title="Recent Payments"
                         subtitle="Latest payment activity"
                     />
                     <CardContent>
@@ -278,15 +282,14 @@ const AdminDashboard = () => {
                         ) : (
                             <div className="space-y-3 max-h-64 overflow-y-auto">
                                 {recentPayments.data.slice(0, 8).map((payment: RecentPayment) => (
-                                    <div 
+                                    <div
                                         key={payment.id}
                                         className="flex items-center justify-between p-3 bg-cream/30 rounded-lg"
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className={`p-2 rounded-lg ${
-                                                payment.method === 'yoco' ? 'bg-purple-100' :
+                                            <div className={`p-2 rounded-lg ${payment.method === 'yoco' ? 'bg-purple-100' :
                                                 payment.method === 'cash' ? 'bg-green-100' : 'bg-blue-100'
-                                            }`}>
+                                                }`}>
                                                 {getMethodIcon(payment.method)}
                                             </div>
                                             <div>
@@ -302,9 +305,8 @@ const AdminDashboard = () => {
                                             <p className="font-body text-body-md font-medium text-primary-dark">
                                                 R{(payment.amount / 100).toFixed(2)}
                                             </p>
-                                            <span className={`text-caption ${
-                                                payment.invoiceStatus === 'paid' ? 'text-green-600' : 'text-yellow-600'
-                                            }`}>
+                                            <span className={`text-caption ${payment.invoiceStatus === 'paid' ? 'text-green-600' : 'text-yellow-600'
+                                                }`}>
                                                 {payment.invoiceStatus}
                                             </span>
                                         </div>
@@ -319,8 +321,8 @@ const AdminDashboard = () => {
             {/* Weekly/Monthly Payment Stats */}
             {!paymentLoading && paymentStats && (
                 <Card>
-                    <CardHeader 
-                        title="Payment Overview" 
+                    <CardHeader
+                        title="Payment Overview"
                         subtitle="Payment statistics for different periods"
                     />
                     <CardContent>
@@ -409,8 +411,8 @@ const AdminDashboard = () => {
 
             {/* Recent Orders */}
             <Card>
-                <CardHeader 
-                    title="Recent Orders" 
+                <CardHeader
+                    title="Recent Orders"
                     subtitle="Latest pending orders requiring attention"
                 />
                 <CardContent>
@@ -424,8 +426,8 @@ const AdminDashboard = () => {
                             {(recentOrders?.data ?? []).slice(0, 5).map((order: unknown) => {
                                 const o = order as { id?: string; customerName?: string; total?: number; status?: string; createdAt?: string };
                                 return (
-                                    <div 
-                                        key={o.id} 
+                                    <div
+                                        key={o.id}
                                         className="flex items-center justify-between p-4 bg-cream/30 rounded-lg hover:bg-cream/50 transition-colors"
                                     >
                                         <div className="flex items-center gap-4">
@@ -459,8 +461,8 @@ const AdminDashboard = () => {
 
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <a 
-                    href="/admin/orders" 
+                <a
+                    href="/admin/orders"
                     className="flex items-center gap-4 p-6 bg-terracotta text-white rounded-lg hover:bg-terracotta/90 transition-colors"
                 >
                     <ShoppingCart size={28} />
@@ -469,8 +471,8 @@ const AdminDashboard = () => {
                         <p className="font-accent text-caption opacity-80">View and process orders</p>
                     </div>
                 </a>
-                <a 
-                    href="/admin/products" 
+                <a
+                    href="/admin/products"
                     className="flex items-center gap-4 p-6 bg-sage-green text-white rounded-lg hover:bg-sage-green/90 transition-colors"
                 >
                     <Package size={28} />
@@ -479,8 +481,8 @@ const AdminDashboard = () => {
                         <p className="font-accent text-caption opacity-80">Update your catalog</p>
                     </div>
                 </a>
-                <a 
-                    href="/admin/reports" 
+                <a
+                    href="/admin/reports"
                     className="flex items-center gap-4 p-6 bg-info text-white rounded-lg hover:bg-info/90 transition-colors"
                 >
                     <TrendingUp size={28} />

@@ -132,10 +132,43 @@ class AuthService
 
     /**
      * Development login (bypass password)
+     * For dev shortcut emails, resolves to a REAL Firestore user with matching role
+     * so that all dashboard workflows work correctly (orders, lookups, etc.)
      */
     public function devLogin(string $email): array
     {
-        // In Firestore, we have to query by email
+        // Map dev shortcut emails → the role to look up in Firestore
+        $devRoleMap = [
+            'admin@vegshop.com' => 'admin',
+            'john@example.com' => 'customer',
+            'packer@vegshop.com' => 'packer',
+            'driver@vegshop.com' => 'driver',
+        ];
+
+        if (isset($devRoleMap[$email])) {
+            $role = $devRoleMap[$email];
+
+            // Find the first real Firestore user with that role
+            $results = $this->firebase->query('users', 'role', '==', $role);
+
+            if (!empty($results)) {
+                $user = $results[0];
+                return $this->generateTokens([
+                    'id' => $user['id'],
+                    'name' => $user['name'] ?? ucfirst($role),
+                    'role' => $user['role']
+                ]);
+            }
+
+            // No real user with that role exists yet — use placeholder
+            return $this->generateTokens([
+                'id' => 'dev-' . $role,
+                'name' => ucfirst($role),
+                'role' => $role
+            ]);
+        }
+
+        // Regular real-user lookup by email
         $results = $this->firebase->query('users', 'email', '==', $email);
 
         if (empty($results)) {

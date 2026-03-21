@@ -36,20 +36,20 @@ class CreditController
 
         $credits = [];
         if ($customerId) {
-            $credits = $this->firebase->query('credits', 'customer_id', '==', $customerId);
+            $credits = $this->firebase->query('credits', 'customerId', '==', $customerId);
         } else {
-            // Fetch all (with dummy query)
-            $credits = $this->firebase->query('credits', 'type', '>', '');
+            // Fetch all from catalogues
+            $credits = $this->firebase->listDocuments('credits');
         }
 
-        // Sort by created_at DESC
-        usort($credits, fn($a, $b) => ($b['created_at'] ?? '') <=> ($a['created_at'] ?? ''));
+        // Sort by createdAt DESC
+        usort($credits, fn($a, $b) => ($b['createdAt'] ?? '') <=> ($a['createdAt'] ?? ''));
 
         // Attach customer name
         foreach ($credits as &$c) {
             $c['amount'] = (float) ($c['amount'] ?? 0);
-            $customer = $this->firebase->getDocument('users', $c['customer_id']);
-            $c['customer_name'] = $customer['name'] ?? 'Unknown';
+            $customer = $this->firebase->getDocument('users', $c['customerId']);
+            $c['customerName'] = $customer['name'] ?? 'Unknown';
         }
 
         Response::json($credits);
@@ -74,11 +74,11 @@ class CreditController
 
         $creditData = [
             'id' => $id,
-            'customer_id' => $data['customerId'],
+            'customerId' => $data['customerId'],
             'amount' => (float) $data['amount'],
             'reason' => $data['reason'],
             'type' => $data['type'], // 'refund', 'adjustment', 'loyalty'
-            'created_at' => date('c'),
+            'createdAt' => date('c'),
             'timestamp' => date('c')
         ];
 
@@ -104,10 +104,10 @@ class CreditController
             Response::forbidden('Cannot access these credits');
         }
 
-        $credits = $this->firebase->query('credits', 'customer_id', '==', $customerId);
+        $credits = $this->firebase->query('credits', 'customerId', '==', $customerId);
 
-        // Sort by created_at DESC
-        usort($credits, fn($a, $b) => ($b['created_at'] ?? '') <=> ($a['created_at'] ?? ''));
+        // Sort by createdAt DESC
+        usort($credits, fn($a, $b) => ($b['createdAt'] ?? '') <=> ($a['createdAt'] ?? ''));
 
         $credits = array_map(function ($c) {
             $c['amount'] = (float) ($c['amount'] ?? 0);

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '../test/utils';
+import { render, screen } from '../test/utils.js';
 import userEvent from '@testing-library/user-event';
-import ProductCard from './ProductCard';
-import { useCartStore } from '../stores/cartStore';
+import ProductCard from './ProductCard.js';
+import { useCartStore } from '../stores/cartStore.js';
 
 const mockProduct = {
   id: '1',
@@ -14,6 +14,7 @@ const mockProduct = {
   imageUrl: null,
   isAvailable: true,
   isSeasonal: false,
+  isPerishable: false,
   packingType: 'box',
   createdAt: new Date().toISOString(),
   updatedAt: '2024-01-01T00:00:00.000Z',
@@ -57,7 +58,7 @@ describe('ProductCard', () => {
   });
 
   it('calls addItem when add to cart button is clicked', async () => {
-    const user = userEvent.setup();
+    const user = (userEvent as any).setup();
     mockGetItemQuantity.mockReturnValue(0);
     mockAddItem.mockClear();
 

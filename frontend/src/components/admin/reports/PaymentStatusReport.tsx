@@ -1,5 +1,5 @@
-import { usePaymentStatusReport } from '../../../hooks/useReports';
-import { formatCurrency } from '../../../lib/utils';
+import { usePaymentStatusReport } from '../../../hooks/useReports.js';
+import { formatCurrency } from '../../../lib/utils.js';
 
 export default function PaymentStatusReport() {
   const { data: report, isLoading, error } = usePaymentStatusReport();
@@ -56,14 +56,14 @@ export default function PaymentStatusReport() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {report.customers.length === 0 ? (
+                  {(report.customers || []).length === 0 ? (
                     <tr>
                       <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
                         No outstanding balances
                       </td>
                     </tr>
                   ) : (
-                    report.customers.map((customer) => (
+                    (report.customers || []).map((customer) => (
                       <tr key={customer.customerId}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {customer.customerName}
@@ -78,11 +78,10 @@ export default function PaymentStatusReport() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              customer.outstandingBalance > 0
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${customer.outstandingBalance > 0
                                 ? 'bg-red-100 text-red-800'
                                 : 'bg-green-100 text-green-800'
-                            }`}
+                              }`}
                           >
                             {customer.outstandingBalance > 0 ? 'Outstanding' : 'Paid'}
                           </span>

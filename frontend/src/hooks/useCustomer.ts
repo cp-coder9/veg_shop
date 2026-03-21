@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import api from '../lib/api';
-import { useAuthStore } from '../stores/authStore';
+import api from '../lib/api.js';
+import { useAuthStore } from '../stores/authStore.js';
 
-interface Customer {
+export interface Customer {
   id: string;
   name: string;
   email: string | null;

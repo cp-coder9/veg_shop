@@ -31,12 +31,12 @@ class CategoryController
     public function index(): void
     {
         // Fetch active categories
-        $categories = $this->firebase->query('product_categories', 'is_active', '==', true);
+        $categories = $this->firebase->query('product_categories', 'isActive', '==', true);
 
-        // Sort manually by sort_order then label
+        // Sort manually by sortOrder then label
         usort($categories, function ($a, $b) {
-            $sortA = (int) ($a['sort_order'] ?? 0);
-            $sortB = (int) ($b['sort_order'] ?? 0);
+            $sortA = (int) ($a['sortOrder'] ?? 0);
+            $sortB = (int) ($b['sortOrder'] ?? 0);
             if ($sortA !== $sortB)
                 return $sortA <=> $sortB;
             return ($a['label'] ?? '') <=> ($b['label'] ?? '');
@@ -82,8 +82,8 @@ class CategoryController
             'key' => $data['key'],
             'label' => $data['label'],
             'description' => $data['description'] ?? null,
-            'sort_order' => (int) ($data['sortOrder'] ?? 0),
-            'is_active' => true,
+            'sortOrder' => (int) ($data['sortOrder'] ?? 0),
+            'isActive' => true,
             'createdAt' => date('c'),
             'updatedAt' => date('c')
         ];
@@ -117,9 +117,9 @@ class CategoryController
         if (isset($data['description']))
             $updates['description'] = $data['description'];
         if (isset($data['isActive']))
-            $updates['is_active'] = (bool) $data['isActive'];
+            $updates['isActive'] = (bool) $data['isActive'];
         if (isset($data['sortOrder']))
-            $updates['sort_order'] = (int) $data['sortOrder'];
+            $updates['sortOrder'] = (int) $data['sortOrder'];
 
         if (empty($updates)) {
             Response::error('No fields to update', 400);
