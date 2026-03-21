@@ -38,6 +38,9 @@ model User {
   // Packer relations
   packerOrders  Order[]     @relation("PackerOrders")
 
+  // Poll Items
+  pollItems     PollItem[]  @relation("CustomerPollItems")
+
   @@map("users")
 }
 
@@ -78,6 +81,7 @@ model Product {
   orderItems         OrderItem[]
   priceHistory       PriceHistory[]
   weeklyAvailability WeeklyAvailability[]
+  pollItems          PollItem[] @relation("ProductPollItems")
 
   @@map("products")
   @@index([supplierId])
@@ -203,6 +207,7 @@ model Invoice {
   order    Order     @relation(fields: [orderId], references: [id])
   customer User      @relation("CustomerInvoices", fields: [customerId], references: [id])
   payments Payment[]
+  pollItems PollItem[] @relation("InvoicePollItems")
 
   @@index([customerId])
   @@index([status])
@@ -363,4 +368,25 @@ model WeeklyCollationHistory {
   @@index([weekStartDate])
   @@index([status])
   @@map("weekly_collation_history")
+}
+
+// WhatsApp Poll items recorded by admin
+model PollItem {
+  id          String   @id @default(uuid())
+  customerId  String
+  productId   String
+  quantity    Int
+  price       Decimal 
+  status      String   @default("pending") // "pending" | "invoiced"
+  invoiceId   String?  // Reference to the invoice it eventually gets added to
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer    User     @relation("CustomerPollItems", fields: [customerId], references: [id])
+  product     Product  @relation("ProductPollItems", fields: [productId], references: [id])
+  invoice     Invoice? @relation("InvoicePollItems", fields: [invoiceId], references: [id])
+
+  @@index([customerId])
+  @@index([status])
+  @@map("poll_items")
 }

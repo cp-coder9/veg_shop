@@ -54,6 +54,7 @@ interface ProductFormData {
     price: number;
     unit: string;
     isAvailable: boolean;
+    imageUrl?: string;
     deliveryDay?: 'Wednesday' | 'Friday';
     description?: string;
     supplierId?: string;
@@ -137,6 +138,13 @@ const ProductsManagement = () => {
     const [bulkPriceValue, setBulkPriceValue] = useState(0);
 
     const [priceInput, setPriceInput] = useState('');
+
+    const [isAddingCategory, setIsAddingCategory] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [isAddingSupplier, setIsAddingSupplier] = useState(false);
+    const [newSupplierName, setNewSupplierName] = useState('');
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
 
     const [formData, setFormData] = useState<ProductFormData>({
         name: '',
@@ -341,10 +349,53 @@ const ProductsManagement = () => {
         updateMutation.mutate({ id, data: { price: newPrice } });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const createCategoryMutation = useMutation({
+        mutationFn: (data: { key: string; label: string }) => api.post('/categories', data),
+        onSuccess: (response) => {
+            queryClient.invalidateQueries({ queryKey: ['categories'] });
+            setFormData({ ...formData, category: response.data?.category?.key || response.data?.key });
+            setIsAddingCategory(false);
+            setNewCategoryName('');
+            toast.success('Category created successfully');
+        },
+        onError: () => toast.error('Failed to create category')
+    });
+
+    const createSupplierMutation = useMutation({
+        mutationFn: (data: { name: string }) => api.post('/admin/suppliers', data),
+        onSuccess: (response) => {
+            queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] });
+            queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+            setFormData({ ...formData, supplierId: response.data?.supplier?.id || response.data?.id });
+            setIsAddingSupplier(false);
+            setNewSupplierName('');
+            toast.success('Supplier created successfully');
+        },
+        onError: () => toast.error('Failed to create supplier')
+    });
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        let currentImageUrl = formData.imageUrl;
+
+        if (imageFile) {
+            const formDataUpload = new FormData();
+            formDataUpload.append('file', imageFile);
+            try {
+                const uploadRes = await api.post('/upload/image', formDataUpload, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                currentImageUrl = uploadRes.data.url;
+            } catch (err) {
+                toast.error('Failed to upload image');
+                return;
+            }
+        }
+
         const finalData = {
             ...formData,
+            imageUrl: currentImageUrl,
             price: Math.round(parseFloat(priceInput) * 100) || 0
         };
 
@@ -363,10 +414,13 @@ const ProductsManagement = () => {
             price: product.price,
             unit: product.unit,
             isAvailable: product.isAvailable,
+            imageUrl: product.imageUrl || '',
             deliveryDay: product.deliveryDay,
             description: product.description || '',
             supplierId: product.supplierId || ''
         });
+        setImageFile(null);
+        setImagePreview(product.imageUrl || null);
         setPriceInput((product.price / 100).toString());
         setIsModalOpen(true);
     };
@@ -380,10 +434,17 @@ const ProductsManagement = () => {
             price: 0,
             unit: '',
             isAvailable: true,
+            imageUrl: '',
             deliveryDay: undefined,
             description: '',
             supplierId: ''
         });
+        setImageFile(null);
+        setImagePreview(null);
+        setIsAddingCategory(false);
+        setNewCategoryName('');
+        setIsAddingSupplier(false);
+        setNewSupplierName('');
         setPriceInput('');
     };
 
@@ -816,29 +877,130 @@ const ProductsManagement = () => {
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Product Image</label>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                            {imagePreview ? (
+                                <div className="relative w-20 h-20 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setImageFile(null);
+                                            setImagePreview(null);
+                                            setFormData({ ...formData, imageUrl: '' });
+                                        }}
+                                        className="absolute top-0 right-0 p-1 bg-black/50 text-white hover:bg-black rounded-bl"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="w-20 h-20 bg-gray-50 border border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400 flex-shrink-0">
+                                    <Package size={24} />
+                                </div>
+                            )}
+                            <div className="flex-1 w-full">
+                                <Input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            setImageFile(file);
+                                            setImagePreview(URL.createObjectURL(file));
+                                        }
+                                    }}
+                                />
+                                <p className="text-xs text-warm-gray mt-1">Suggested format: Square (1:1) JPG or PNG.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Category</label>
-                            <Select
-                                value={formData.category}
-                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                required
-                                options={[
-                                    { value: '', label: 'Select category' },
-                                    ...(categories?.data?.map((c: { key: string; label: string }) => ({ value: c.key, label: c.label })) || [])
-                                ]}
-                            />
+                            {isAddingCategory ? (
+                                <div className="flex gap-2">
+                                    <Input
+                                        value={newCategoryName}
+                                        onChange={(e) => setNewCategoryName(e.target.value)}
+                                        placeholder="New category name"
+                                        autoFocus
+                                    />
+                                    <Button
+                                        type="button"
+                                        onClick={() => {
+                                            if (newCategoryName.trim()) {
+                                                const key = newCategoryName.trim().toLowerCase().replace(/[^a-z0-9]/g, '-');
+                                                createCategoryMutation.mutate({ key, label: newCategoryName.trim() });
+                                            }
+                                        }}
+                                        disabled={createCategoryMutation.isPending || !newCategoryName.trim()}
+                                        variant="harvest"
+                                    >
+                                        Save
+                                    </Button>
+                                    <Button type="button" variant="secondary" onClick={() => setIsAddingCategory(false)}>
+                                        Cancel
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Select
+                                    value={formData.category}
+                                    onChange={(e) => {
+                                        if (e.target.value === 'ADD_NEW') setIsAddingCategory(true);
+                                        else setFormData({ ...formData, category: e.target.value });
+                                    }}
+                                    required
+                                    options={[
+                                        { value: '', label: 'Select category' },
+                                        ...(categories?.data?.map((c: { key: string; label: string }) => ({ value: c.key, label: c.label })) || []),
+                                        { value: 'ADD_NEW', label: '+ Add New Category' }
+                                    ]}
+                                />
+                            )}
                         </div>
                         <div>
                             <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Supplier</label>
-                            <Select
-                                value={formData.supplierId || ''}
-                                onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
-                                options={[
-                                    { value: '', label: 'Select supplier' },
-                                    ...(suppliers?.map((s: Supplier) => ({ value: s.id, label: s.name })) || [])
-                                ]}
-                            />
+                            {isAddingSupplier ? (
+                                <div className="flex gap-2">
+                                    <Input
+                                        value={newSupplierName}
+                                        onChange={(e) => setNewSupplierName(e.target.value)}
+                                        placeholder="New supplier name"
+                                        autoFocus
+                                    />
+                                    <Button
+                                        type="button"
+                                        onClick={() => {
+                                            if (newSupplierName.trim()) {
+                                                createSupplierMutation.mutate({ name: newSupplierName.trim() });
+                                            }
+                                        }}
+                                        disabled={createSupplierMutation.isPending || !newSupplierName.trim()}
+                                        variant="harvest"
+                                    >
+                                        Save
+                                    </Button>
+                                    <Button type="button" variant="secondary" onClick={() => setIsAddingSupplier(false)}>
+                                        Cancel
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Select
+                                    value={formData.supplierId || ''}
+                                    onChange={(e) => {
+                                        if (e.target.value === 'ADD_NEW') setIsAddingSupplier(true);
+                                        else setFormData({ ...formData, supplierId: e.target.value });
+                                    }}
+                                    options={[
+                                        { value: '', label: 'Select supplier' },
+                                        ...(suppliers?.map((s: Supplier) => ({ value: s.id, label: s.name })) || []),
+                                        { value: 'ADD_NEW', label: '+ Add New Supplier' }
+                                    ]}
+                                />
+                            )}
                         </div>
                     </div>
 

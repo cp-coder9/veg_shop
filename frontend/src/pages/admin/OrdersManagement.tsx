@@ -1244,6 +1244,7 @@ interface StockOrderDetailModalProps {
 
 function StockOrderDetailModal({ stockOrderId, onClose }: StockOrderDetailModalProps) {
   const { data: stockOrder, isLoading, refetch } = useStockOrder(stockOrderId);
+  const { data: products } = useProducts();
   const updateReceived = useUpdateReceivedQuantities();
   const fulfillOrder = useFulfillStockOrder();
   const [receivedQuantities, setReceivedQuantities] = useState<Record<string, number>>({});
@@ -1341,34 +1342,40 @@ function StockOrderDetailModal({ stockOrderId, onClose }: StockOrderDetailModalP
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
                 <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Ordered</th>
                 <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Received</th>
                 <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Short</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {stockOrder.items.map((item) => (
-                <tr key={item.id} className={item.isShort ? 'bg-orange-50' : ''}>
-                  <td className="px-4 py-2 text-sm text-gray-900">{item.productName}</td>
-                  <td className="px-4 py-2 text-sm text-right text-gray-900">{item.orderedQuantity}</td>
-                  <td className="px-4 py-2 text-sm">
-                    <input
-                      type="number"
-                      min={0}
-                      max={item.orderedQuantity}
-                      value={receivedQuantities[item.id] ?? item.orderedQuantity}
-                      onChange={(e) => setReceivedQuantities({
-                        ...receivedQuantities,
-                        [item.id]: parseInt(e.target.value) || 0
-                      })}
-                      className="w-20 px-2 py-1 text-right border border-gray-300 rounded"
-                    />
-                  </td>
-                  <td className={`px-4 py-2 text-sm text-right ${item.isShort ? 'text-orange-600 font-semibold' : 'text-gray-500'}`}>
-                    {item.isShort ? item.shortQuantity : '-'}
-                  </td>
-                </tr>
-              ))}
+              {stockOrder.items.map((item) => {
+                const product = products?.find(p => p.id === item.productId);
+                const supplierName = product?.supplier?.name || '-';
+                return (
+                  <tr key={item.id} className={item.isShort ? 'bg-orange-50' : ''}>
+                    <td className="px-4 py-2 text-sm text-gray-900">{item.productName}</td>
+                    <td className="px-4 py-2 text-sm text-gray-500">{supplierName}</td>
+                    <td className="px-4 py-2 text-sm text-right text-gray-900">{item.orderedQuantity}</td>
+                    <td className="px-4 py-2 text-sm">
+                      <input
+                        type="number"
+                        min={0}
+                        max={item.orderedQuantity}
+                        value={receivedQuantities[item.id] ?? item.orderedQuantity}
+                        onChange={(e) => setReceivedQuantities({
+                          ...receivedQuantities,
+                          [item.id]: parseInt(e.target.value) || 0
+                        })}
+                        className="w-20 px-2 py-1 text-right border border-gray-300 rounded"
+                      />
+                    </td>
+                    <td className={`px-4 py-2 text-sm text-right ${item.isShort ? 'text-orange-600 font-semibold' : 'text-gray-500'}`}>
+                      {item.isShort ? item.shortQuantity : '-'}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

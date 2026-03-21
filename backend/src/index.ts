@@ -22,6 +22,7 @@ import driverRoutes from './routes/driver.routes.js';
 import stockOrderRoutes from './routes/stock-order.routes.js';
 import weeklyAvailabilityRoutes from './routes/weekly-availability.routes.js';
 import publicProductsRoutes from './routes/public-products.routes.js';
+import pollItemsRoutes from './routes/poll-items.routes.js';
 import { schedulerService } from './services/scheduler.service.js';
 
 // Log configuration on startup
@@ -73,6 +74,7 @@ app.use('/api/driver', driverRoutes);
 app.use('/api/stock-orders', stockOrderRoutes);
 app.use('/api/availability', weeklyAvailabilityRoutes);
 app.use('/api/public/products', publicProductsRoutes);
+app.use('/api/poll-items', pollItemsRoutes);
 
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {

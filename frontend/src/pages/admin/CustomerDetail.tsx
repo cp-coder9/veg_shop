@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAdminCustomer, useUpdateAdminCustomer, CustomerProfile } from '../../hooks/useAdminCustomers.js';
 import { Button, Input, Card, CardContent, Badge, Select, Textarea } from '../../components/ui/index.js';
-import { ArrowLeft, User, Package, DollarSign, CreditCard, Gift } from 'lucide-react';
+import { ArrowLeft, User, Package, DollarSign, CreditCard, Gift, MessageSquare } from 'lucide-react';
+import { usePollItems, useCreatePollItem, useDeletePollItem, useGeneratePollItemsInvoice } from '../../hooks/usePollItems.js';
+import { useAdminProducts } from '../../hooks/useAdminProducts.js';
 
-type TabType = 'info' | 'orders' | 'invoices' | 'payments' | 'credits';
+type TabType = 'info' | 'orders' | 'invoices' | 'payments' | 'credits' | 'poll';
 
 export default function CustomerDetail() {
   const { customerId } = useParams<{ customerId: string }>();
@@ -43,6 +45,7 @@ export default function CustomerDetail() {
     { id: 'invoices' as TabType, label: 'Invoices', icon: DollarSign, count: customerProfile.invoices?.length },
     { id: 'payments' as TabType, label: 'Payments', icon: CreditCard, count: customerProfile.paymentHistory?.length },
     { id: 'credits' as TabType, label: 'Credits', icon: Gift, count: undefined },
+    { id: 'poll' as TabType, label: 'Poll Items', icon: MessageSquare, count: undefined },
   ];
 
   return (
@@ -109,6 +112,7 @@ export default function CustomerDetail() {
         {activeTab === 'invoices' && <InvoicesTab invoices={customerProfile.invoices} />}
         {activeTab === 'payments' && <PaymentsTab payments={customerProfile.paymentHistory} />}
         {activeTab === 'credits' && <CreditsTab customerId={customerProfile.id} creditBalance={customerProfile.creditBalance} />}
+        {activeTab === 'poll' && <PollItemsTab customerId={customerProfile.id} />}
       </div>
     </div>
   );
@@ -640,6 +644,167 @@ function CreditsTab({ creditBalance }: CreditsTabProps) {
           have been applied and earned over time.
         </p>
       </div>
+    </div>
+  );
+}
+
+// Poll Items Tab Component
+function PollItemsTab({ customerId }: { customerId: string }) {
+  const { data: pollItems, isLoading } = usePollItems(customerId);
+  const { data: productsData } = useAdminProducts();
+  const createPollItem = useCreatePollItem();
+  const deletePollItem = useDeletePollItem(customerId);
+  const generateInvoice = useGeneratePollItemsInvoice(customerId);
+
+  const products = Array.isArray(productsData) ? productsData : (productsData as any)?.data || [];
+
+  const [form, setForm] = useState({ productId: '', quantity: 1 });
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const product = products.find((p: any) => p.id === form.productId);
+    if (!product) return;
+    try {
+      await createPollItem.mutateAsync({
+        customerId,
+        productId: form.productId,
+        quantity: form.quantity,
+        price: Number(product.price),
+      });
+      setForm({ productId: '', quantity: 1 });
+    } catch {
+      alert('Failed to add poll item');
+    }
+  };
+
+  const handleGenerateInvoice = async () => {
+    if (!window.confirm('Generate a standalone invoice for all pending poll items?')) return;
+    try {
+      await generateInvoice.mutateAsync();
+      alert('Invoice generated successfully!');
+    } catch (err: any) {
+      alert(err?.response?.data?.error?.message || 'Failed to generate invoice');
+    }
+  };
+
+  const total = (pollItems || []).reduce(
+    (sum, item) => sum + Number(item.price) * item.quantity, 0
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Info Banner */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+        <strong>📱 WhatsApp Poll Items</strong> — Add items ordered by this customer via WhatsApp polls (Tue–Fri).
+        These will automatically be included in their next invoice, or you can generate a standalone invoice below.
+      </div>
+
+      {/* Add Poll Item Form */}
+      <Card>
+        <CardContent className="p-6">
+          <h2 className="font-display text-body-lg text-primary-dark mb-4">Add Poll Item</h2>
+          <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+            <div className="sm:col-span-2">
+              <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Product</label>
+              <Select
+                value={form.productId}
+                onChange={(e) => setForm({ ...form, productId: e.target.value })}
+                required
+                options={[
+                  { value: '', label: 'Select product...' },
+                  ...products.map((p: any) => ({
+                    value: p.id,
+                    label: `${p.name} — R${Number(p.price).toFixed(2)}/${p.unit}`,
+                  }))
+                ]}
+              />
+            </div>
+            <div>
+              <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Qty</label>
+              <Input
+                type="number"
+                min={1}
+                value={form.quantity}
+                onChange={(e) => setForm({ ...form, quantity: parseInt(e.target.value) || 1 })}
+                required
+              />
+            </div>
+            <div className="sm:col-span-3">
+              <Button type="submit" variant="primary" disabled={createPollItem.isPending || !form.productId}>
+                {createPollItem.isPending ? 'Adding...' : '+ Add Item'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Pending Poll Items List */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="font-display text-body-lg text-primary-dark">
+              Pending Poll Items {pollItems && pollItems.length > 0 && `(${pollItems.length})`}
+            </h2>
+            {pollItems && pollItems.length > 0 && (
+              <Button
+                onClick={handleGenerateInvoice}
+                variant="primary"
+                disabled={generateInvoice.isPending}
+              >
+                {generateInvoice.isPending ? 'Generating...' : '🧾 Generate Standalone Invoice'}
+              </Button>
+            )}
+          </div>
+
+          {isLoading ? (
+            <div className="text-center py-6"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-terracotta mx-auto"></div></div>
+          ) : !pollItems || pollItems.length === 0 ? (
+            <p className="font-body text-body-md text-warm-gray text-center py-6">No pending poll items.</p>
+          ) : (
+            <>
+              <table className="min-w-full divide-y divide-light-gray">
+                <thead className="bg-cream">
+                  <tr>
+                    <th className="px-4 py-2 text-left font-accent text-caption text-warm-gray uppercase">Product</th>
+                    <th className="px-4 py-2 text-right font-accent text-caption text-warm-gray uppercase">Qty</th>
+                    <th className="px-4 py-2 text-right font-accent text-caption text-warm-gray uppercase">Price</th>
+                    <th className="px-4 py-2 text-right font-accent text-caption text-warm-gray uppercase">Subtotal</th>
+                    <th className="px-4 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-light-gray">
+                  {pollItems.map((item) => (
+                    <tr key={item.id}>
+                      <td className="px-4 py-3 text-sm text-primary-dark">{item.product.name}</td>
+                      <td className="px-4 py-3 text-sm text-right text-primary-dark">{item.quantity} {item.product.unit}</td>
+                      <td className="px-4 py-3 text-sm text-right text-warm-gray">R {Number(item.price).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-sm text-right font-semibold text-primary-dark">R {(Number(item.price) * item.quantity).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => deletePollItem.mutate(item.id)}
+                          className="text-red-500 hover:text-red-700 text-xs font-bold"
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-cream">
+                    <td colSpan={3} className="px-4 py-3 text-right font-semibold text-primary-dark">Total:</td>
+                    <td className="px-4 py-3 text-right font-bold text-primary-dark">R {total.toFixed(2)}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+              <p className="text-xs text-warm-gray mt-3">
+                💡 These items will be auto-included in the next invoice generated for this customer from an online order.
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

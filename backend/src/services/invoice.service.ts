@@ -171,7 +171,17 @@ export class InvoiceService {
       }, 0);
 
       const deliveryFee = Number(order.deliveryFees || 0);
-      const subtotalWithDelivery = itemsTotal + deliveryFee;
+
+      // Fetch any pending poll items for this customer
+      const pendingPollItems = await prisma.pollItem.findMany({
+        where: { customerId: order.customerId, status: 'pending' },
+        include: { product: true },
+      });
+      const pollItemsTotal = pendingPollItems.reduce(
+        (sum: number, pi: any) => sum + Number(pi.price) * pi.quantity, 0
+      );
+
+      const subtotalWithDelivery = itemsTotal + deliveryFee + pollItemsTotal;
 
       // Get customer's current credit balance
       const creditBalance = await this.getCustomerCreditBalance(order.customerId);
@@ -193,7 +203,7 @@ export class InvoiceService {
           data: {
             orderId,
             customerId: order.customerId,
-            subtotal: new Decimal(itemsTotal),
+            subtotal: new Decimal(itemsTotal + pollItemsTotal),
             creditApplied: new Decimal(creditToApply),
             total: new Decimal(total),
             status: total === 0 ? 'paid' : 'unpaid',
@@ -215,6 +225,14 @@ export class InvoiceService {
           },
         });
 
+        // Mark poll items as invoiced and link them to this invoice
+        if (pendingPollItems.length > 0) {
+          await tx.pollItem.updateMany({
+            where: { id: { in: pendingPollItems.map((pi: any) => pi.id) } },
+            data: { status: 'invoiced', invoiceId: newInvoice.id },
+          });
+        }
+
         // If credit was applied, deduct it from customer's credit balance
         if (creditToApply > 0) {
           await tx.credit.create({
@@ -232,6 +250,89 @@ export class InvoiceService {
 
       return invoice;
     }
+  }
+
+  /**
+   * Generate a standalone invoice from pending poll items (when customer doesn't order online)
+   */
+  async generatePollItemsInvoice(customerId: string): Promise<any> {
+    const pendingPollItems = await prisma.pollItem.findMany({
+      where: { customerId, status: 'pending' },
+      include: { product: true },
+    });
+
+    if (pendingPollItems.length === 0) {
+      throw new Error('No pending poll items for this customer');
+    }
+
+    const customer = await prisma.user.findUnique({ where: { id: customerId } });
+    if (!customer) throw new Error('Customer not found');
+
+    const pollItemsTotal = pendingPollItems.reduce(
+      (sum: number, pi: any) => sum + Number(pi.price) * pi.quantity, 0
+    );
+
+    const creditBalance = await this.getCustomerCreditBalance(customerId);
+    const creditToApply = Math.min(creditBalance, pollItemsTotal);
+    const total = pollItemsTotal - creditToApply;
+
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 14);
+
+    // Poll item invoices don't have a linked order – we use a null orderId workaround
+    // by creating a placeholder order for now, or we store directly.
+    // Strategy: create the invoice with a placeholder sentinel orderId that references
+    // a dummy order. Instead, we'll create a minimal invoice record referencing null orderId.
+    // Since orderId is required/unique on Invoice, we create a placeholder order.
+    const placeholderOrder = await prisma.order.create({
+      data: {
+        customerId,
+        deliveryDate: new Date(),
+        deliveryMethod: 'collection',
+        status: 'confirmed',
+        notes: 'Poll items order (WhatsApp)',
+      } as any,
+    });
+
+    const invoice = await prisma.$transaction(async (tx: any) => {
+      const newInvoice = await tx.invoice.create({
+        data: {
+          orderId: placeholderOrder.id,
+          customerId,
+          subtotal: new Decimal(pollItemsTotal),
+          creditApplied: new Decimal(creditToApply),
+          total: new Decimal(total),
+          status: total === 0 ? 'paid' : 'unpaid',
+          type: 'proforma',
+          dueDate,
+        },
+        include: {
+          customer: true,
+          payments: true,
+        },
+      });
+
+      // Mark poll items invoiced
+      await tx.pollItem.updateMany({
+        where: { id: { in: pendingPollItems.map((pi: any) => pi.id) } },
+        data: { status: 'invoiced', invoiceId: newInvoice.id },
+      });
+
+      if (creditToApply > 0) {
+        await tx.credit.create({
+          data: {
+            customerId,
+            amount: new Decimal(-creditToApply),
+            reason: `Applied to poll items invoice ${newInvoice.id}`,
+            type: 'applied',
+          },
+        });
+      }
+
+      return newInvoice;
+    });
+
+    return { invoice, pollItems: pendingPollItems };
   }
 
   /**
