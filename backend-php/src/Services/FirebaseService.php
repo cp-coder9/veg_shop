@@ -43,7 +43,6 @@ class FirebaseService
         curl_setopt_array($ch, $params);
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         $decoded = json_decode((string) $response, true);
 

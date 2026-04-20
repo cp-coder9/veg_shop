@@ -20,6 +20,8 @@ interface Product {
         id: string;
         name: string;
     } | null;
+    packingType?: string;
+    packQuantity?: number;
     updatedAt?: string;
 }
 
@@ -58,7 +60,11 @@ interface ProductFormData {
     deliveryDay?: 'Wednesday' | 'Friday';
     description?: string;
     supplierId?: string;
+    packingType?: string;
+    packQuantity?: number;
 }
+
+const PRODUCT_UNITS = ['kg', 'g', 'unit', 'bunch', 'pack', 'bag', 'box'];
 
 const InlinePriceInput = ({ product, onUpdate }: { product: Product; onUpdate: (id: string, newPrice: number) => void }) => {
     const [price, setPrice] = useState((product.price / 100).toFixed(2));
@@ -150,11 +156,13 @@ const ProductsManagement = () => {
         name: '',
         category: '',
         price: 0,
-        unit: '',
+        unit: 'unit',
         isAvailable: true,
         deliveryDay: undefined,
         description: '',
-        supplierId: ''
+        supplierId: '',
+        packingType: 'ambient',
+        packQuantity: undefined
     });
 
     const { data: products, isLoading } = useQuery<Product[]>({
@@ -165,11 +173,11 @@ const ProductsManagement = () => {
         }
     });
 
-    const { data: categories } = useQuery<{ data: { key: string; label: string }[] }>({
+    const { data: categories } = useQuery<{ key: string; label: string }[]>({
         queryKey: ['categories'],
         queryFn: async () => {
             const response = await api.get('/categories');
-            return response;
+            return response.data;
         }
     });
 
@@ -180,9 +188,6 @@ const ProductsManagement = () => {
             return response.data;
         }
     });
-
-    // Fetch orders - kept for potential future use
-    // Currently using API response for affected orders instead
 
     const createMutation = useMutation({
         mutationFn: (data: ProductFormData) => api.post('/products', data),
@@ -233,11 +238,9 @@ const ProductsManagement = () => {
             queryClient.invalidateQueries({ queryKey: ['products'] });
             queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] });
 
-            // Check if there are affected orders in the response
             const responseData = response as any;
             const affectedOrders = responseData?.data?.affectedOrders || [];
             if (affectedOrders.length > 0) {
-                // Show the popup with affected orders
                 setOrdersForProduct(affectedOrders.map((order: AffectedOrder) => ({
                     id: order.orderId,
                     customer: { name: order.customerName },
@@ -262,7 +265,6 @@ const ProductsManagement = () => {
     const bulkUpdateMutation = useMutation({
         mutationFn: async (data: { ids: string[]; isAvailable: boolean }) => {
             if (!data.isAvailable) {
-                // For bulk unavailable, we need to check each product for affected orders first
                 const allAffectedOrders: AffectedOrder[] = [];
                 const productsList = Array.isArray(products) ? products : (products as unknown as { data: Product[] })?.data || [];
 
@@ -273,7 +275,6 @@ const ProductsManagement = () => {
                             const response = await api.put(`/products/${id}`, { isAvailable: false }) as any;
                             const responseData = response?.data;
                             if (responseData?.affectedOrders && responseData.affectedOrders.length > 0) {
-                                // Add product name to each affected order
                                 const ordersWithProduct = responseData.affectedOrders.map((order: AffectedOrder) => ({
                                     ...order,
                                     productName: product.name
@@ -286,7 +287,6 @@ const ProductsManagement = () => {
                     }
                 }
 
-                // If there are affected orders, show popup and don't complete the update yet
                 if (allAffectedOrders.length > 0) {
                     setBulkAffectedOrders(allAffectedOrders);
                     setShowBulkOrdersPopup(true);
@@ -294,10 +294,8 @@ const ProductsManagement = () => {
                     throw new Error('AFFECTED_ORDERS_FOUND');
                 }
 
-                // No affected orders, proceed with bulk update
                 return Promise.all(data.ids.map(id => api.put(`/products/${id}`, { isAvailable: false })));
             } else {
-                // For making available, just update directly
                 return Promise.all(data.ids.map(id => api.put(`/products/${id}`, { isAvailable: true })));
             }
         },
@@ -308,7 +306,6 @@ const ProductsManagement = () => {
             setSelectedProducts(new Set());
         },
         onError: (error: unknown) => {
-            // Don't show error toast if we found affected orders (handled separately)
             if (error instanceof Error && error.message === 'AFFECTED_ORDERS_FOUND') {
                 return;
             }
@@ -353,7 +350,7 @@ const ProductsManagement = () => {
         mutationFn: (data: { key: string; label: string }) => api.post('/categories', data),
         onSuccess: (response) => {
             queryClient.invalidateQueries({ queryKey: ['categories'] });
-            setFormData({ ...formData, category: response.data?.category?.key || response.data?.key });
+            setFormData(prev => ({ ...prev, category: response.data?.key }));
             setIsAddingCategory(false);
             setNewCategoryName('');
             toast.success('Category created successfully');
@@ -366,7 +363,7 @@ const ProductsManagement = () => {
         onSuccess: (response) => {
             queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] });
             queryClient.invalidateQueries({ queryKey: ['suppliers'] });
-            setFormData({ ...formData, supplierId: response.data?.supplier?.id || response.data?.id });
+            setFormData(prev => ({ ...prev, supplierId: response.data?.id }));
             setIsAddingSupplier(false);
             setNewSupplierName('');
             toast.success('Supplier created successfully');
@@ -417,7 +414,9 @@ const ProductsManagement = () => {
             imageUrl: product.imageUrl || '',
             deliveryDay: product.deliveryDay,
             description: product.description || '',
-            supplierId: product.supplierId || ''
+            supplierId: product.supplierId || '',
+            packingType: product.packingType || 'ambient',
+            packQuantity: product.packQuantity
         });
         setImageFile(null);
         setImagePreview(product.imageUrl || null);
@@ -432,12 +431,14 @@ const ProductsManagement = () => {
             name: '',
             category: '',
             price: 0,
-            unit: '',
+            unit: 'unit',
             isAvailable: true,
             imageUrl: '',
             deliveryDay: undefined,
             description: '',
-            supplierId: ''
+            supplierId: '',
+            packingType: 'ambient',
+            packQuantity: undefined
         });
         setImageFile(null);
         setImagePreview(null);
@@ -448,14 +449,12 @@ const ProductsManagement = () => {
         setPriceInput('');
     };
 
-    // Toggle single product availability with check for active orders
-    // Note: Now using API response for affected orders instead of local filtering
     const handleToggleAvailability = (product: Product) => {
         if (!product.isAvailable) {
-            // Making available - no need to check orders
             toggleAvailabilityMutation.mutate({ id: product.id, isAvailable: true });
         } else {
-            // Making unavailable - the API will return affected orders
+            setProductToToggle({ id: product.id, isAvailable: false });
+            // The API will return affected orders which shows the popup
             toggleAvailabilityMutation.mutate({ id: product.id, isAvailable: false });
         }
     };
@@ -466,16 +465,13 @@ const ProductsManagement = () => {
         }
     };
 
-    // Handle bulk unavailable with confirmation
     const confirmBulkUnavailable = async () => {
         setShowBulkOrdersPopup(false);
-
-        // Now perform the actual bulk update
-        const productsList = Array.isArray(products) ? products : (products as unknown as { data: Product[] })?.data || [];
-
+        const productsList = Array.isArray(products) ? products : (products as any)?.data || [];
+        
         for (const id of pendingBulkIds) {
-            const product = productsList.find((p: Product) => p.id === id);
-            if (product && product.isAvailable) {
+            const product = productsList.find((p: any) => p.id === id);
+            if (product?.isAvailable) {
                 try {
                     await api.put(`/products/${id}`, { isAvailable: false });
                 } catch (error) {
@@ -483,13 +479,10 @@ const ProductsManagement = () => {
                 }
             }
         }
-
+        
         queryClient.invalidateQueries({ queryKey: ['products'] });
-        queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] });
         toast.success(`Updated ${pendingBulkIds.length} products`);
         setSelectedProducts(new Set());
-        setBulkAffectedOrders([]);
-        setPendingBulkIds([]);
     };
 
     const cancelBulkUnavailable = () => {
@@ -497,6 +490,7 @@ const ProductsManagement = () => {
         setBulkAffectedOrders([]);
         setPendingBulkIds([]);
     };
+
     const toggleSelectAll = () => {
         if (selectedProducts.size === filteredProducts.length) {
             setSelectedProducts(new Set());
@@ -515,7 +509,6 @@ const ProductsManagement = () => {
         setSelectedProducts(newSelected);
     };
 
-    // Bulk actions
     const handleBulkMakeAvailable = () => {
         bulkUpdateMutation.mutate({ ids: Array.from(selectedProducts), isAvailable: true });
     };
@@ -535,7 +528,6 @@ const ProductsManagement = () => {
 
     return (
         <div className="space-y-8 max-w-[1600px] mx-auto">
-            {/* Page Header */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                 <div>
                     <h1 className="font-display text-display-md text-primary-dark">Products Management</h1>
@@ -554,7 +546,6 @@ const ProductsManagement = () => {
                 </Button>
             </div>
 
-            {/* Filters and View Toggle */}
             <Card>
                 <CardContent className="flex flex-col md:flex-row gap-4">
                     <div className="flex-1">
@@ -574,7 +565,7 @@ const ProductsManagement = () => {
                         onChange={(e) => setCategoryFilter(e.target.value)}
                         options={[
                             { value: 'all', label: 'All Categories' },
-                            ...(categories?.data?.map((c: { key: string; label: string }) => ({ value: c.key, label: c.label })) || [])
+                            ...(categories?.map((c: { key: string; label: string }) => ({ value: c.key, label: c.label })) || [])
                         ]}
                         className="w-full md:w-48"
                     />
@@ -606,7 +597,6 @@ const ProductsManagement = () => {
                 </CardContent>
             </Card>
 
-            {/* Bulk Actions Bar */}
             {selectedProducts.size > 0 && (
                 <Card className="bg-green-50 border-green-100 shadow-sm animate-in fade-in slide-in-from-top-4">
                     <CardContent className="flex flex-col md:flex-row items-center justify-between gap-4 py-3">
@@ -654,7 +644,6 @@ const ProductsManagement = () => {
                 </Card>
             )}
 
-            {/* Products Display */}
             <Card padding="none">
                 {isLoading ? (
                     <div className="p-8 text-center">
@@ -695,7 +684,19 @@ const ProductsManagement = () => {
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1">
                                             <h3 className="font-body text-body-md font-medium text-primary-dark">{product.name}</h3>
-                                            <p className="font-accent text-caption text-warm-gray">{product.category}</p>
+                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                <span className="font-accent text-[10px] tracking-wider uppercase px-1.5 py-0.5 bg-cream text-warm-gray rounded border border-light-gray">
+                                                    {product.category}
+                                                </span>
+                                                {product.packingType && (
+                                                    <span className="font-accent text-[10px] tracking-wider uppercase px-1.5 py-0.5 bg-terracotta/5 text-terracotta rounded border border-terracotta/20">
+                                                        {product.packingType === 'ambient' && '📦 Ambient (Box or Bag)'}
+                                                        {product.packingType === 'cold' && '❄️ Cold (Cooler Box)'}
+                                                        {product.packingType === 'frozen' && '🧊 Frozen (Cooler Box)'}
+                                                        {product.packingType === 'loose' && '🧺 Loose Items'}
+                                                    </span>
+                                                )}
+                                            </div>
                                             {product.supplier && (
                                                 <p className="font-accent text-caption text-warm-gray mt-1">
                                                     Supplier: {product.supplier.name}
@@ -739,7 +740,6 @@ const ProductsManagement = () => {
                         ))}
                     </div>
                 ) : (
-                    /* List View */
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
@@ -794,7 +794,19 @@ const ProductsManagement = () => {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-4 text-body-sm text-gray-500">{product.category}</td>
+                                        <td className="px-4 py-4">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-body-sm text-gray-500">{product.category}</span>
+                                                {product.packingType && (
+                                                    <span className="text-[10px] font-bold uppercase tracking-tighter text-terracotta">
+                                                        {product.packingType === 'ambient' && '📦 Ambient (Box or Bag)'}
+                                                        {product.packingType === 'cold' && '❄️ Cold (Cooler Box)'}
+                                                        {product.packingType === 'frozen' && '🧊 Frozen (Cooler Box)'}
+                                                        {product.packingType === 'loose' && '🧺 Loose Items'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
                                         <td className="px-4 py-4 text-body-sm text-gray-500">
                                             {product.supplier?.name || '-'}
                                         </td>
@@ -848,7 +860,6 @@ const ProductsManagement = () => {
                 )}
             </Card>
 
-            {/* Create/Edit Modal */}
             <Modal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
@@ -932,8 +943,12 @@ const ProductsManagement = () => {
                                         type="button"
                                         onClick={() => {
                                             if (newCategoryName.trim()) {
-                                                const key = newCategoryName.trim().toLowerCase().replace(/[^a-z0-9]/g, '-');
-                                                createCategoryMutation.mutate({ key, label: newCategoryName.trim() });
+                                                const key = newCategoryName.trim().toLowerCase().replace(/[^a-z]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+                                                if (key) {
+                                                    createCategoryMutation.mutate({ key, label: newCategoryName.trim() });
+                                                } else {
+                                                    toast.error('Category name must contain letters');
+                                                }
                                             }
                                         }}
                                         disabled={createCategoryMutation.isPending || !newCategoryName.trim()}
@@ -955,7 +970,7 @@ const ProductsManagement = () => {
                                     required
                                     options={[
                                         { value: '', label: 'Select category' },
-                                        ...(categories?.data?.map((c: { key: string; label: string }) => ({ value: c.key, label: c.label })) || []),
+                                        ...(categories?.map((c: { key: string; label: string }) => ({ value: c.key, label: c.label })) || []),
                                         { value: 'ADD_NEW', label: '+ Add New Category' }
                                     ]}
                                 />
@@ -1007,13 +1022,16 @@ const ProductsManagement = () => {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Unit</label>
-                            <Input
-                                type="text"
-                                required
+                            <select
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 value={formData.unit}
                                 onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                                placeholder="kg, bunch, piece, etc."
-                            />
+                                required
+                            >
+                                {PRODUCT_UNITS.map(unit => (
+                                    <option key={unit} value={unit}>{unit}</option>
+                                ))}
+                            </select>
                         </div>
                         <div>
                             <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Price (R)</label>
@@ -1066,6 +1084,40 @@ const ProductsManagement = () => {
                             />
                         </div>
                     </div>
+
+                    <div>
+                        <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Packing Type</label>
+                        <Select
+                            value={formData.packingType}
+                            onChange={(e) => setFormData({ ...formData, packingType: e.target.value })}
+                            options={[
+                                { value: 'ambient', label: 'Ambient (Box or Bag)' },
+                                { value: 'cold', label: 'Cold (Cooler Box)' },
+                                { value: 'frozen', label: 'Frozen (Cooler Box)' },
+                                { value: 'loose', label: 'Loose Items' }
+                            ]}
+                        />
+                    </div>
+
+                    {formData.unit?.toLowerCase() === 'pack' && (
+                        <div className="mt-4 p-4 bg-emerald-50 rounded-lg border border-emerald-100">
+                            <label className="font-accent text-caption text-emerald-800 uppercase tracking-wide mb-2 block">
+                                Items per Pack (Multiplier)
+                            </label>
+                            <p className="text-xs text-emerald-600 mb-3">
+                                Total Price = Quantity Ordered × Items per Pack × Unit Price
+                            </p>
+                            <Input
+                                type="number"
+                                required
+                                min="1"
+                                placeholder="e.g. 6, 12, 24"
+                                value={formData.packQuantity || ''}
+                                onChange={(e) => setFormData({ ...formData, packQuantity: parseInt(e.target.value) || undefined })}
+                                className="border-emerald-200 focus:ring-emerald-500 font-bold text-lg"
+                            />
+                        </div>
+                    )}
 
                     <div className="flex justify-end gap-3 mt-6">
                         <Button type="button" onClick={handleCloseModal} variant="secondary">

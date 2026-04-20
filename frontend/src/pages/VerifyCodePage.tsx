@@ -15,6 +15,7 @@ export default function VerifyCodePage() {
   // Get contact info from navigation state
   const contact = location.state?.contact || '';
   const method = location.state?.method || 'email';
+  const devCode = location.state?.devCode;
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Only allow numeric input, max 6 digits
@@ -32,11 +33,17 @@ export default function VerifyCodePage() {
     }
 
     try {
-      await verifyCode.mutateAsync({
+      const response = await verifyCode.mutateAsync({
         contact,
         code,
       });
-      navigate('/dashboard');
+
+      // Role-based redirect
+      const role = response.user.role;
+      if (role === 'admin') navigate('/admin');
+      else if (role === 'driver') navigate('/driver');
+      else if (role === 'packer') navigate('/packer');
+      else navigate('/dashboard');
     } catch (err) {
       setError('Invalid verification code. Please try again.');
     }
@@ -79,6 +86,22 @@ export default function VerifyCodePage() {
               Check your {method} — <br />
               <span className="text-[var(--ink)] opacity-100 font-bold">{contact}</span>
             </p>
+
+            {devCode && (
+              <div className="mt-6 p-4 bg-[var(--pigment-green)]/10 border border-[var(--pigment-green)]/20 rounded-lg animate-[bounce_1s_infinite]">
+                <p className="text-[10px] uppercase font-bold tracking-[2px] text-[var(--pigment-green)] opacity-60 mb-2">Dev Code (Popup)</p>
+                <p className="text-4xl font-black tracking-[0.2em] text-[var(--pigment-green)]">{devCode}</p>
+                <button
+                  onClick={() => {
+                    setCode(devCode);
+                    setError('');
+                  }}
+                  className="mt-3 text-[10px] uppercase font-black underline tracking-widest hover:text-[var(--pigment-oxide)] transition-colors"
+                >
+                  Auto-fill Code
+                </button>
+              </div>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">

@@ -6,7 +6,7 @@ import { useProducts } from '../hooks/useProducts.js';
 import { useCreateOrder, useOrderWindowStatus } from '../hooks/useOrders.js';
 import { formatPrice } from '../lib/utils.js';
 import { toast } from 'react-hot-toast';
-import { ShoppingCart, Trash2, Plus, Minus, CreditCard, Truck, Package, ChevronRight, Info, Calendar } from 'lucide-react';
+import { ShoppingCart, Trash2, Plus, Minus, CreditCard, Truck, Package, ChevronRight, Info, Calendar, X } from 'lucide-react';
 
 // Order cutoff time configuration (in hours, 24h format)
 // Orders placed before this time on cutoff day will be delivered next available day
@@ -37,6 +37,8 @@ export default function CartPage() {
   const [deliveryInstruction, setDeliveryInstruction] = useState<'door' | 'hand_to_me' | 'inside_fridge' | 'inside_freezer' | undefined>(undefined);
   const [coolerBag, setCoolerBag] = useState(false);
   const [groupDelivery, setGroupDelivery] = useState(false);
+  const [agreedToTnC, setAgreedToTnC] = useState(false);
+  const [showTnCModal, setShowTnCModal] = useState(false);
 
   const cartItems = items.map((item) => {
     const product = products?.find((p: any) => p.id === item.productId);
@@ -503,9 +505,21 @@ export default function CartPage() {
             <div className="space-y-4">
               {isCheckout ? (
                 <>
+                  <div className="mb-4 flex items-start gap-3">
+                    <input 
+                      type="checkbox" 
+                      id="tnc" 
+                      checked={agreedToTnC} 
+                      onChange={(e) => setAgreedToTnC(e.target.checked)}
+                      className="mt-0.5 accent-[var(--pigment-green)] w-4 h-4"
+                    />
+                    <label htmlFor="tnc" className="text-[10px] font-mono text-[var(--pigment-oxide)] uppercase tracking-wider">
+                      I agree to the <button type="button" onClick={() => setShowTnCModal(true)} className="underline font-bold text-[var(--pigment-green)] hover:text-black transition-colors">Terms & Conditions</button>
+                    </label>
+                  </div>
                   <button
                     onClick={handleCheckout}
-                    disabled={createOrder.isPending || windowStatus?.isOpen === false}
+                    disabled={createOrder.isPending || windowStatus?.isOpen === false || !agreedToTnC}
                     className="w-full bg-[var(--pigment-green)] text-[var(--canvas)] py-5 font-bold uppercase tracking-[3px] hover:bg-[var(--pigment-oxide)] transition-all disabled:opacity-50 shadow-xl"
                   >
                     {createOrder.isPending ? 'Processing...' : windowStatus?.isOpen === false ? 'Window Closed' : 'Confirm Order'}
@@ -539,6 +553,45 @@ export default function CartPage() {
           </div>
         </div>
       </div>
+
+      {/* T&C Modal */}
+      {showTnCModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#fcfaf7] w-full max-w-2xl max-h-[85vh] flex flex-col border border-[var(--pigment-ochre)]/20 shadow-2xl relative">
+            <div className="p-8 border-b border-[var(--pigment-ochre)]/20 flex justify-between items-center bg-white sticky top-0">
+              <h2 className="text-xl font-black uppercase tracking-tighter text-[var(--pigment-green)]">Terms & Conditions</h2>
+              <button onClick={() => setShowTnCModal(false)} className="opacity-40 hover:opacity-100 transition-opacity">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="p-8 overflow-y-auto font-mono text-sm leading-relaxed text-[var(--pigment-oxide)]/80 space-y-6">
+              <p className="font-bold underline">1. Introduction</p>
+              <p>Welcome to Our Harvest Tote. These terms and conditions outline the rules and regulations for the use of our service.</p>
+              
+              <p className="font-bold underline">2. Orders and Deliveries</p>
+              <p>Due to the fresh nature of our produce, items are subject to availability on the day of harvest. Substituted items or short deliveries will be credited.</p>
+              
+              <p className="font-bold underline">3. Returns & Replacements</p>
+              <p>If you have any issues with your produce, please contact us within 24 hours of delivery. Cooler bags must be returned empty and clean on the next delivery, failing which a replacement fee may apply.</p>
+              
+              <p className="text-xs italic opacity-60 mt-8">(Note: Full legal terms to be provided)</p>
+            </div>
+            
+            <div className="p-6 border-t border-[var(--pigment-ochre)]/10 bg-white/50 flex justify-end">
+              <button 
+                onClick={() => {
+                  setAgreedToTnC(true);
+                  setShowTnCModal(false);
+                }}
+                className="bg-[var(--pigment-green)] text-white px-8 py-3 text-xs font-bold uppercase tracking-[2px] hover:bg-[var(--pigment-oxide)] transition-colors"
+              >
+                I Agree
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

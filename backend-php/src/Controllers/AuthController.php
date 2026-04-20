@@ -123,6 +123,14 @@ class AuthController
      */
     public function devLogin(): void
     {
+        $isDev = ($_ENV['APP_ENV'] ?? 'development') === 'development';
+        $allowDevLogin = ($_ENV['ALLOW_DEV_LOGIN'] ?? 'false') === 'true';
+
+        if (!$isDev && !$allowDevLogin) {
+            Response::unauthorized('Dev login is disabled in this environment');
+            return;
+        }
+
         $data = Request::validate(['email']);
 
         try {

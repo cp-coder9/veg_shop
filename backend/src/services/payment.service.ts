@@ -27,6 +27,7 @@ export interface ShortDeliveryDto {
     productId: string;
     quantityShort: number;
   }[];
+  reason?: string;
 }
 
 interface InvoiceDetails {
@@ -498,7 +499,7 @@ export class PaymentService {
       const credit = await creditRepository.create({
         customerId: data.customerId,
         amount: totalCreditAmount,
-        reason: `Short delivery on order ${data.orderId}: ${creditDetails.join('; ')}`,
+        reason: data.reason ? `${data.reason} (Order ${data.orderId})` : `Short delivery on order ${data.orderId}: ${creditDetails.join('; ')}`,
         type: 'short_delivery',
         createdAt: new Date(),
       });
@@ -593,7 +594,7 @@ export class PaymentService {
           data: {
             customerId: data.customerId,
             amount: new Decimal(totalCreditAmount),
-            reason: `Short delivery on order ${data.orderId}: ${creditDetails.join('; ')}`,
+            reason: data.reason ? `${data.reason} (Order ${data.orderId})` : `Short delivery on order ${data.orderId}: ${creditDetails.join('; ')}`,
             type: 'short_delivery',
           },
           include: {

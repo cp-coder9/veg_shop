@@ -15,10 +15,12 @@ use Ramsey\Uuid\Uuid;
 class NotificationService
 {
     private FirebaseService $firebase;
+    private SmtpService $smtp;
 
     public function __construct()
     {
         $this->firebase = new FirebaseService();
+        $this->smtp = new SmtpService();
     }
 
     /**
@@ -31,7 +33,8 @@ class NotificationService
         if (!$order)
             return;
 
-        $customer = $this->firebase->getDocument('users', $order['customer_id']);
+        $userId = $order['customer_id'] ?? $order['customerId'] ?? '';
+        $customer = $this->firebase->getDocument('users', $userId);
         if (!$customer)
             return;
 
@@ -45,18 +48,18 @@ class NotificationService
         }
 
         // Calculate total if not stored
-        $total = $order['total_amount'] ?? 0;
+        $total = $order['total_amount'] ?? $order['totalAmount'] ?? 0;
         if ($total == 0) {
             foreach ($items as $item) {
-                $total += ($item['quantity'] ?? 0) * ($item['price_at_order'] ?? 0);
+                $total += ($item['quantity'] ?? 0) * ($item['price_at_order'] ?? $item['priceAtOrder'] ?? 0);
             }
         }
 
         $message = "Hi {$customer['name']}, thanks for your order!\n\nDetails:\n{$itemList}\nTotal: R{$total}\n\nWe'll let you know when it's on the way.";
 
         // Queue notification
-        $this->queueNotification($order['customer_id'], 'order_confirmation', 'whatsapp', $message);
-        $this->queueNotification($order['customer_id'], 'order_confirmation', 'email', $message);
+        $this->queueNotification($userId, 'order_confirmation', 'whatsapp', $message);
+        $this->queueNotification($userId, 'order_confirmation', 'email', $message);
     }
 
     /**
@@ -113,10 +116,28 @@ class NotificationService
     }
 
     /**
-     * Send Email (Mock implementation)
+     * Send Email using SMTP
      */
     private function sendEmail(array $notification): void
     {
-        // Integration with SMTP or Email Provider
+        $customerId = $notification['customer_id'] ?? '';
+        $customer = $this->firebase->getDocument('users', $customerId);
+        
+        if (!$customer || empty($customer['email'])) {
+            throw new \Exception("Customer email not found");
+        }
+
+        $subject = "Notification from Our Harvest Tote";
+        if ($notification['type'] === 'order_confirmation') {
+            $subject = "Order Confirmation - Our Harvest Tote";
+        }
+
+        $body = "<html><body>" . nl2br(htmlspecialchars($notification['content'])) . "</body></html>";
+        
+        $success = $this->smtp->send($customer['email'], $subject, $body);
+        
+        if (!$success) {
+            throw new \Exception("Failed to send email via SMTP");
+        }
     }
 }

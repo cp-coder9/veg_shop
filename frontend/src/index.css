@@ -30,6 +30,30 @@
   h6 {
     @apply font-display;
   }
+
+  /* Safe Area Utilities */
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-area-top {
+    padding-top: max(0px, env(safe-area-inset-top));
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* iOS specific UI optimizations */
+  body {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    touch-action: manipulation;
+  }
 }
 
 @layer components {
@@ -115,7 +139,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: theme('colors.warm-gray');
+  background: theme('colors.warm-gray.500');
   border-radius: 4px;
 }
 

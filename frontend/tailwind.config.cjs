@@ -7,48 +7,77 @@ module.exports = {
     darkMode: 'class',
     theme: {
         extend: {
-            colors: {
-                // Primary Colors
-                'primary-dark': '#1A1A1A',
-                'primary-light': '#FFFFFF',
-                'cream': '#F5F0E8',
-
-                // Artisanal Palette
-                'canvas': 'var(--canvas)',
-                'pigment-green': 'var(--pigment-green)',
-                'pigment-ochre': 'var(--pigment-ochre)',
-                'pigment-oxide': 'var(--pigment-oxide)',
-                'ink': 'var(--ink)',
-
-                // Secondary Colors
-                'warm-gray': '#8B8178',
-                'light-gray': '#E8E4DE',
-                'soft-black': '#2D2926',
-
-                // Accent Colors
-                'terracotta': '#C17F59',
-                'sage-green': '#8B9A7D',
-                'muted-gold': '#B8A77A',
-
-                // Semantic Colors
-                'success': '#7A9E7E',
-                'warning': '#D4A574',
-                'error': '#C75D5D',
-                'info': '#7B8FA2',
-
-                // Legacy colors for backward compatibility
-                'organic-green': {
-                    100: '#fdf6e8',
-                    200: '#f7e7c6',
-                    300: '#efcf8f',
-                    400: '#e7b65a',
-                    500: '#d89b3d',
-                    600: '#bf7f2e',
-                    700: '#9a5f22',
-                    800: '#7a4a1b',
-                    900: '#5a3414',
-                },
-            },
+             colors: {
+                 // Primary Colors
+                 'primary-dark': '#1A1A1A',
+                 'primary-light': '#FFFFFF',
+                 'cream': '#F5F0E8',
+ 
+                 // Artisanal Palette
+                 'canvas': 'var(--canvas)',
+                 'pigment-green': 'var(--pigment-green)',
+                 'pigment-ochre': 'var(--pigment-ochre)',
+                 'pigment-oxide': 'var(--pigment-oxide)',
+                 'ink': 'var(--ink)',
+ 
+                 // Secondary Colors
+                 'warm-gray': '#8B8178',
+                 'light-gray': '#E8E4DE',
+                 'soft-black': '#2D2926',
+ 
+                 // Accent Colors
+                 'terracotta': '#C17F59',
+                 'sage-green': '#8B9A7D',
+                 'muted-gold': '#B8A77A',
+ 
+                 // Semantic Colors
+                 'success': '#7A9E7E',
+                 'warning': '#D4A574',
+                 'error': '#C75D5D',
+                 'info': '#7B8FA2',
+ 
+                 // Legacy colors for backward compatibility
+                 'organic-green': {
+                     50: '#fdf6e8',
+                     100: '#f7e7c6',
+                     200: '#efcf8f',
+                     300: '#e7b65a',
+                     400: '#d89b3d',
+                     500: '#bf7f2e',
+                     600: '#9a5f22',
+                     700: '#7a4a1b',
+                     800: '#5a3414',
+                     900: '#3c2b0e',
+                 },
+                 
+                 // Extended warm-gray scale
+                 'warm-gray': {
+                     50: '#f8f6f3',
+                     100: '#f1ede8',
+                     200: '#e9e4dd',
+                     300: '#d8cfc8',
+                     400: '#c2b8af',
+                     500: '#8B8178',
+                     600: '#6f6860',
+                     700: '#585048',
+                     800: '#413b33',
+                     900: '#2a251e',
+                 },
+                 
+                 // Amber scale (based on warning color)
+                 'amber': {
+                     50: '#fdf7f3',
+                     100: '#fbece0',
+                     200: '#f8dfc8',
+                     300: '#f5d2af',
+                     400: '#f2c597',
+                     500: '#D4A574',
+                     600: '#aa855d',
+                     700: '#806245',
+                     800: '#57402e',
+                     900: '#2e2017',
+                 },
+             },
             fontFamily: {
                 // Display font for headlines, product names
                 'display': ['"Playfair Display"', 'Georgia', 'serif'],

@@ -230,10 +230,10 @@ export default function CustomerInvoiceDetailModal({
                     return (
                       <tr key={item.id}>
                         <td className="px-4 py-3 text-sm text-gray-900">
-                          {item.product.name}
+                          {item.product?.name || 'Unknown Product'}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600 text-right">
-                          {item.quantity} {item.product.unit}
+                          {item.quantity} {item.product?.unit || 'unit'}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600 text-right">
                           R{price.toFixed(2)}

@@ -167,7 +167,8 @@ export class InvoiceService {
 
       // Calculate subtotal from order items
       const itemsTotal = order.items.reduce((sum: number, item: any) => {
-        return sum + Number(item.priceAtOrder) * item.quantity;
+        const packMultiplier = (item.product as any)?.packQuantity || 1;
+        return sum + Number(item.priceAtOrder) * item.quantity * packMultiplier;
       }, 0);
 
       const deliveryFee = Number(order.deliveryFees || 0);
@@ -588,13 +589,17 @@ export class InvoiceService {
       dueDate: invoice.dueDate,
       customerName: invoice.customer.name,
       customerAddress: invoice.customer.address,
-      items: invoice.order.items.map((item: any) => ({
-        productName: item.product?.name ?? 'Unknown product',
-        quantity: item.quantity,
-        unit: item.product?.unit ?? '',
-        pricePerUnit: Number(item.priceAtOrder),
-        total: Number(item.priceAtOrder) * item.quantity,
-      })),
+      items: invoice.order.items.map((item: any) => {
+        const packMultiplier = item.product?.packQuantity || 1;
+        return {
+          productName: item.product?.name ?? 'Unknown product',
+          quantity: item.quantity,
+          unit: item.product?.unit ?? '',
+          pricePerUnit: Number(item.priceAtOrder),
+          total: Number(item.priceAtOrder) * item.quantity * packMultiplier,
+          packQuantity: item.product?.packQuantity,
+        };
+      }),
       subtotal: Number(invoice.subtotal),
       deliveryFee: Number(invoice.order?.deliveryFees || 0),
       creditApplied: Number(invoice.creditApplied),
@@ -680,7 +685,10 @@ export class InvoiceService {
 
     if (!order) throw new Error('Order not found');
 
-    const itemsTotal = order.items.reduce((sum, item) => sum + Number(item.priceAtOrder) * item.quantity, 0);
+    const itemsTotal = order.items.reduce((sum, item) => {
+      const packMultiplier = (item.product as any)?.packQuantity || 1;
+      return sum + Number(item.priceAtOrder) * item.quantity * packMultiplier;
+    }, 0);
     const deliveryFee = Number(order.deliveryFees || 0);
     const subtotalWithDelivery = itemsTotal + deliveryFee;
 

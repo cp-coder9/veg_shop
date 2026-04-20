@@ -1,35 +1,48 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAdminOrders } from '../../hooks/useAdminOrders.js';
 import { useCustomerCredits, useRecordShortDelivery } from '../../hooks/useAdminCredits.js';
 import { useProducts } from '../../hooks/useProducts.js';
 import { toNumber } from '../../lib/utils.js';
 
 export default function ShortDeliveryManagement() {
+  const location = useLocation();
   const [showShortDeliveryModal, setShowShortDeliveryModal] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+  const [selectedOrderId, setSelectedOrderId] = useState<string>('');
 
-  const { data: deliveredOrders } = useAdminOrders({ status: 'delivered' });
+  useEffect(() => {
+    if (location.state?.customerId) {
+      setSelectedCustomerId(location.state.customerId);
+      if (location.state.orderId) {
+        setSelectedOrderId(location.state.orderId);
+      }
+      setShowShortDeliveryModal(true);
+    }
+  }, [location.state]);
+
+  const { data: allOrders } = useAdminOrders({});
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Short Delivery Management</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Order & Invoice Adjustments</h1>
         <button
           onClick={() => setShowShortDeliveryModal(true)}
           className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
         >
-          Record Short Delivery
+          Record Short Delivery / Adjustment
         </button>
       </div>
 
-      {/* Recent Delivered Orders */}
+      {/* Recent Orders for Adjustment */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Recent Delivered Orders
+          Recent Active Orders
         </h2>
 
-        {!deliveredOrders || deliveredOrders.length === 0 ? (
-          <p className="text-gray-500">No delivered orders</p>
+        {!allOrders || allOrders.length === 0 ? (
+          <p className="text-gray-500">No active orders</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -42,10 +55,10 @@ export default function ShortDeliveryManagement() {
                     Customer
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Delivery Date
+                    Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Items
+                    Delivery Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -53,19 +66,23 @@ export default function ShortDeliveryManagement() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {deliveredOrders.slice(0, 10).map((order) => (
+                {allOrders.slice(0, 15).map((order) => (
                   <tr key={order.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {order.id.slice(0, 8)}...
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.customerId.slice(0, 8)}...
+                      {order.customer?.name || order.customerId.slice(0, 8)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                        ${order.status === 'delivered' ? 'bg-green-100 text-green-800' : 
+                          order.status === 'packed' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+                        {order.status}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(order.deliveryDate).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.items.length} items
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
@@ -75,7 +92,7 @@ export default function ShortDeliveryManagement() {
                         }}
                         className="text-orange-600 hover:text-orange-900"
                       >
-                        Record Short Delivery
+                        Adjust Items
                       </button>
                     </td>
                   </tr>
@@ -86,6 +103,7 @@ export default function ShortDeliveryManagement() {
         )}
       </div>
 
+
       {/* Short Delivery History */}
       {selectedCustomerId && (
         <ShortDeliveryHistorySection customerId={selectedCustomerId} />
@@ -95,9 +113,10 @@ export default function ShortDeliveryManagement() {
       {showShortDeliveryModal && (
         <ShortDeliveryModal
           preselectedCustomerId={selectedCustomerId}
+          preselectedOrderId={selectedOrderId}
           onClose={() => {
             setShowShortDeliveryModal(false);
-            setSelectedCustomerId('');
+            setSelectedOrderId('');
           }}
         />
       )}
@@ -120,7 +139,7 @@ function ShortDeliveryHistorySection({ customerId }: ShortDeliveryHistorySection
     );
   }
 
-  const shortDeliveryCredits = creditData?.credits.filter(c => c.type === 'short_delivery') || [];
+  const shortDeliveryCredits = creditData?.credits?.filter(c => c.type === 'short_delivery') || [];
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
@@ -174,12 +193,13 @@ function ShortDeliveryHistorySection({ customerId }: ShortDeliveryHistorySection
 
 interface ShortDeliveryModalProps {
   preselectedCustomerId?: string;
+  preselectedOrderId?: string;
   onClose: () => void;
 }
 
-function ShortDeliveryModal({ preselectedCustomerId, onClose }: ShortDeliveryModalProps) {
+function ShortDeliveryModal({ preselectedCustomerId, preselectedOrderId, onClose }: ShortDeliveryModalProps) {
   const [customerId, setCustomerId] = useState(preselectedCustomerId || '');
-  const [orderId, setOrderId] = useState('');
+  const [orderId, setOrderId] = useState(preselectedOrderId || '');
   const [shortItems, setShortItems] = useState<{ productId: string; quantityShort: number }[]>([]);
   const [selectedProductId, setSelectedProductId] = useState('');
   const [quantityShort, setQuantityShort] = useState(0);
@@ -285,7 +305,7 @@ function ShortDeliveryModal({ preselectedCustomerId, onClose }: ShortDeliveryMod
               <ul className="text-sm text-gray-600 space-y-1">
                 {selectedOrder.items.map((item: any) => (
                   <li key={item.id}>
-                    {item.product.name} - {item.quantity} {item.product.unit}
+                    {item.product?.name || 'Unknown Product'} - {item.quantity} {item.product?.unit || 'unit'}
                   </li>
                 ))}
               </ul>
@@ -306,7 +326,7 @@ function ShortDeliveryModal({ preselectedCustomerId, onClose }: ShortDeliveryMod
                   <option value="">Select product</option>
                   {selectedOrder?.items.map((item: any) => (
                     <option key={item.productId} value={item.productId}>
-                      {item.product.name} (R {toNumber(item.product.price).toFixed(2)})
+                      {item.product?.name || 'Unknown Product'} (R {toNumber(item.product?.price || 0).toFixed(2)})
                     </option>
                   ))}
                 </select>

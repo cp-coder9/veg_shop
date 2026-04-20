@@ -15,7 +15,7 @@ const mockProduct = {
   isAvailable: true,
   isSeasonal: false,
   isPerishable: false,
-  packingType: 'box',
+  packingType: 'ambient' as const,
   createdAt: new Date().toISOString(),
   updatedAt: '2024-01-01T00:00:00.000Z',
 };

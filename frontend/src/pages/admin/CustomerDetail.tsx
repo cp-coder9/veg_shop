@@ -775,8 +775,8 @@ function PollItemsTab({ customerId }: { customerId: string }) {
                 <tbody className="bg-white divide-y divide-light-gray">
                   {pollItems.map((item) => (
                     <tr key={item.id}>
-                      <td className="px-4 py-3 text-sm text-primary-dark">{item.product.name}</td>
-                      <td className="px-4 py-3 text-sm text-right text-primary-dark">{item.quantity} {item.product.unit}</td>
+                      <td className="px-4 py-3 text-sm text-primary-dark">{item.product?.name || 'Unknown Product'}</td>
+                      <td className="px-4 py-3 text-sm text-right text-primary-dark">{item.quantity} {item.product?.unit || 'unit'}</td>
                       <td className="px-4 py-3 text-sm text-right text-warm-gray">R {Number(item.price).toFixed(2)}</td>
                       <td className="px-4 py-3 text-sm text-right font-semibold text-primary-dark">R {(Number(item.price) * item.quantity).toFixed(2)}</td>
                       <td className="px-4 py-3 text-right">

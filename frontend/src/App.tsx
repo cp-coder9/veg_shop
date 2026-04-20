@@ -6,10 +6,13 @@ import { useAuthStore } from './stores/authStore.js';
 import Layout from './components/layout/Layout.js';
 import { PrivacyConsent } from './components/auth/PrivacyConsent.js';
 
-import AdminLayout from './components/layout/AdminLayout.js';
-import DriverLayout from './layouts/DriverLayout.js';
 import ProtectedRoute from './components/ProtectedRoute.js';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute.js';
+import ProtectedDriverRoute from './components/ProtectedDriverRoute.js';
+import ProtectedPackerRoute from './components/ProtectedPackerRoute.js';
+import AdminLayout from './components/layout/AdminLayout.js';
+import DriverLayout from './layouts/DriverLayout.js';
+import PackerLayout from './layouts/PackerLayout.js';
 import HomePage from './pages/HomePage.js';
 import AuthPage from './pages/AuthPage.js';
 import VerifyCodePage from './pages/VerifyCodePage.js';
@@ -160,26 +163,25 @@ function App() {
           {/* Driver Routes */}
           <Route
             element={
-              <ProtectedRoute>
+              <ProtectedDriverRoute>
                 <DriverLayout />
-              </ProtectedRoute>
+              </ProtectedDriverRoute>
             }
           >
             <Route path="/driver" element={<DriverDashboard />} />
             <Route path="/driver/logs" element={<LogbookPage />} />
           </Route>
 
-          {/* Packer Routes */}
-          <Route
-            element={
-              <ProtectedAdminRoute>
-                <DriverLayout />
-                {/* Reusing DriverLayout for simple mobile wrapper, or just use Outlet */}
-              </ProtectedAdminRoute>
-            }
-          >
-            <Route path="/packer" element={<PackerDashboard />} />
-          </Route>
+           {/* Packer Routes */}
+           <Route
+             element={
+               <ProtectedPackerRoute>
+                 <PackerLayout />
+               </ProtectedPackerRoute>
+             }
+           >
+             <Route path="/packer" element={<PackerDashboard />} />
+           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

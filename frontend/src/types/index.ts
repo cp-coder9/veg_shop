@@ -1,4 +1,5 @@
 export type ProductCategory = 'bakery' | 'broths' | 'nuts_fruit' | 'vegetables' | 'fruit' | 'local_produce' | 'plant_based' | 'dairy' | 'meat';
+export type PackingType = 'ambient' | 'cold' | 'frozen' | 'loose';
 
 export interface Product {
   id: string;
@@ -11,10 +12,11 @@ export interface Product {
   isAvailable: boolean;
   isSeasonal: boolean;
   isPerishable: boolean;
-  packingType: string;
+  packingType: PackingType;
   supplierId?: string | null;
   supplier?: { id: string; name: string } | null;
   deliveryDay?: string | null; // "Wednesday" | "Friday" - delivery day for the product
+  packQuantity?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,13 +43,17 @@ export interface Order {
   driverId?: string | null;
   deliveryNotes?: string | null;
   driverNotes?: string | null;
+  area?: string | null;
+  handoverConfirmed?: boolean;
+  handoverConfirmedAt?: string;
+  packageDetails?: string;
   coolerBagOption: boolean;
   coolerBagStatus: 'none' | 'taken' | 'returned';
   invoice?: Invoice | null;
   items: {
     id: string;
     productId: string;
-    product: Product;
+    product?: Product;
     quantity: number;
     priceAtOrder: number | string; // Prisma Decimal serializes as string
   }[];
@@ -85,6 +91,13 @@ export const CATEGORY_LABELS: Record<ProductCategory, string> = {
   plant_based: '🌱 Plant Based (Tabu)',
   dairy: '🥛 Dairy',
   meat: '🥩 Meat & Poultry',
+};
+
+export const PACKING_TYPE_LABELS: Record<PackingType, string> = {
+  ambient: '📦 Ambient (Box or Bag)',
+  cold: '❄️ Cold (Cooler Box)',
+  frozen: '🧊 Frozen (Cooler Box)',
+  loose: '🧺 Loose Items',
 };
 
 export type ProductUnit =

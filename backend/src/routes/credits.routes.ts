@@ -15,6 +15,7 @@ const shortDeliverySchema = z.object({
         productId: z.string(),
         quantityShort: z.number().int().positive(),
     })).min(1),
+    reason: z.string().optional(),
 });
 
 /**

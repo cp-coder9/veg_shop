@@ -4,6 +4,7 @@ import { useAuthStore } from '../../stores/authStore.js';
 import { ShoppingCart, User as UserIcon, Menu, X, LogOut, ChevronRight } from 'lucide-react';
 import logo from '../../assets/our-harvest-tote-logo.png';
 import { OrderWindowBanner } from '../shop/OrderWindowBanner.js';
+import ThemeToggle from '../ThemeToggle.tsx';
 
 export default function Layout() {
   const { user, logout } = useAuthStore();
@@ -68,6 +69,7 @@ export default function Layout() {
           >
             <ShoppingCart size={22} />
           </Link>
+          <ThemeToggle />
         </div>
       </header>
 

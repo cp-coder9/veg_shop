@@ -17,6 +17,9 @@ export interface Order {
     packerSignature?: string | null;
     deliveryNotes?: string | null;
     coolerBagStatus?: string | null;
+    handoverConfirmed?: boolean;
+    handoverConfirmedAt?: Date;
+    packageDetails?: string;
     createdAt: Date;
     updatedAt: Date;
 }

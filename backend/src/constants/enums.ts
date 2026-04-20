@@ -36,5 +36,13 @@ export const PRODUCT_UNITS = [
     'piece',
 ] as const;
 
+export const PACKING_TYPES = [
+    'ambient',
+    'cold',
+    'frozen',
+    'loose',
+] as const;
+
 export type ProductCategory = typeof PRODUCT_CATEGORIES[number];
 export type ProductUnit = typeof PRODUCT_UNITS[number];
+export type PackingType = typeof PACKING_TYPES[number];

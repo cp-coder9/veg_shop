@@ -8,9 +8,11 @@ const router = Router();
 
 // Validation schemas
 const createOrderSchema = z.object({
+  customerId: z.string().optional(), // New: Allow admin to specify customer
   deliveryDate: z.string().transform(str => new Date(str)),
   deliveryMethod: z.enum(['delivery', 'collection']),
   deliveryAddress: z.string().optional(),
+  area: z.string().optional(),
   specialInstructions: z.string().optional(),
   deliveryFees: z.number().optional().default(0),
   items: z.array(z.object({
@@ -18,14 +20,19 @@ const createOrderSchema = z.object({
     quantity: z.number().int().positive(),
   })).min(1, 'At least one item is required'),
   coolerBagOption: z.boolean().optional(),
+  tcAccepted: z.boolean().optional().default(false),
   groupDelivery: z.boolean().optional(),
   deliveryInstruction: z.enum(['door', 'hand_to_me', 'inside_fridge', 'inside_freezer']).optional(),
 });
 
 const updateOrderStatusSchema = z.object({
   status: z.enum(['pending', 'confirmed', 'packed', 'delivered', 'out_for_delivery', 'cancelled']),
+  stage: z.enum(['pending', 'prepping', 'packed', 'handed_over', 'delivering', 'completed']).optional(),
   packedItems: z.record(z.number().int()).optional(),
   notes: z.string().optional(),
+  signature: z.string().optional(),
+  handoverConfirmed: z.boolean().optional(),
+  packageDetails: z.string().optional(),
 });
 
 const generateBulkOrderSchema = z.object({
@@ -56,7 +63,8 @@ router.get('/window-status', authenticate, asyncHandler(async (_req: Request, re
 router.post('/', authenticate, asyncHandler(async (req: Request, res: Response) => {
   try {
     const data = createOrderSchema.parse(req.body);
-    const customerId = req.user!.userId;
+    const isAdmin = req.user!.role === 'admin';
+    const customerId = (isAdmin && data.customerId) ? data.customerId : req.user!.userId;
 
     const order = await orderService.createOrder(customerId, {
       deliveryDate: data.deliveryDate,
@@ -71,7 +79,7 @@ router.post('/', authenticate, asyncHandler(async (req: Request, res: Response) 
       coolerBagOption: data.coolerBagOption,
       groupDelivery: data.groupDelivery,
       deliveryInstruction: data.deliveryInstruction
-    });
+    }, isAdmin);
 
     return res.status(201).json(order);
   } catch (error) {
@@ -367,6 +375,7 @@ router.patch('/:id', authenticate, requireAdmin, asyncHandler(async (req: Reques
     const schema = z.object({
       packerId: z.string().nullable().optional(),
       driverId: z.string().nullable().optional(),
+      area: z.string().nullable().optional(),
       status: z.enum(['pending', 'confirmed', 'packed', 'delivered', 'out_for_delivery', 'cancelled']).optional(),
     });
 
@@ -410,7 +419,12 @@ router.patch('/:id/status', authenticate, requireStaff, asyncHandler(async (req:
       req.user!.userId,
       req.user!.role,
       data.packedItems,
-      data.notes
+      data.notes,
+      data.signature,
+      undefined, // deliveryNotes
+      undefined, // coolerBagStatus
+      data.handoverConfirmed,
+      data.packageDetails
     );
 
     return res.json(order);

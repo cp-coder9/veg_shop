@@ -23,9 +23,20 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect admins to admin panel
+  // Redirect based on role to appropriate portal
   if (user.role === 'admin') {
     return <Navigate to="/admin" replace />;
+  }
+  if (user.role === 'driver') {
+    return <Navigate to="/driver" replace />;
+  }
+  if (user.role === 'packer') {
+    return <Navigate to="/packer" replace />;
+  }
+  
+  // Only allow customer role to access customer routes
+  if (user.role !== 'customer') {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

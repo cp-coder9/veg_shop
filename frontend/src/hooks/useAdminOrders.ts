@@ -72,14 +72,23 @@ export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, status, packedItems, notes, signature }: {
+    mutationFn: async ({ id, status, packedItems, notes, signature, handoverConfirmed, packageDetails }: {
       id: string;
       status: Order['status'];
       packedItems?: Record<string, number>;
       notes?: string;
       signature?: string;
+      handoverConfirmed?: boolean;
+      packageDetails?: string;
     }) => {
-      const response = await api.patch(`/orders/${id}/status`, { status, packedItems, notes, signature });
+      const response = await api.patch(`/orders/${id}/status`, { 
+        status, 
+        packedItems, 
+        notes, 
+        signature,
+        handoverConfirmed,
+        packageDetails
+      });
       return response.data;
     },
     onSuccess: () => {
@@ -97,6 +106,7 @@ export function useUpdateOrder() {
       id: string;
       packerId?: string | null;
       driverId?: string | null;
+      area?: string | null;
       status?: Order['status'];
       items?: any[];
     }) => {
@@ -131,6 +141,30 @@ export function useOrderWeeklyCollation() {
     mutationFn: async (filters: { startDate: string; endDate: string }) => {
       const response = await api.get('/orders/collation', { params: filters });
       return response.data as CollationItem[];
+    },
+  });
+}
+
+export function useCreateOrder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      customerId?: string;
+      deliveryDate: string;
+      deliveryMethod: 'delivery' | 'collection';
+      deliveryAddress?: string;
+      specialInstructions?: string;
+      deliveryFees?: number;
+      items: { productId: string; quantity: number }[];
+      coolerBagOption?: boolean;
+      groupDelivery?: boolean;
+    }) => {
+      const response = await api.post('/orders', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
     },
   });
 }

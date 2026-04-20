@@ -4,7 +4,7 @@ import { productService, ProductFilters } from '../services/product.service.js';
 import { authenticate, requireAdmin } from '../middleware/auth.middleware.js';
 import { auditLog } from '../middleware/audit.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
-import { PRODUCT_CATEGORIES, PRODUCT_UNITS } from '../constants/enums.js';
+import { PRODUCT_CATEGORIES, PRODUCT_UNITS, PACKING_TYPES } from '../constants/enums.js';
 
 const router = Router();
 
@@ -21,8 +21,9 @@ const createProductSchema = z.object({
   isAvailable: z.boolean().optional(),
   isSeasonal: z.boolean().optional(),
   isPerishable: z.boolean().optional(),
-  packingType: z.enum(['box', 'bag', 'fridge', 'freezer']).optional(),
+  packingType: z.enum(PACKING_TYPES).optional(),
   deliveryDay: z.enum(deliveryDays).optional().nullable(),
+  packQuantity: z.number().int().positive().optional().nullable(),
   supplierId: z.string().nullable().optional(),
 });
 
@@ -36,8 +37,9 @@ const updateProductSchema = z.object({
   isAvailable: z.boolean().optional(),
   isSeasonal: z.boolean().optional(),
   isPerishable: z.boolean().optional(),
-  packingType: z.enum(['box', 'bag', 'fridge', 'freezer']).optional(),
+  packingType: z.enum(PACKING_TYPES).optional(),
   deliveryDay: z.enum(deliveryDays).optional().nullable(),
+  packQuantity: z.number().int().positive().optional().nullable(),
   supplierId: z.string().nullable().optional(),
 });
 

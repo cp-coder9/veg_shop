@@ -11,9 +11,11 @@
     "dev:frontend": "npm run dev --workspace=frontend",
     "dev:backend": "npm run dev --workspace=backend",
     "start": "npx concurrently --kill-others -n \"FRONTEND,BACKEND\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "build": "npm run build --workspace=frontend",
-    "lint": "npm run lint --workspace=frontend",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "test": "npm run test --workspaces",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "ci": "npm run lint && npm run build && npm run test",
     "deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1",
     "deploy:push": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1 -Push"
   },

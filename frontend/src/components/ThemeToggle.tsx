@@ -1,13 +1,13 @@
 import { useThemeStore } from '../stores/themeStore.js';
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ className = '' }) {
     const { resolvedTheme, toggleTheme } = useThemeStore();
     const isDark = resolvedTheme === 'dark';
 
     return (
         <button
             onClick={toggleTheme}
-            className="relative p-2 rounded-lg bg-warm-gray-100 dark:bg-warm-gray-800 hover:bg-warm-gray-200 dark:hover:bg-warm-gray-700 transition-all duration-300 group"
+            className={`relative p-2 rounded-lg bg-warm-gray-100 dark:bg-warm-gray-800 hover:bg-warm-gray-200 dark:hover:bg-warm-gray-700 transition-all duration-300 group ${className}`}
             aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
             title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
         >

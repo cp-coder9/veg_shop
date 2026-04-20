@@ -139,10 +139,12 @@ class AuthService
     {
         // Map dev shortcut emails → the role to look up in Firestore
         $devRoleMap = [
+            'admin@organicveg.com' => 'admin',
             'admin@vegshop.com' => 'admin',
             'john@example.com' => 'customer',
             'packer@vegshop.com' => 'packer',
             'driver@vegshop.com' => 'driver',
+            'customer@organicveg.com' => 'customer',
         ];
 
         if (isset($devRoleMap[$email])) {

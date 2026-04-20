@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore.js';
+import ThemeToggle from '../../components/ThemeToggle.tsx';
 import logo from '../../assets/our-harvest-tote-logo.png';
 
 export default function AdminLayout() {
@@ -208,43 +209,44 @@ export default function AdminLayout() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-screen">
-        {/* Header */}
-        <header className="bg-white border-b border-light-gray px-5 py-4 sticky top-0 z-40">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsMenuOpen(true)}
-              className="text-primary-dark p-2 -ml-2 hover:bg-cream rounded-lg transition-colors"
-              aria-label="Toggle Menu"
-            >
-              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M4 8h16M4 16h10" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
-            </button>
+         {/* Header */}
+         <header className="bg-white border-b border-light-gray px-5 py-4 sticky top-0 z-40">
+           <div className="flex items-center gap-4">
+             <button
+               onClick={() => setIsMenuOpen(true)}
+               className="text-primary-dark p-2 -ml-2 hover:bg-cream rounded-lg transition-colors"
+               aria-label="Toggle Menu"
+             >
+               <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                 <path d="M4 8h16M4 16h10" strokeWidth="2.5" strokeLinecap="round" />
+               </svg>
+             </button>
 
-            {/* Logo (Mobile Only) */}
-            <div className="lg:hidden flex items-center gap-3">
-              <img src={logo} alt="Logo" className="w-8 h-8 rounded-lg" />
-              <span className="font-display text-lg text-primary-dark">Admin</span>
-            </div>
+             {/* Logo (Mobile Only) */}
+             <div className="lg:hidden flex items-center gap-3">
+               <img src={logo} alt="Logo" className="w-8 h-8 rounded-lg" />
+               <span className="font-display text-lg text-primary-dark">Admin</span>
+             </div>
 
-            {/* Title */}
-            <h1 className="hidden sm:block font-display text-display-sm text-primary-dark flex-1 ml-2">
-              {navItems.find((item) => isActive(item.path))?.name || 'Dashboard'}
-            </h1>
+             {/* Title */}
+             <h1 className="hidden sm:block font-display text-display-sm text-primary-dark flex-1 ml-2">
+               {navItems.find((item) => isActive(item.path))?.name || 'Dashboard'}
+             </h1>
 
-            {/* User Profile */}
-            <NavLink
-              to="/admin/profile"
-              className="flex items-center gap-2 text-warm-gray hover:text-primary-dark transition-colors"
-            >
-              <div className="w-8 h-8 rounded-full bg-terracotta flex items-center justify-center">
-                <span className="text-white font-medium text-xs">
-                  {user?.name?.charAt(0).toUpperCase() || 'A'}
-                </span>
-              </div>
-            </NavLink>
-          </div>
-        </header>
+             {/* User Profile */}
+             <NavLink
+               to="/admin/profile"
+               className="flex items-center gap-2 text-warm-gray hover:text-primary-dark transition-colors"
+             >
+               <div className="w-8 h-8 rounded-full bg-terracotta flex items-center justify-center">
+                 <span className="text-white font-medium text-xs">
+                   {user?.name?.charAt(0).toUpperCase() || 'A'}
+                 </span>
+               </div>
+             </NavLink>
+           </div>
+           <ThemeToggle className="ml-auto" />
+         </header>
 
         {/* Page Content */}
         <main className="flex-1 p-4 md:p-6 lg:p-10 max-w-7xl mx-auto w-full">

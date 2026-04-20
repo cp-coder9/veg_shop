@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Order } from '../../types/index.js';
 import {
   useAdminOrders,
@@ -12,28 +13,31 @@ import {
 import { useGenerateInvoice } from '../../hooks/useAdminInvoices.js';
 import { useAdminUsers } from '../../hooks/useAdminUsers.js';
 import { useProducts } from '../../hooks/useProducts.js';
-import {
-  useStockOrders,
-  useStockOrder,
-  useCreateStockOrder,
-  useUpdateReceivedQuantities,
-  useFulfillStockOrder,
-} from '../../hooks/useStockOrders.js';
-import { Button, Input, Badge, Card, CardContent } from '../../components/ui/index.js';
-import { LayoutDashboard, FileText, Package, Filter, Download } from 'lucide-react';
+import { useStockOrders, useStockOrder, useCreateStockOrder, useUpdateReceivedQuantities, useFulfillStockOrder } from '../../hooks/useStockOrders.js';
+import { LayoutDashboard, FileText, Package, Filter, Download, Plus } from 'lucide-react';
+import AddOrderModal from '../../components/admin/AddOrderModal.js';
+import { Button, Input, Card, CardContent, Badge } from '../../components/ui/index.js';
+import ProductBreakdownModal from '../../components/admin/ProductBreakdownModal.js';
 
 
 export default function OrdersManagement() {
+  const navigate = useNavigate();
   const [deliveryDateFilter, setDeliveryDateFilter] = useState('');
   const [startDateFilter, setStartDateFilter] = useState('');
   const [endDateFilter, setEndDateFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [bulkPackerId, setBulkPackerId] = useState('');
+  const [bulkDriverId, setBulkDriverId] = useState('');
+  const [bulkArea, setBulkArea] = useState('');
   const [showBulkOrderModal, setShowBulkOrderModal] = useState(false);
   const [showCollationModal, setShowCollationModal] = useState(false);
   const [showStockOrderModal, setShowStockOrderModal] = useState(false);
   const [showStockOrderListModal, setShowStockOrderListModal] = useState(false);
   const [selectedStockOrderId, setSelectedStockOrderId] = useState<string | null>(null);
+  const [showProductBreakdownModal, setShowProductBreakdownModal] = useState(false);
+  const [showAddOrderModal, setShowAddOrderModal] = useState(false);
   const [currentCollationReport, setCurrentCollationReport] = useState<CollationItem[] | null>(null);
   const [currentCollationDates, setCurrentCollationDates] = useState<{ startDate: string; endDate: string } | null>(null);
 
@@ -55,6 +59,40 @@ export default function OrdersManagement() {
     } catch (error) {
       console.error('Failed to update status:', error);
     }
+  };
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked && orders) {
+      setSelectedOrders(orders.map(o => o.id));
+    } else {
+      setSelectedOrders([]);
+    }
+  };
+
+  const handleSelectOrder = (id: string) => {
+    setSelectedOrders(prev => 
+      prev.includes(id) ? prev.filter(orderId => orderId !== id) : [...prev, id]
+    );
+  };
+
+  const applyBulkEdit = async () => {
+    if (selectedOrders.length === 0) return;
+    
+    // We update them sequentially to avoid overwhelming the backend
+    for (const id of selectedOrders) {
+      const updates: any = { id };
+      if (bulkPackerId) updates.packerId = bulkPackerId;
+      if (bulkDriverId) updates.driverId = bulkDriverId;
+      if (bulkArea) updates.area = bulkArea;
+      
+      if (Object.keys(updates).length > 1) {
+        await updateOrder.mutateAsync(updates);
+      }
+    }
+    setSelectedOrders([]);
+    setBulkPackerId('');
+    setBulkDriverId('');
+    setBulkArea('');
   };
 
   if (isLoading) {
@@ -86,6 +124,15 @@ export default function OrdersManagement() {
             Weekly Collation
           </Button>
           <Button
+            onClick={() => setShowProductBreakdownModal(true)}
+            variant="secondary"
+            size="md"
+            className="bg-blue-50 border-blue-100 text-blue-700 hover:bg-blue-100"
+            leftIcon={<Filter size={18} />}
+          >
+            Product Breakdown
+          </Button>
+          <Button
             onClick={() => setShowStockOrderListModal(true)}
             variant="secondary"
             size="md"
@@ -102,6 +149,14 @@ export default function OrdersManagement() {
             leftIcon={<Download size={18} />}
           >
             Generate Bulk Order
+          </Button>
+          <Button
+            onClick={() => setShowAddOrderModal(true)}
+            variant="harvest"
+            size="md"
+            leftIcon={<Plus size={18} />}
+          >
+            Add Order
           </Button>
         </div>
       </div>
@@ -182,14 +237,64 @@ export default function OrdersManagement() {
 
       {/* Orders Table - Desktop */}
       <div className="hidden md:block bg-white rounded-xl shadow-premium border border-light-gray/50 overflow-hidden">
+        
+        {/* Bulk Actions Bar */}
+        {selectedOrders.length > 0 && (
+          <div className="bg-sage-green/10 border-b border-light-gray/50 px-6 py-3 flex items-center justify-between">
+            <div className="text-sm font-bold text-sage-green">
+              {selectedOrders.length} orders selected
+            </div>
+            <div className="flex items-center gap-3">
+              <select
+                value={bulkPackerId}
+                onChange={(e) => setBulkPackerId(e.target.value)}
+                className="text-sm border border-gray-300 rounded px-3 py-1.5"
+              >
+                <option value="">Set Packer...</option>
+                {packers?.map((packer) => (
+                  <option key={packer.id} value={packer.id}>{packer.name}</option>
+                ))}
+              </select>
+              <select
+                value={bulkDriverId}
+                onChange={(e) => setBulkDriverId(e.target.value)}
+                className="text-sm border border-gray-300 rounded px-3 py-1.5"
+              >
+                <option value="">Set Driver...</option>
+                {drivers?.map((driver) => (
+                  <option key={driver.id} value={driver.id}>{driver.name}</option>
+                ))}
+              </select>
+              <Input
+                type="text"
+                placeholder="Set Area..."
+                value={bulkArea}
+                onChange={(e) => setBulkArea(e.target.value)}
+                className="w-32 py-1.5 !h-8"
+              />
+              <Button onClick={applyBulkEdit} variant="harvest" size="sm">
+                Apply to {selectedOrders.length} Orders
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-light-gray">
             <thead className="bg-cream/30">
               <tr>
+                <th className="px-6 py-4 text-left">
+                  <input 
+                    type="checkbox" 
+                    onChange={handleSelectAll} 
+                    checked={orders && orders.length > 0 && selectedOrders.length === orders.length}
+                    className="rounded border-gray-300 shadow-sm"
+                  />
+                </th>
                 <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Order ID</th>
                 <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Customer</th>
                 <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Delivery</th>
-                <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Method</th>
+                <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Area</th>
                 <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Status</th>
                 <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Packer</th>
                 <th className="px-6 py-4 text-left text-overline font-bold text-warm-gray uppercase tracking-widest">Driver</th>
@@ -200,7 +305,15 @@ export default function OrdersManagement() {
             </thead>
             <tbody className="bg-white divide-y divide-light-gray">
               {orders?.map((order) => (
-                <tr key={order.id}>
+                <tr key={order.id} className={selectedOrders.includes(order.id) ? 'bg-sage-green/5' : ''}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedOrders.includes(order.id)}
+                      onChange={() => handleSelectOrder(order.id)}
+                      className="rounded border-gray-300 shadow-sm"
+                    />
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {order.id.slice(0, 8)}...
                   </td>
@@ -209,9 +322,16 @@ export default function OrdersManagement() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(order.deliveryDate).toLocaleDateString()}
+                    <br/><span className="text-xs opacity-60 uppercase">{order.deliveryMethod}</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {order.deliveryMethod}
+                    <input
+                      type="text"
+                      className="text-sm border border-gray-300 rounded px-2 py-1 w-24"
+                      placeholder="Area"
+                      value={order.area || ''}
+                      onChange={(e) => updateOrder.mutate({ id: order.id, area: e.target.value || null })}
+                    />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <select
@@ -259,26 +379,36 @@ export default function OrdersManagement() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex flex-col gap-1">
-                      {order.items.some((i: any) => i.product.packingType === 'fridge') && (
+                      {order.items.some((i: any) => i.product?.packingType === 'fridge') && (
                         <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded w-fit uppercase">Fridge</span>
                       )}
-                      {order.items.some((i: any) => i.product.packingType === 'freezer') && (
+                      {order.items.some((i: any) => i.product?.packingType === 'freezer') && (
                         <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded w-fit uppercase">Freezer</span>
                       )}
-                      {(!order.items.some((i: any) => i.product.packingType === 'fridge' || i.product.packingType === 'freezer')) && (
+                      {(!order.items.some((i: any) => i.product?.packingType === 'fridge' || i.product?.packingType === 'freezer')) && (
                         <span className="bg-gray-100 text-gray-800 text-[10px] font-bold px-1.5 py-0.5 rounded w-fit uppercase">Standard</span>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedOrderId(order.id)}
-                      className="text-primary-dark hover:text-black"
-                    >
-                      View Details
-                    </Button>
+                    <div className="flex flex-col gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedOrderId(order.id)}
+                        className="text-primary-dark hover:text-black justify-start px-2"
+                      >
+                        View Details
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate('/admin/short-delivery', { state: { customerId: order.customerId, orderId: order.id } })}
+                        className="text-orange-600 hover:text-orange-700 justify-start px-2"
+                      >
+                        Adjust Items
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -366,13 +496,23 @@ export default function OrdersManagement() {
                 <option value="cancelled">Cancelled</option>
               </select>
 
-              <Button
-                size="sm"
-                onClick={() => setSelectedOrderId(order.id)}
-                variant="ghost"
-              >
-                View
-              </Button>
+              <div className="flex flex-col gap-1">
+                <Button
+                  size="sm"
+                  onClick={() => setSelectedOrderId(order.id)}
+                  variant="ghost"
+                >
+                  View
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => navigate('/admin/short-delivery', { state: { customerId: order.customerId, orderId: order.id } })}
+                  variant="ghost"
+                  className="text-orange-600"
+                >
+                  Adjust
+                </Button>
+              </div>
             </div>
           </Card>
         ))}
@@ -434,6 +574,21 @@ export default function OrdersManagement() {
           stockOrderId={selectedStockOrderId}
           onClose={() => setSelectedStockOrderId(null)}
         />
+      )}
+
+      {/* Product Breakdown Modal */}
+      {showProductBreakdownModal && orders && (
+        <ProductBreakdownModal
+          onClose={() => setShowProductBreakdownModal(false)}
+          orders={orders}
+          startDate={startDateFilter || deliveryDateFilter}
+          endDate={endDateFilter}
+        />
+      )}
+
+      {/* Add Order Modal */}
+      {showAddOrderModal && (
+        <AddOrderModal onClose={() => setShowAddOrderModal(false)} />
       )}
     </div>
   );
@@ -710,10 +865,10 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
               <p className="text-sm text-gray-600">Instructions: {order.specialInstructions}</p>
             )}
             <div className="mt-2 flex gap-2">
-              {order.items.some((i: any) => i.product.packingType === 'fridge') && (
+              {order.items.some((i: any) => i.product?.packingType === 'fridge') && (
                 <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-full uppercase">Requires Fridge</span>
               )}
-              {order.items.some((i: any) => i.product.packingType === 'freezer') && (
+              {order.items.some((i: any) => i.product?.packingType === 'freezer') && (
                 <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-2 py-1 rounded-full uppercase">Requires Freezer</span>
               )}
             </div>
@@ -775,10 +930,10 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
                   {order.items.map((item: any) => (
                     <tr key={item.id}>
                       <td className="px-4 py-2 text-sm text-gray-900">
-                        {item.product.name}
+                        {item.product?.name || 'Deleted Product'}
                         <div className="flex gap-1 mt-1">
-                          {item.product.packingType === 'fridge' && <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Fridge</span>}
-                          {item.product.packingType === 'freezer' && <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Freezer</span>}
+                          {item.product?.packingType === 'fridge' && <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Fridge</span>}
+                          {item.product?.packingType === 'freezer' && <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Freezer</span>}
                         </div>
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-500">
@@ -786,7 +941,7 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
                           <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="p-1 hover:bg-gray-100 rounded">-</button>
                           <span className="w-8 text-center">{item.quantity}</span>
                           <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="p-1 hover:bg-gray-100 rounded">+</button>
-                          <span className="text-xs">{item.product.unit}</span>
+                          <span className="text-xs">{item.product?.unit}</span>
                         </div>
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-500">
@@ -813,7 +968,7 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
                         <span className="text-sm font-bold text-green-700 whitespace-nowrap">Add Item:</span>
                         <select
                           className="flex-1 text-sm border-2 border-green-100 rounded-lg p-1.5 focus:border-green-300 outline-none"
-                          onChange={(e) => {
+                          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                             if (e.target.value) {
                               addItem(e.target.value);
                               e.target.value = '';
@@ -871,15 +1026,15 @@ function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
                 <div key={item.id} className="bg-white border rounded-lg p-3 shadow-sm flex justify-between items-center">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold text-gray-900 text-lg">{item.quantity} {item.product.unit}</span>
-                      {item.product.packingType === 'fridge' && <span className="bg-blue-100 text-blue-800 text-xs font-bold px-1.5 py-0.5 rounded">❄️ Fridge</span>}
-                      {item.product.packingType === 'freezer' && <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-1.5 py-0.5 rounded">🧊 Freezer</span>}
+                      <span className="font-bold text-gray-900 text-lg">{item.quantity} {item.product?.unit}</span>
+                      {item.product?.packingType === 'fridge' && <span className="bg-blue-100 text-blue-800 text-xs font-bold px-1.5 py-0.5 rounded">❄️ Fridge</span>}
+                      {item.product?.packingType === 'freezer' && <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-1.5 py-0.5 rounded">🧊 Freezer</span>}
                     </div>
-                    <p className="text-gray-800 font-medium leading-tight">{item.product.name}</p>
+                    <p className="text-gray-800 font-medium leading-tight">{item.product?.name || 'Deleted Product'}</p>
                   </div>
                   <div className="text-right">
                     <div className="text-gray-400 text-xs text-nowrap">
-                      R {Number(item.priceAtOrder).toFixed(0)}/{item.product.unit}
+                      R {Number(item.priceAtOrder).toFixed(0)}/{item.product?.unit}
                     </div>
                   </div>
                 </div>

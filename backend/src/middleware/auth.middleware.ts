@@ -128,3 +128,57 @@ export const requireOwnerOrAdmin = (req: Request, res: Response, next: NextFunct
     });
   }
 };
+
+/**
+ * Middleware to check if user has driver role
+ */
+export const requireDriver = (req: Request, res: Response, next: NextFunction): void => {
+  if (!req.user) {
+    res.status(401).json({
+      error: {
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required',
+      },
+    });
+    return;
+  }
+
+  if (req.user.role !== 'driver') {
+    res.status(403).json({
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Driver access required',
+      },
+    });
+    return;
+  }
+
+  next();
+};
+
+/**
+ * Middleware to check if user has driver or admin role
+ */
+export const requireDriverOrAdmin = (req: Request, res: Response, next: NextFunction): void => {
+  if (!req.user) {
+    res.status(401).json({
+      error: {
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required',
+      },
+    });
+    return;
+  }
+
+  if (req.user.role !== 'driver' && req.user.role !== 'admin') {
+    res.status(403).json({
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Driver or admin access required',
+      },
+    });
+    return;
+  }
+
+  next();
+};

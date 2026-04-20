@@ -263,7 +263,8 @@ class OrderController
             'packerId' => 'packerId',
             'deliveryNotes' => 'deliveryNotes',
             'packerNotes' => 'packerNotes',
-            'driverNotes' => 'driverNotes'
+            'driverNotes' => 'driverNotes',
+            'area' => 'area'
         ];
 
         foreach ($fieldMap as $jsonKey => $dbField) {

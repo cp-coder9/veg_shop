@@ -76,6 +76,18 @@ export interface CreateOrderData {
 
 export class OrderService {
   /**
+   * Determine delivery area based on address
+   */
+  private determineArea(address: string): string {
+    const addr = address.toLowerCase();
+    if (addr.includes('paarl') || addr.includes('val de vie') || addr.includes('pearl valley')) return 'Paarl';
+    if (addr.includes('wellington')) return 'Wellington';
+    if (addr.includes('franschhoek')) return 'Franschhoek';
+    if (addr.includes('stellenbosch')) return 'Stellenbosch';
+    return 'General';
+  }
+
+  /**
    * Check if the ordering window is currently open
    * Window: Tuesday 00:00 to Friday 14:00
    */
@@ -149,10 +161,10 @@ export class OrderService {
   /**
    * Create a new order with order items
    */
-  async createOrder(customerId: string, data: CreateOrderData): Promise<OrderWithItems> {
+  async createOrder(customerId: string, data: CreateOrderData, isAdmin: boolean = false): Promise<OrderWithItems> {
     // Validate order window
     const window = this.isOrderWindowOpen();
-    if (!window.isOpen && env.NODE_ENV === 'production') {
+    if (!isAdmin && !window.isOpen && env.NODE_ENV === 'production') {
       throw new Error(window.message);
     }
 
@@ -160,12 +172,12 @@ export class OrderService {
     const now = new Date();
     const deliveryDate = new Date(data.deliveryDate);
 
-    if (deliveryDate < now) {
+    if (deliveryDate < now && !isAdmin) {
       throw new Error('Delivery date must be in the future');
     }
 
     const validDeliveryDays = [1, 3, 5];
-    if (!validDeliveryDays.includes(deliveryDate.getDay())) {
+    if (!isAdmin && !validDeliveryDays.includes(deliveryDate.getDay())) {
       throw new Error('Delivery date must be Monday (1), Wednesday (3), or Friday (5)');
     }
 
@@ -196,12 +208,14 @@ export class OrderService {
       const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
       const customId = `${sanitizedName}-${dateStr}-${randomSuffix}`;
 
-      // Calculate delivery fee
+      // Calculate delivery fee and area
       let deliveryFees = data.deliveryFees ?? 0;
+      let area = 'General';
       if (data.deliveryMethod === 'delivery' && data.deliveryAddress) {
         const address = data.deliveryAddress.toLowerCase();
         const matchedOption = DELIVERY_FEES.find(opt => address.includes(opt.keyword));
         if (matchedOption) deliveryFees = matchedOption.fee;
+        area = this.determineArea(data.deliveryAddress);
       }
 
       // Create Order
@@ -211,6 +225,7 @@ export class OrderService {
         deliveryDate: data.deliveryDate,
         deliveryMethod: data.deliveryMethod,
         deliveryAddress: data.deliveryAddress || null,
+        area,
         specialInstructions: data.specialInstructions || null,
         deliveryFees,
         status: 'pending',
@@ -266,14 +281,16 @@ export class OrderService {
       const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
       const customId = `${sanitizedName}-${dateStr}-${randomSuffix}`;
 
-      // Calculate delivery fee
+      // Calculate delivery fee and area
       let deliveryFees = data.deliveryFees ?? 0;
+      let area = 'General';
       if (data.deliveryMethod === 'delivery' && data.deliveryAddress) {
         const address = data.deliveryAddress.toLowerCase();
         const matchedOption = DELIVERY_FEES.find(opt => address.includes(opt.keyword));
         if (matchedOption) {
           deliveryFees = matchedOption.fee;
         }
+        area = this.determineArea(data.deliveryAddress);
       }
 
       // Validate group delivery eligibility
@@ -294,6 +311,7 @@ export class OrderService {
             deliveryDate: data.deliveryDate,
             deliveryMethod: data.deliveryMethod,
             deliveryAddress: data.deliveryAddress,
+            area,
             specialInstructions: data.specialInstructions,
             deliveryFees: deliveryFees,
             status: 'pending',
@@ -536,7 +554,9 @@ export class OrderService {
     notes?: string,
     signature?: string,
     deliveryNotes?: string,
-    coolerBagStatus?: string
+    coolerBagStatus?: string,
+    handoverConfirmed?: boolean,
+    packageDetails?: string
   ): Promise<OrderWithItems> {
     const validStatuses = ['pending', 'confirmed', 'packed', 'delivered', 'cancelled', 'out_for_delivery'];
     if (!validStatuses.includes(status)) {
@@ -554,10 +574,19 @@ export class OrderService {
         if (userId) updateData.packerId = userId;
         if (notes) updateData.packerNotes = notes;
         if (signature) updateData.packerSignature = signature;
+        if (handoverConfirmed !== undefined) {
+          updateData.handoverConfirmed = handoverConfirmed;
+          if (handoverConfirmed) updateData.handoverConfirmedAt = new Date();
+        }
+        if (packageDetails) updateData.packageDetails = packageDetails;
       }
       if (role === 'driver') {
         if (deliveryNotes) updateData.deliveryNotes = deliveryNotes;
         if (coolerBagStatus) updateData.coolerBagStatus = coolerBagStatus;
+        if (handoverConfirmed !== undefined) {
+          updateData.handoverConfirmed = handoverConfirmed;
+          if (handoverConfirmed) updateData.handoverConfirmedAt = new Date();
+        }
       }
 
       if (packedItems) {
@@ -589,7 +618,7 @@ export class OrderService {
 
       updatedOrder = await orderRepository.update(id, updateData);
     } else {
-      if (!packedItems && !userId && !role && !notes && !signature && !deliveryNotes && !coolerBagStatus) {
+      if (!packedItems && !userId && !role && !notes && !signature && !deliveryNotes && !coolerBagStatus && handoverConfirmed === undefined && !packageDetails) {
         return prisma.order.update({
           where: { id },
           data: { status },
@@ -615,12 +644,21 @@ export class OrderService {
           if (userId) updateData.packerId = userId;
           if (notes) updateData.packerNotes = notes;
           if (signature) updateData.packerSignature = signature;
+          if (handoverConfirmed !== undefined) {
+            updateData.handoverConfirmed = handoverConfirmed;
+            if (handoverConfirmed) updateData.handoverConfirmedAt = new Date();
+          }
+          if (packageDetails) updateData.packageDetails = packageDetails;
         }
 
         // Driver specific logic
         if (role === 'driver') {
           if (deliveryNotes) updateData.deliveryNotes = deliveryNotes;
           if (coolerBagStatus) updateData.coolerBagStatus = coolerBagStatus;
+          if (handoverConfirmed !== undefined) {
+            updateData.handoverConfirmed = handoverConfirmed;
+            if (handoverConfirmed) updateData.handoverConfirmedAt = new Date();
+          }
         }
 
         // If specific packed quantities were provided, reconcile them

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { authenticate } from '../middleware/auth.middleware.js';
+import { authenticate, requireDriver, requireDriverOrAdmin } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
 import { z } from 'zod';
 
@@ -10,10 +10,11 @@ const router = Router();
 
 // Validation schemas
 const updateStatusSchema = z.object({
-    status: z.enum(['delivered', 'failed', 'out_for_delivery']), // Order status
-    deliveryProof: z.enum(['handed_to_client', 'left_at_door']).optional(),
+    status: z.enum(['delivered', 'failed', 'out_for_delivery', 'packed']), // Order status
+    deliveryProof: z.enum(['handed_to_client', 'left_at_door', 'placed_inside']).optional(),
     deliveryNotes: z.string().optional(),
     coolerBagStatus: z.enum(['none', 'taken', 'returned']).optional(),
+    handoverConfirmed: z.boolean().optional(),
 });
 
 const logbookSchema = z.object({
@@ -27,7 +28,7 @@ const logbookSchema = z.object({
  * GET /api/driver/orders
  * Get active orders for the authenticated driver (pending/out_for_delivery)
  */
-router.get('/orders', authenticate, asyncHandler(async (req: Request, res: Response) => {
+router.get('/orders', authenticate, requireDriverOrAdmin, asyncHandler(async (req: Request, res: Response) => {
     const driverId = req.user!.userId;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -75,9 +76,10 @@ router.get('/orders', authenticate, asyncHandler(async (req: Request, res: Respo
  * PATCH /api/driver/orders/:id/status
  * Update order status (Mark as Delivered)
  */
-router.patch('/orders/:id/status', authenticate, asyncHandler(async (req: Request, res: Response) => {
+router.patch('/orders/:id/status', authenticate, requireDriverOrAdmin, asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const driverId = req.user!.userId;
+    const userRole = req.user!.role;
 
     const validatedData = updateStatusSchema.parse(req.body);
 
@@ -87,6 +89,11 @@ router.patch('/orders/:id/status', authenticate, asyncHandler(async (req: Reques
 
     if (!order) {
         return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Order not found' } });
+    }
+
+    // Check if the order is assigned to the current driver (unless admin override)
+    if (userRole !== 'admin' && order.driverId !== driverId) {
+        return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Access denied: Order not assigned to you' } });
     }
 
     // Use centralized order service for status updates to ensure consistency/notifications
@@ -99,7 +106,8 @@ router.patch('/orders/:id/status', authenticate, asyncHandler(async (req: Reques
         undefined, // notes (packerNotes)
         undefined, // signature
         validatedData.deliveryNotes,
-        validatedData.coolerBagStatus
+        validatedData.coolerBagStatus,
+        validatedData.handoverConfirmed
     );
 
     // If delivery proof was provided, update it separately as it's driver specific and not in core updateOrderStatus yet
@@ -117,7 +125,7 @@ router.patch('/orders/:id/status', authenticate, asyncHandler(async (req: Reques
  * POST /api/driver/logs
  * Create a new logbook entry
  */
-router.post('/logs', authenticate, asyncHandler(async (req: Request, res: Response) => {
+router.post('/logs', authenticate, requireDriver, asyncHandler(async (req: Request, res: Response) => {
     const driverId = req.user!.userId;
     const validatedData = logbookSchema.parse(req.body);
 
@@ -138,7 +146,7 @@ router.post('/logs', authenticate, asyncHandler(async (req: Request, res: Respon
  * GET /api/driver/logs/today
  * Get today's logbook entry
  */
-router.get('/logs/today', authenticate, asyncHandler(async (req: Request, res: Response) => {
+router.get('/logs/today', authenticate, requireDriver, asyncHandler(async (req: Request, res: Response) => {
     const driverId = req.user!.userId;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -162,7 +170,7 @@ router.get('/logs/today', authenticate, asyncHandler(async (req: Request, res: R
  * PATCH /api/driver/logs/:id
  * Update logbook entry (e.g. End KM)
  */
-router.patch('/logs/:id', authenticate, asyncHandler(async (req: Request, res: Response) => {
+router.patch('/logs/:id', authenticate, requireDriver, asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const driverId = req.user!.userId;
 

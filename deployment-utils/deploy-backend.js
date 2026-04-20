@@ -2,7 +2,7 @@ const ftp = require("basic-ftp");
 const path = require("path");
 const fs = require("fs");
 
-async function deploy() {
+async function deployBackend() {
     const client = new ftp.Client();
     try {
         await client.access({
@@ -13,45 +13,9 @@ async function deploy() {
         });
         console.log("Connected to FTP as greg");
 
-        // 0. Cleanup - optional, but good for clean slate
-        // await client.clearWorkingDir(); 
-
         const remoteRoot = "/";
 
-        // 1. Upload Frontend
-        console.log("Uploading frontend to ROOT...");
-        await client.uploadFromDir(path.join(__dirname, "../frontend/dist"), remoteRoot);
-        console.log("Frontend uploaded.");
-
-        // 1.1 Create Frontend .htaccess for SPA routing
-        const frontendHtaccess = `RewriteEngine On
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.html [L]`;
-        const fHtaccessPath = path.join(__dirname, "frontend_htaccess");
-        fs.writeFileSync(fHtaccessPath, frontendHtaccess);
-        await client.uploadFrom(fHtaccessPath, `${remoteRoot}/.htaccess`);
-        fs.unlinkSync(fHtaccessPath);
-        console.log("Frontend .htaccess uploaded.");
-
-        // 1.2 Upload Firebase runtime config (for frontend)
-        const firebaseConfigContent = `window.__FIREBASE_CONFIG__ = {
-  apiKey: "AIzaSyCeBDhY7SOvsmfcTmxi5Ra-qOZGtLrJApM",
-  authDomain: "our-harvest-tote.firebaseapp.com",
-  databaseURL: "https://our-harvest-tote-default-rtdb.firebaseio.com",
-  projectId: "our-harvest-tote",
-  storageBucket: "our-harvest-tote.firebasestorage.app",
-  messagingSenderId: "703119370454",
-  appId: "1:703119370454:web:e27f87706d213ff30d4177",
-  measurementId: "G-YEVS64C84N"
-};`;
-        const firebaseConfigPath = path.join(__dirname, "firebase-config.js");
-        fs.writeFileSync(firebaseConfigPath, firebaseConfigContent);
-        await client.uploadFrom(firebaseConfigPath, `${remoteRoot}/firebase-config.js`);
-        fs.unlinkSync(firebaseConfigPath);
-        console.log("Frontend Firebase config uploaded.");
-
-        // 2. Upload Backend
+        // 1. Upload Backend PHP files
         console.log("Ensuring /api exists...");
         await client.ensureDir(`${remoteRoot}/api`);
 
@@ -66,13 +30,13 @@ RewriteRule ^ index.html [L]`;
 
         const backendFiles = ["composer.json", "composer.lock", "README.md"];
         for (const file of backendFiles) {
-            await client.uploadFrom(
-                path.join(__dirname, `../backend-php/${file}`),
-                `${remoteRoot}/api/${file}`
-            );
+            const filePath = path.join(__dirname, `../backend-php/${file}`);
+            if (fs.existsSync(filePath)) {
+                await client.uploadFrom(filePath, `${remoteRoot}/api/${file}`);
+            }
         }
 
-        // 3. Create .htaccess for routing
+        // 2. Create API .htaccess for routing
         const htaccessContent = `RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
@@ -82,7 +46,7 @@ RewriteRule ^(.*)$ public/index.php [QSA,L]`;
         await client.uploadFrom(htaccessPath, `${remoteRoot}/api/.htaccess`);
         fs.unlinkSync(htaccessPath);
 
-        // 4. Create .env with production credentials
+        // 3. Create .env with production credentials
         const envContent = `DB_HOST=localhost
 DB_PORT=3306
 DB_NAME=ourharve_veg_db
@@ -117,7 +81,7 @@ SMTP_FROM_NAME="Our Harvest Tote"`;
         await client.uploadFrom(envPath, `${remoteRoot}/api/.env`);
         fs.unlinkSync(envPath);
 
-        console.log("Deployment complete!");
+        console.log("Backend deployment complete!");
     }
     catch (err) {
         console.log("Error:", err);
@@ -125,4 +89,4 @@ SMTP_FROM_NAME="Our Harvest Tote"`;
     client.close();
 }
 
-deploy();
+deployBackend();

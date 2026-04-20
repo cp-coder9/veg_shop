@@ -25,6 +25,8 @@ interface DriverOrder {
     driverNotes?: string;
     coolerBagOption: boolean;
     coolerBagStatus: 'none' | 'taken' | 'returned';
+    handoverConfirmed?: boolean;
+    packageDetails?: string;
     items?: DriverOrderItem[];
     customer: {
         name: string;
@@ -38,6 +40,7 @@ export default function DriverDashboard() {
     const queryClient = useQueryClient();
     const [selectedOrder, setSelectedOrder] = useState<DriverOrder | null>(null);
     const [activeTab, setActiveTab] = useState<'orders' | 'summary'>('orders');
+    const [manifestAccepted, setManifestAccepted] = useState(false);
 
     // Fetch Orders
     const { data: orders, isLoading } = useQuery<DriverOrder[]>({
@@ -52,20 +55,35 @@ export default function DriverDashboard() {
     const summaryItems = orders?.reduce((acc, order) => {
         if (order.status === 'delivered' || order.status === 'cancelled') return acc;
         order.items?.forEach(item => {
-            const existing = acc.find(i => i.productId === item.product.id);
+            if (!item.product) return;
+            const existing = acc.find(i => i.productId === item.product?.id);
             if (existing) {
                 existing.totalQuantity += item.quantity;
             } else {
                 acc.push({
-                    productId: item.product.id,
-                    productName: item.product.name,
+                    productId: item.product?.id || item.id,
+                    productName: item.product?.name || 'Unknown Product',
                     totalQuantity: item.quantity,
-                    unit: item.product.unit || 'unit',
+                    unit: item.product?.unit || 'unit',
                 });
             }
         });
         return acc;
     }, [] as { productId: string; productName: string; totalQuantity: number; unit: string }[]).sort((a, b) => a.productName.localeCompare(b.productName));
+
+    const totalPackages = orders?.reduce((acc, order) => {
+        if (order.status === 'delivered' || order.status === 'cancelled') return acc;
+        if (order.packageDetails) {
+            try {
+                const details = JSON.parse(order.packageDetails);
+                acc.bags += details.bags || 0;
+                acc.coolers_cold += details.coolers_cold || 0;
+                acc.coolers_frozen += details.coolers_frozen || 0;
+                acc.eggs += details.eggs || 0;
+            } catch (e) { /* ignore */ }
+        }
+        return acc;
+    }, { bags: 0, coolers_cold: 0, coolers_frozen: 0, eggs: 0 });
 
     // Update Status Mutation
     const updateStatus = useMutation({
@@ -88,6 +106,17 @@ export default function DriverDashboard() {
         },
     });
 
+    const handleStartDelivery = () => {
+        if (!selectedOrder) return;
+        updateStatus.mutate({
+            id: selectedOrder.id,
+            status: 'out_for_delivery',
+            deliveryProof: '',
+            deliveryNotes: selectedOrder.driverNotes || '',
+            coolerBagStatus: selectedOrder.coolerBagStatus || 'none',
+        });
+    };
+
     const handleDelivery = (proof: string) => {
         if (!selectedOrder) return;
         updateStatus.mutate({
@@ -99,14 +128,41 @@ export default function DriverDashboard() {
         });
     };
 
+    const handleAcceptManifest = async () => {
+        const pendingOrders = orders?.filter(o => o.status === 'packed' || o.status === 'confirmed');
+        if (!pendingOrders || pendingOrders.length === 0) return;
+
+        try {
+            await Promise.all(pendingOrders.map(order => 
+                api.patch(`/driver/orders/${order.id}/status`, {
+                    status: order.status,
+                    handoverConfirmed: true
+                })
+            ));
+            setManifestAccepted(true);
+            toast.success('Manifest accepted! Safe travels. 🚗');
+            setActiveTab('orders');
+            queryClient.invalidateQueries({ queryKey: ['driver-orders'] });
+        } catch (error) {
+            toast.error('Failed to accept manifest');
+        }
+    };
+
     if (isLoading) {
-        return <div className="p-8 text-center">Loading deliveries...</div>;
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-cream">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sage-green mx-auto"></div>
+                    <p className="mt-4 text-warm-gray font-body font-medium">Loading deliveries...</p>
+                </div>
+            </div>
+        );
     }
 
     // If detailed view is open
     if (selectedOrder) {
         return (
-            <div className="space-y-6">
+            <div className="p-4 pb-safe space-y-6">
                 <button
                     onClick={() => setSelectedOrder(null)}
                     className="flex items-center text-warm-gray mb-4"
@@ -188,21 +244,38 @@ export default function DriverDashboard() {
                     )}
 
                     <div className="space-y-4">
+                        {selectedOrder.status !== 'out_for_delivery' && (
+                            <button
+                                onClick={handleStartDelivery}
+                                disabled={updateStatus.isPending}
+                                className="w-full bg-soft-black text-white py-4 px-6 rounded-xl text-lg font-bold shadow-lg hover:bg-black/90 active:bg-black disabled:opacity-50 transition-all flex items-center justify-center gap-3 mb-6"
+                            >
+                                <span className="text-xl">🚀</span> Start Delivery Run
+                            </button>
+                        )}
+
                         <h3 className="font-semibold text-primary-dark text-lg">Complete Delivery</h3>
-                        <div className="grid grid-cols-1 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <button
                                 onClick={() => handleDelivery('handed_to_client')}
                                 disabled={updateStatus.isPending}
-                                className="w-full bg-sage-green text-white py-5 px-6 rounded-xl text-xl font-bold shadow-lg hover:bg-sage-green/90 active:bg-soft-black disabled:opacity-50 transition-all transform active:scale-95 flex items-center justify-center gap-3"
+                                className="w-full bg-sage-green text-white py-5 px-4 rounded-xl text-lg font-bold shadow-lg hover:bg-sage-green/90 active:bg-soft-black disabled:opacity-50 transition-all transform active:scale-95 flex flex-col items-center justify-center gap-2"
                             >
-                                <span className="text-2xl">🤝</span> Handed to Client
+                                <span className="text-3xl">🤝</span> Handed to Client
                             </button>
                             <button
                                 onClick={() => handleDelivery('left_at_door')}
                                 disabled={updateStatus.isPending}
-                                className="w-full bg-warning text-white py-5 px-6 rounded-xl text-xl font-bold shadow-lg hover:bg-warning/90 active:bg-soft-black disabled:opacity-50 transition-all transform active:scale-95 flex items-center justify-center gap-3"
+                                className="w-full bg-warning text-white py-5 px-4 rounded-xl text-lg font-bold shadow-lg hover:bg-warning/90 active:bg-soft-black disabled:opacity-50 transition-all transform active:scale-95 flex flex-col items-center justify-center gap-2"
                             >
-                                <span className="text-2xl">🚪</span> Left at Door
+                                <span className="text-3xl">🚪</span> Left at Door
+                            </button>
+                            <button
+                                onClick={() => handleDelivery('placed_inside')}
+                                disabled={updateStatus.isPending}
+                                className="w-full bg-blue-500 text-white py-5 px-4 rounded-xl text-lg font-bold shadow-lg hover:bg-blue-600 active:bg-soft-black disabled:opacity-50 transition-all transform active:scale-95 flex flex-col items-center justify-center gap-2"
+                            >
+                                <span className="text-3xl">🏠</span> Placed Inside
                             </button>
                         </div>
 
@@ -221,9 +294,9 @@ export default function DriverDashboard() {
 
     // Main List View
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 pb-safe">
             {/* Sticky Header */}
-            <div className="sticky top-0 bg-sage-green/10 -mx-4 px-4 py-3 -mt-4 shadow-sm z-10 border-b border-sage-green/20">
+            <div className="sticky top-0 bg-sage-green/10 -mx-4 px-4 py-3 -mt-4 shadow-sm z-10 border-b border-sage-green/20 safe-area-top">
                 <div className="flex justify-between items-center mb-3">
                     <div>
                         <h1 className="text-xl font-bold text-primary-dark">Today's Deliveries</h1>
@@ -292,7 +365,21 @@ export default function DriverDashboard() {
                         <p className="text-xs text-warning/80 mt-1">Total items to carry across all {orders?.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length} remaining orders.</p>
                     </div>
 
-                    <div className="bg-white rounded-xl shadow-card overflow-hidden border border-light-gray">
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                        {[
+                            { label: 'Bags', val: totalPackages?.bags, emoji: '🛍️' },
+                            { label: 'Cold Coolers', val: totalPackages?.coolers_cold, emoji: '❄️' },
+                            { label: 'Frozen Coolers', val: totalPackages?.coolers_frozen, emoji: '🧊' },
+                            { label: 'Egg Cartons', val: totalPackages?.eggs, emoji: '🥚' },
+                        ].map(p => (
+                            <div key={p.label} className="bg-white p-3 rounded-xl border border-light-gray shadow-sm">
+                                <p className="text-[10px] font-bold uppercase text-warm-gray mb-1">{p.emoji} {p.label}</p>
+                                <p className="text-2xl font-black text-primary-dark">{p.val || 0}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-card overflow-x-auto border border-light-gray">
                         <table className="min-w-full divide-y divide-light-gray">
                             <thead className="bg-cream/50">
                                 <tr>
@@ -317,6 +404,25 @@ export default function DriverDashboard() {
                             </tbody>
                         </table>
                     </div>
+
+                    {!manifestAccepted && summaryItems && summaryItems.length > 0 && (
+                        <div className="mt-8 p-4 bg-sage-green/10 rounded-xl border border-sage-green/30 text-center">
+                            <h3 className="font-bold text-sage-green text-lg mb-2">Driver Handover Confirmation</h3>
+                            <p className="text-sm text-sage-green/80 mb-4">I confirm that I have physically counted and received all the items listed above for my delivery run.</p>
+                            <button 
+                                onClick={handleAcceptManifest}
+                                className="w-full bg-sage-green text-white font-bold py-4 rounded-xl shadow-md hover:bg-sage-green/90"
+                            >
+                                Accept Manifest & Sign Off
+                            </button>
+                        </div>
+                    )}
+                    {manifestAccepted && summaryItems && summaryItems.length > 0 && (
+                        <div className="mt-8 p-4 bg-sage-green text-white rounded-xl text-center shadow-md">
+                            <h3 className="font-bold text-lg mb-1">✅ Manifest Accepted</h3>
+                            <p className="text-sm opacity-90">You have signed off on these items.</p>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

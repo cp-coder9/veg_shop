@@ -14,11 +14,11 @@ import { Card, CardContent, CardHeader } from '../../components/ui/index.js';
 import api from '../../lib/api.js';
 
 interface DashboardStats {
-    totalCustomers: number;
     totalOrders: number;
+    pendingOrders: number;
     totalRevenue: number;
-    pendingPayments: number;
-    activeProducts: number;
+    unpaidInvoices: number;
+    activeCustomers: number;
 }
 
 interface PaymentStats {
@@ -80,33 +80,33 @@ const AdminDashboard = () => {
 
     const statCards = [
         {
-            title: 'Total Customers',
-            value: stats?.data?.totalCustomers ?? 0,
-            icon: Users,
-            color: 'bg-terracotta/10 text-terracotta'
-        },
-        {
             title: 'Total Orders',
             value: stats?.data?.totalOrders ?? 0,
             icon: ShoppingCart,
             color: 'bg-sage-green/10 text-sage-green'
         },
         {
-            title: 'Total Revenue',
-            value: `R${((stats?.data?.totalRevenue ?? 0) / 100).toFixed(2)}`,
-            icon: DollarSign,
-            color: 'bg-info/10 text-info'
-        },
-        {
-            title: 'Pending Payments',
-            value: stats?.data?.pendingPayments ?? 0,
+            title: 'Pending Orders',
+            value: stats?.data?.pendingOrders ?? 0,
             icon: Clock,
             color: 'bg-warning/10 text-warning'
         },
         {
-            title: 'Active Products',
-            value: stats?.data?.activeProducts ?? 0,
-            icon: Package,
+            title: 'Total Revenue',
+            value: `R${(stats?.data?.totalRevenue ?? 0).toFixed(2)}`,
+            icon: DollarSign,
+            color: 'bg-info/10 text-info'
+        },
+        {
+            title: 'Unpaid Invoices',
+            value: stats?.data?.unpaidInvoices ?? 0,
+            icon: Banknote,
+            color: 'bg-terracotta/10 text-terracotta'
+        },
+        {
+            title: 'Active Customers',
+            value: stats?.data?.activeCustomers ?? 0,
+            icon: Users,
             color: 'bg-primary/10 text-primary'
         }
     ];
@@ -163,7 +163,7 @@ const AdminDashboard = () => {
                                 <p className="font-accent text-caption text-warm-gray uppercase tracking-wide">
                                     {stat.title}
                                 </p>
-                                <p className="font-display text-body-xl text-primary-dark">
+                                <p className="font-display text-body-lg text-primary-dark">
                                     {stat.value}
                                 </p>
                             </div>
@@ -202,8 +202,8 @@ const AdminDashboard = () => {
                                             <span className="font-body text-body-md text-primary-dark">Yoco</span>
                                         </div>
                                         <span className="font-body text-body-md font-medium text-primary-dark">
-                                            R{(todayStats.yoco / 100).toFixed(2)}
-                                        </span>
+                                             R{todayStats.yoco.toFixed(2)}
+                                         </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded-full h-2">
                                         <div
@@ -222,8 +222,8 @@ const AdminDashboard = () => {
                                             <span className="font-body text-body-md text-primary-dark">Cash</span>
                                         </div>
                                         <span className="font-body text-body-md font-medium text-primary-dark">
-                                            R{(todayStats.cash / 100).toFixed(2)}
-                                        </span>
+                                             R{todayStats.cash.toFixed(2)}
+                                         </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded-full h-2">
                                         <div
@@ -242,8 +242,8 @@ const AdminDashboard = () => {
                                             <span className="font-body text-body-md text-primary-dark">EFT</span>
                                         </div>
                                         <span className="font-body text-body-md font-medium text-primary-dark">
-                                            R{(todayStats.eft / 100).toFixed(2)}
-                                        </span>
+                                             R{todayStats.eft.toFixed(2)}
+                                         </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded-full h-2">
                                         <div
@@ -303,8 +303,8 @@ const AdminDashboard = () => {
                                         </div>
                                         <div className="text-right">
                                             <p className="font-body text-body-md font-medium text-primary-dark">
-                                                R{(payment.amount / 100).toFixed(2)}
-                                            </p>
+                                                 R{payment.amount.toFixed(2)}
+                                             </p>
                                             <span className={`text-caption ${payment.invoiceStatus === 'paid' ? 'text-green-600' : 'text-yellow-600'
                                                 }`}>
                                                 {payment.invoiceStatus}
@@ -333,19 +333,19 @@ const AdminDashboard = () => {
                                 <div className="space-y-2">
                                     <div className="flex justify-between">
                                         <span className="text-warm-gray">Total</span>
-                                        <span className="font-medium text-primary-dark">R{(paymentStats.today.total / 100).toFixed(2)}</span>
+                                        <span className="font-medium text-primary-dark">R{paymentStats.today.total.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-purple-600">
                                         <span>💳 Yoco</span>
-                                        <span>R{(paymentStats.today.yoco / 100).toFixed(2)}</span>
+                                         <span>R{paymentStats.today.yoco.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-green-600">
                                         <span>💵 Cash</span>
-                                        <span>R{(paymentStats.today.cash / 100).toFixed(2)}</span>
+                                         <span>R{paymentStats.today.cash.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-blue-600">
                                         <span>🏦 EFT</span>
-                                        <span>R{(paymentStats.today.eft / 100).toFixed(2)}</span>
+                                         <span>R{paymentStats.today.eft.toFixed(2)}</span>
                                     </div>
                                     <div className="pt-2 border-t border-gray-200 text-caption text-warm-gray">
                                         {paymentStats.today.count} transactions
@@ -359,19 +359,19 @@ const AdminDashboard = () => {
                                 <div className="space-y-2">
                                     <div className="flex justify-between">
                                         <span className="text-warm-gray">Total</span>
-                                        <span className="font-medium text-primary-dark">R{(paymentStats.week.total / 100).toFixed(2)}</span>
+                                        <span className="font-medium text-primary-dark">R{paymentStats.week.total.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-purple-600">
                                         <span>💳 Yoco</span>
-                                        <span>R{(paymentStats.week.yoco / 100).toFixed(2)}</span>
+                                         <span>R{paymentStats.week.yoco.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-green-600">
                                         <span>💵 Cash</span>
-                                        <span>R{(paymentStats.week.cash / 100).toFixed(2)}</span>
+                                         <span>R{paymentStats.week.cash.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-blue-600">
                                         <span>🏦 EFT</span>
-                                        <span>R{(paymentStats.week.eft / 100).toFixed(2)}</span>
+                                         <span>R{paymentStats.week.eft.toFixed(2)}</span>
                                     </div>
                                     <div className="pt-2 border-t border-gray-200 text-caption text-warm-gray">
                                         {paymentStats.week.count} transactions
@@ -385,19 +385,19 @@ const AdminDashboard = () => {
                                 <div className="space-y-2">
                                     <div className="flex justify-between">
                                         <span className="text-warm-gray">Total</span>
-                                        <span className="font-medium text-primary-dark">R{(paymentStats.month.total / 100).toFixed(2)}</span>
+                                        <span className="font-medium text-primary-dark">R{paymentStats.month.total.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-purple-600">
                                         <span>💳 Yoco</span>
-                                        <span>R{(paymentStats.month.yoco / 100).toFixed(2)}</span>
+                                         <span>R{paymentStats.month.yoco.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-green-600">
                                         <span>💵 Cash</span>
-                                        <span>R{(paymentStats.month.cash / 100).toFixed(2)}</span>
+                                         <span>R{paymentStats.month.cash.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-blue-600">
                                         <span>🏦 EFT</span>
-                                        <span>R{(paymentStats.month.eft / 100).toFixed(2)}</span>
+                                         <span>R{paymentStats.month.eft.toFixed(2)}</span>
                                     </div>
                                     <div className="pt-2 border-t border-gray-200 text-caption text-warm-gray">
                                         {paymentStats.month.count} transactions
@@ -445,8 +445,8 @@ const AdminDashboard = () => {
                                         </div>
                                         <div className="text-right">
                                             <p className="font-body text-body-md font-medium text-primary-dark">
-                                                R{((o.total ?? 0) / 100).toFixed(2)}
-                                            </p>
+                                                 R{((o.total ?? 0)).toFixed(2)}
+                                             </p>
                                             <p className="font-accent text-caption text-warning uppercase">
                                                 {o.status ?? 'pending'}
                                             </p>

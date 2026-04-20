@@ -70,21 +70,7 @@ export default function PaymentPage() {
         }
       } catch (err: any) {
         console.error('Error fetching invoice:', err);
-        setInvoice({
-          id: invoiceId,
-          invoiceNumber: `INV-${invoiceId.slice(0, 8).toUpperCase()}`,
-          total: 450.00,
-          subtotal: 400.00,
-          deliveryFee: 50.00,
-          creditApplied: 0,
-          status: 'pending',
-          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          items: [
-            { id: '1', name: 'Tomatoes', quantity: 2, price: 50.00 },
-            { id: '2', name: 'Spinach', quantity: 1, price: 35.00 },
-            { id: '3', name: 'Carrots', quantity: 3, price: 25.00 },
-          ],
-        });
+        setError('Failed to load invoice. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -99,12 +85,36 @@ export default function PaymentPage() {
     }
   }, [isCompletionPage, checkoutId]);
 
+  interface Payment {
+    id: string;
+    invoiceId: string;
+    customerId: string;
+    amount: number;
+    method: 'cash' | 'yoco' | 'eft';
+    status: string;
+    paymentDate: string;
+    createdAt: string;
+    updatedAt: string;
+  }
+
   const verifyPayment = async (_checkoutId: string) => {
     setIsProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      navigate(`/orders?payment=success&invoiceId=${invoiceId}`);
-    } catch (err) {
+      // Verify payment by checking if invoice has been paid
+      const response = await api.get(`/payments/invoice/${invoiceId}`);
+      const payments = response.data as Payment[] || [];
+      
+      // Check if there's at least one successful payment
+      const hasSuccessfulPayment = payments.some(payment => 
+        payment.status === 'completed' || payment.status === 'succeeded'
+      );
+      
+      if (hasSuccessfulPayment) {
+        navigate(`/orders?payment=success&invoiceId=${invoiceId}`);
+      } else {
+        navigate(`/orders?payment=failed&invoiceId=${invoiceId}`);
+      }
+    } catch (err: any) {
       console.error('Payment verification failed:', err);
       navigate(`/orders?payment=failed&invoiceId=${invoiceId}`);
     } finally {

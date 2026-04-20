@@ -1,4 +1,5 @@
 import axios from 'axios';
+import nodemailer from 'nodemailer';
 import { prisma } from '../lib/prisma.js';
 import { Decimal } from '@prisma/client/runtime/library';
 import { env } from '../config/env.js';
@@ -313,46 +314,42 @@ export class NotificationService {
   }
 
   /**
-   * Send email message with retry logic
+   * Send email message using SMTP
    */
   async sendEmailMessage(email: string, subject: string, htmlContent: string, retries = 3): Promise<void> {
-    if (!SENDGRID_API_KEY || !SENDGRID_FROM_EMAIL) {
-      console.warn('[DEV MODE] SendGrid API not configured, skipping email send');
+    const smtpHost = env.SMTP_HOST;
+    const smtpPort = env.SMTP_PORT;
+    const smtpUser = env.SMTP_USER;
+    const smtpPass = env.SMTP_PASS;
+    const fromEmail = env.SMTP_FROM_EMAIL;
+    const fromName = env.SMTP_FROM_NAME;
+
+    if (!smtpHost || !smtpUser || !smtpPass) {
+      console.warn('[DEV MODE] SMTP not configured correctly, skipping email send');
       console.log(`[DEV MODE] Would send email to ${email} with subject: ${subject}`);
       return;
     }
+
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: env.SMTP_SECURE, // true for 465, false for other ports
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    });
 
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        await axios.post(
-          'https://api.sendgrid.com/v3/mail/send',
-          {
-            personalizations: [
-              {
-                to: [{ email }],
-                subject,
-              },
-            ],
-            from: {
-              email: SENDGRID_FROM_EMAIL,
-            },
-            content: [
-              {
-                type: 'text/html',
-                value: htmlContent,
-              },
-            ],
-          },
-          {
-            headers: {
-              'Authorization': `Bearer ${SENDGRID_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            timeout: 10000,
-          }
-        );
+        await transporter.sendMail({
+          from: `"${fromName}" <${fromEmail}>`,
+          to: email,
+          subject: subject,
+          html: htmlContent,
+        });
         return; // Success
       } catch (error) {
         lastError = error as Error;
@@ -365,7 +362,7 @@ export class NotificationService {
       }
     }
 
-    throw new Error(`Failed to send email after ${retries} attempts: ${lastError?.message}`);
+    throw new Error(`Failed to send email via SMTP after ${retries} attempts: ${lastError?.message}`);
   }
 
   /**

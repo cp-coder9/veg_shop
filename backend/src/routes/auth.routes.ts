@@ -33,6 +33,7 @@ router.post(
     return res.json({
       message: 'Verification code sent successfully',
       contact,
+      ...(process.env.NODE_ENV === 'development' ? { code } : {}),
     });
   })
 );
@@ -254,34 +255,44 @@ router.post('/logout', (_req: Request, res: Response): void => {
 });
 
 // One-click login for development
-// if (process.env.NODE_ENV === 'development') {
-console.log('Registering /dev-login route. NODE_ENV:', process.env.NODE_ENV);
-router.post(
-  '/dev-login',
-  asyncHandler(async (req: Request, res: Response) => {
-    const { email } = req.body as { email: string };
+if (process.env.NODE_ENV === 'development' || process.env.ALLOW_DEV_LOGIN === 'true') {
+  console.log('Registering /dev-login route. NODE_ENV:', process.env.NODE_ENV);
+  router.post(
+    '/dev-login',
+    asyncHandler(async (req: Request, res: Response) => {
+      const { email } = req.body as { email: string };
 
-    try {
-      const authToken = await authService.devLogin(email);
-      return res.json(authToken);
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(404).json({
+      try {
+        const authToken = await authService.devLogin(email);
+        return res.json(authToken);
+      } catch (error) {
+        if (error instanceof Error) {
+          return res.status(404).json({
+            error: {
+              code: 'USER_NOT_FOUND',
+              message: error.message,
+            },
+          });
+        }
+        return res.status(500).json({
           error: {
-            code: 'USER_NOT_FOUND',
-            message: error.message,
+            code: 'INTERNAL_ERROR',
+            message: 'Failed to login',
           },
         });
       }
-      return res.status(500).json({
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Failed to login',
-        },
-      });
-    }
-  })
-);
-// }
+    })
+  );
+} else {
+  // Hard deny for non-development environments
+  router.post('/dev-login', (_req: Request, res: Response) => {
+    return res.status(401).json({
+      error: {
+        code: 'UNAUTHORIZED',
+        message: 'Dev login is disabled in this environment',
+      },
+    });
+  });
+}
 
 export default router;

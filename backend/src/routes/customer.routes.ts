@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { customerService, UpdateCustomerDto, CreateCustomerDto } from '../services/customer.service.js';
-import { authenticate, requireAdmin } from '../middleware/auth.middleware.js';
+import { authenticate, requireAdmin, requireOwnerOrAdmin } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
 
 const router = Router();
@@ -185,7 +185,7 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
  * GET /api/customers/:id
  * Get customer by ID with full profile (order history, credit balance, payment history)
  */
-router.get('/:id', authenticate, asyncHandler(async (req: Request, res: Response) => {
+router.get('/:id', authenticate, requireOwnerOrAdmin, asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const includeProfile = req.query.includeProfile === 'true';
@@ -232,9 +232,9 @@ router.get('/:id', authenticate, asyncHandler(async (req: Request, res: Response
 
 /**
  * PUT /api/customers/:id
- * Update customer by ID (admin)
+ * Update customer by ID (admin or owner)
  */
-router.put('/:id', authenticate, asyncHandler(async (req: Request, res: Response) => {
+router.put('/:id', authenticate, requireOwnerOrAdmin, asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = req.body as UpdateCustomerDto;

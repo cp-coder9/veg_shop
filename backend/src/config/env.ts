@@ -24,9 +24,17 @@ const envSchema = z.object({
   WHATSAPP_API_TOKEN: z.string().optional(),
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
 
-  // Email (optional in development)
+  // Email (SMTP or SendGrid)
   SENDGRID_API_KEY: z.string().optional(),
   SENDGRID_FROM_EMAIL: z.string().email().optional(),
+
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.string().optional().transform(val => val ? Number(val) : 465),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_SECURE: z.string().optional().default('ssl'),
+  SMTP_FROM_EMAIL: z.string().email().optional(),
+  SMTP_FROM_NAME: z.string().optional().default('Our Harvest Tote'),
 
   // File Storage
   FILE_STORAGE_PATH: z.string().default('./uploads'),
@@ -81,6 +89,7 @@ export function logConfig(): void {
   console.log(`  - Database: ${env.DATABASE_URL ? '✓ Configured' : '✗ Not configured'}`);
   console.log(`  - WhatsApp: ${env.WHATSAPP_API_URL ? '✓ Configured' : '✗ Not configured'}`);
   console.log(`  - SendGrid: ${env.SENDGRID_API_KEY ? '✓ Configured' : '✗ Not configured'}`);
+  console.log(`  - SMTP: ${env.SMTP_HOST ? '✓ Configured' : '✗ Not configured'}`);
   console.log(`  - Yoco: ${env.YOCO_SECRET_KEY ? '✓ Configured' : '✗ Not configured'}`);
   console.log('');
 }

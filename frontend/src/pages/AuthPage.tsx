@@ -6,10 +6,14 @@ import { ArrowLeft } from 'lucide-react';
 
 const TEST_ACCOUNTS = [
   { email: 'admin@vegshop.com', name: 'Admin', role: 'admin' },
+  { email: 'admin@organicveg.com', name: 'Admin (Alt)', role: 'admin' },
   { email: 'john@example.com', name: 'Customer', role: 'customer' },
   { email: 'packer@vegshop.com', name: 'Packer', role: 'packer' },
   { email: 'driver@vegshop.com', name: 'Driver', role: 'driver' },
 ];
+
+// Check if dev login is enabled (default to false for security)
+const ENABLE_DEV_LOGIN = import.meta.env.VITE_ENABLE_DEV_LOGIN === 'true';
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -19,7 +23,6 @@ export default function AuthPage() {
   const [contact, setContact] = useState('');
   const [method, setMethod] = useState<'whatsapp' | 'email'>('whatsapp');
   const [error, setError] = useState('');
-  const [showQuickLogin, setShowQuickLogin] = useState(false);
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +37,7 @@ export default function AuthPage() {
     const selectedMethod = isEmail ? 'email' : method;
 
     try {
-      await sendCode.mutateAsync({
+      const response = await sendCode.mutateAsync({
         contact: contact.trim(),
         method: selectedMethod,
       });
@@ -43,6 +46,7 @@ export default function AuthPage() {
         state: {
           contact: contact.trim(),
           method: selectedMethod,
+          devCode: response.code,
         },
       });
     } catch (err) {
@@ -61,39 +65,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-[var(--canvas)] text-[var(--ink)] flex flex-col items-center justify-center px-6 py-12">
-      {/* Dev Quick Logins */}
-      <div className="fixed top-0 left-0 right-0 z-[100]">
-        <div className="bg-[var(--pigment-green)] text-[var(--canvas)] shadow-xl">
-          <button
-            onClick={() => setShowQuickLogin(!showQuickLogin)}
-            className="w-full px-6 py-2 flex items-center justify-between hover:bg-black/10 transition-colors font-mono text-xs uppercase tracking-widest"
-          >
-            <span>🔧 Development Tools</span>
-            <span>{showQuickLogin ? 'CLOSE' : 'OPEN'}</span>
-          </button>
-
-          {showQuickLogin && (
-            <div className="px-6 pb-6 animate-[fadeIn_0.3s_ease-out]">
-              <p className="text-[10px] opacity-60 mb-3 uppercase tracking-wider">Instant Access (Dev Only)</p>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {TEST_ACCOUNTS.map((account) => (
-                  <button
-                    key={account.email}
-                    onClick={() => handleDevLogin(account.email)}
-                    disabled={devLogin.isPending}
-                    className="p-3 bg-white/10 hover:bg-white/20 border border-white/10 text-left transition-all hover:scale-[1.02]"
-                  >
-                    <div className="font-bold text-sm tracking-tight">{account.name}</div>
-                    <div className="text-[10px] opacity-60 uppercase">{account.role}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className={`w-full max-w-sm transition-all duration-500 ${showQuickLogin ? 'mt-32' : ''}`}>
+      <div className={`w-full max-w-sm transition-all duration-500`}>
         <div className="relative bg-white/50 backdrop-blur-sm border border-[var(--pigment-ochre)]/20 p-8 lg:p-12 shadow-2xl">
           {/* Back Button */}
           <button
@@ -162,6 +134,34 @@ export default function AuthPage() {
             </button>
           </form>
 
+          {/* Sandbox Access Section */}
+          {ENABLE_DEV_LOGIN && (
+            <div className="mt-12 pt-8 border-t border-[var(--pigment-green)]/10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-[var(--pigment-green)]/20"></div>
+                <span className="text-[10px] uppercase font-black tracking-[4px] text-[var(--pigment-green)]/40">Sandbox Access</span>
+                <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-[var(--pigment-green)]/20"></div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                {TEST_ACCOUNTS.map((account) => (
+                  <button
+                    key={account.email}
+                    onClick={() => handleDevLogin(account.email)}
+                    disabled={devLogin.isPending}
+                    className="group relative p-4 bg-white/40 border border-transparent hover:border-[var(--pigment-green)]/30 hover:bg-white/60 transition-all text-left overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-[var(--pigment-green)]/5 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                    <div className="relative">
+                      <div className="font-bold text-xs tracking-tight text-[var(--ink)]">{account.name}</div>
+                      <div className="text-[9px] opacity-40 uppercase font-bold tracking-widest mt-1">{account.role}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="mt-10 text-center">
             <p className="text-[10px] font-mono opacity-40 uppercase tracking-widest">
               Secured by nature — verified by code.
@@ -172,4 +172,5 @@ export default function AuthPage() {
     </div>
   );
 }
+
 

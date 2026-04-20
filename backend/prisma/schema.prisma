@@ -70,12 +70,13 @@ model Product {
   isAvailable Boolean  @default(true)
   isSeasonal  Boolean  @default(false)
   isPerishable Boolean @default(false) // Determines delivery grouping eligibility
-  packingType String   @default("box") // "box", "bag", "fridge", "freezer"
+  packingType String   @default("ambient") 
   deliveryDay String?  // "Wednesday" | "Friday" - delivery day for the product
+  packQuantity Int?      // For pack items (e.g., 6 items per pack)
   supplierId  String?
   supplier    Supplier? @relation(fields: [supplierId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   categoryRef        ProductCategory? @relation(fields: [category], references: [key])
   orderItems         OrderItem[]
@@ -123,9 +124,12 @@ model Order {
   deliveryDate        DateTime
   deliveryMethod      String    @default("delivery")
   deliveryAddress     String?
+  area                String?   // Delivery area/zone
   specialInstructions String?
   deliveryFees        Decimal   @default(0)
   status              String    @default("pending")
+  stage               String    @default("pending") // pending, prepping, packed, handed_over, delivering, completed
+  tcAccepted          Boolean   @default(false)
   coolerBagOption     Boolean   @default(false)
   coolerBagStatus     String    @default("none") // "none", "taken", "returned"
   groupDelivery       Boolean   @default(false)
@@ -142,7 +146,7 @@ model Order {
   // Driver fields
   driverId      String?
   driver        User?   @relation("DriverOrders", fields: [driverId], references: [id])
-  deliveryProof String? // "handed_to_client" | "left_at_door"
+  deliveryProof String? // "handed_to_client" | "left_at_door" | "placed_inside"
   driverNotes   String?
 
   // Packer fields
@@ -150,11 +154,17 @@ model Order {
   packer        User?   @relation("PackerOrders", fields: [packerId], references: [id])
   packerNotes   String?
 
+  // Handover fields
+  handoverConfirmed   Boolean   @default(false)
+  handoverConfirmedAt DateTime?
+  packageDetails      String?   // JSON string of package units (e.g. {"bags": 2, "coolers": 1, "eggs": 1})
+
   @@index([customerId])
   @@index([deliveryDate])
   @@index([status])
   @@index([driverId])
   @@index([packerId])
+  @@index([area])
   @@map("orders")
 }
 
@@ -182,6 +192,7 @@ model OrderItem {
   productId    String
   quantity     Int
   priceAtOrder Decimal
+  isPrepped    Boolean @default(false) // For Sasha's 2-step picking process
 
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])

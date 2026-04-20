@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore.js';
+import ThemeToggle from '../components/ThemeToggle.tsx';
 import logo from '../assets/our-harvest-tote-logo.png';
 
 export default function DriverLayout() {
@@ -33,15 +34,6 @@ export default function DriverLayout() {
       ),
     },
     {
-      name: 'Packer',
-      path: '/packer',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-        </svg>
-      ),
-    },
-    {
       name: 'Profile',
       path: '/profile',
       icon: (
@@ -61,7 +53,7 @@ export default function DriverLayout() {
   return (
     <div className="min-h-screen bg-cream flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b border-light-gray px-5 py-4 sticky top-0 z-40">
+      <header className="bg-white border-b border-light-gray px-5 py-4 sticky top-0 z-40 safe-area-top">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
@@ -89,6 +81,7 @@ export default function DriverLayout() {
               </div>
             </div>
           )}
+          <ThemeToggle className="ml-auto" />
         </div>
       </header>
 
@@ -133,7 +126,7 @@ export default function DriverLayout() {
           ))}
         </nav>
 
-        <div className="p-6 border-t border-light-gray flex items-center gap-3">
+        <div className="p-6 border-t border-light-gray flex items-center gap-3 pb-safe">
           <div className="w-10 h-10 rounded-full bg-sage-green flex items-center justify-center text-white font-bold">
             {user?.name?.charAt(0).toUpperCase()}
           </div>
@@ -144,9 +137,25 @@ export default function DriverLayout() {
         </div>
       </aside>
 
-      <main className="flex-1 md:p-6 lg:p-10 max-w-7xl mx-auto w-full">
+      {/* Bottom Tab Bar (Mobile Only) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-light-gray pb-safe z-30 flex justify-around">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              `flex flex-col items-center py-2 px-4 transition-colors ${isActive ? 'text-sage-green' : 'text-warm-gray'}`
+            }
+          >
+            {item.icon}
+            <span className="text-[10px] mt-1 font-bold uppercase tracking-tighter">{item.name}</span>
+          </NavLink>
+        ))}
+      </nav>
+
+      <main className="flex-1 p-4 md:p-6 lg:p-10 max-w-7xl mx-auto w-full pb-24 md:pb-6 lg:pb-10">
         <Outlet />
       </main>
-    </div>
+    </div >
   );
 }

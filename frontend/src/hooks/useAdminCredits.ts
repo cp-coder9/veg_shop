@@ -17,6 +17,7 @@ interface ShortDeliveryDto {
     productId: string;
     quantityShort: number;
   }[];
+  reason?: string;
 }
 
 export function useCustomerCredits(customerId: string) {
