@@ -4,6 +4,8 @@ import { useCustomerProfile, useUpdateCustomer, useCustomerInvoices, useCustomer
 import { formatPrice } from '../lib/utils.js';
 import { toast } from 'react-hot-toast';
 import { User, MapPin, CreditCard, Receipt, History, Edit3, Save, ChevronRight, AlertCircle } from 'lucide-react';
+import { PhoneInput, type CountryCode } from '../components/ui/PhoneInput.js';
+import { AddressFields, formatFullAddress, type AddressData } from '../components/ui/AddressFields.js';
 
 export default function ProfilePage() {
   const { data: profile, isLoading } = useCustomerProfile();
@@ -13,11 +15,23 @@ export default function ProfilePage() {
   const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [countryCode, setCountryCode] = useState<CountryCode>('ZA');
+  const [addressData, setAddressData] = useState<AddressData>({
+    streetName: '',
+    area: '',
+    province: '',
+    postalCode: '',
+  });
   const [editForm, setEditForm] = useState({
     name: '',
     email: '',
     phone: '',
+    countryCode: 'ZA',
     address: '',
+    streetName: '',
+    area: '',
+    province: '',
+    postalCode: '',
   });
 
   const handleEdit = () => {
@@ -26,7 +40,19 @@ export default function ProfilePage() {
         name: profile.name || '',
         email: profile.email || '',
         phone: profile.phone || '',
+        countryCode: (profile as any).countryCode || 'ZA',
         address: profile.address || '',
+        streetName: (profile as any).streetName || '',
+        area: (profile as any).area || '',
+        province: (profile as any).province || '',
+        postalCode: (profile as any).postalCode || '',
+      });
+      setCountryCode(((profile as any).countryCode as CountryCode) || 'ZA');
+      setAddressData({
+        streetName: (profile as any).streetName || '',
+        area: (profile as any).area || '',
+        province: (profile as any).province || '',
+        postalCode: (profile as any).postalCode || '',
       });
       setIsEditing(true);
     }
@@ -34,7 +60,15 @@ export default function ProfilePage() {
 
   const handleSave = async () => {
     try {
-      await updateCustomer.mutateAsync(editForm);
+      // Build full address
+      const fullAddress = formatFullAddress(addressData);
+      
+      await updateCustomer.mutateAsync({
+        ...editForm,
+        ...addressData,
+        address: fullAddress || editForm.address,
+        countryCode,
+      });
       toast.success('Identity Refined');
       setIsEditing(false);
     } catch (error) {
@@ -125,26 +159,33 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-2">
-                    <label className="font-mono text-[10px] uppercase tracking-widest opacity-40">Connection</label>
-                    <input
-                      type="tel"
-                      className="w-full bg-[var(--canvas)]/50 border-b border-[var(--pigment-green)]/20 focus:border-[var(--pigment-green)] py-3 px-1 outline-none font-bold uppercase tracking-tighter transition-all"
-                      value={editForm.phone}
-                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="font-mono text-[10px] uppercase tracking-widest opacity-40">Coordinates</label>
-                    <input
-                      type="text"
-                      className="w-full bg-[var(--canvas)]/50 border-b border-[var(--pigment-green)]/20 focus:border-[var(--pigment-green)] py-3 px-1 outline-none font-bold uppercase tracking-tighter transition-all"
-                      value={editForm.address}
-                      onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                    />
-                  </div>
-                </div>
+            {/* Phone with Country Selector */}
+            <div className="space-y-2">
+              <label className="font-mono text-[10px] uppercase tracking-widest opacity-40">Connection</label>
+              <PhoneInput
+                value={editForm.phone}
+                onChange={(phone, code) => {
+                  setEditForm({ ...editForm, phone, countryCode: code });
+                  setCountryCode(code);
+                }}
+                countryCode={countryCode}
+                onCountryChange={setCountryCode}
+                placeholder="Enter phone number"
+              />
+            </div>
+
+            {/* Address Fields */}
+            <div className="space-y-4">
+              <label className="font-mono text-[10px] uppercase tracking-widest opacity-40">Delivery Address</label>
+              <AddressFields
+                data={addressData}
+                onChange={(newData) => {
+                  setAddressData(newData);
+                  setEditForm({ ...editForm, ...newData });
+                }}
+                showLabels={true}
+              />
+            </div>
 
                 <div className="flex gap-4 pt-6">
                   <button onClick={handleSave} className="bg-[var(--pigment-green)] text-[var(--canvas)] px-8 py-4 font-bold uppercase tracking-widest hover:scale-[1.02] transition-all flex items-center gap-3">
@@ -155,29 +196,34 @@ export default function ProfilePage() {
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
-                <div className="space-y-1">
-                  <span className="font-mono text-[10px] uppercase tracking-widest opacity-40 block mb-1">Registered Entity</span>
-                  <span className="text-2xl font-black uppercase tracking-tighter text-[var(--pigment-green)]">{profile.name || 'ANONYMOUS'}</span>
-                </div>
-                <div className="space-y-1">
-                  <span className="font-mono text-[10px] uppercase tracking-widest opacity-40 block mb-1">Signal Channel</span>
-                  <span className="font-bold text-lg uppercase tracking-tight">{profile.email}</span>
-                </div>
-                <div className="space-y-1">
-                  <span className="font-mono text-[10px] uppercase tracking-widest opacity-40 block mb-1">Connection Port</span>
-                  <span className="font-mono text-sm tracking-widest">{profile.phone || 'N/A'}</span>
-                </div>
-                <div className="space-y-1">
-                  <span className="font-mono text-[10px] uppercase tracking-widest opacity-40 block mb-1">Logistic Node</span>
-                  <div className="flex items-start gap-2">
-                    <MapPin size={14} className="mt-1 opacity-20" />
-                    <span className="font-bold text-sm uppercase leading-relaxed">{profile.address || 'UNDEFINED'}</span>
-                  </div>
-                </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+              <div className="space-y-1">
+                <span className="font-mono text-[10px] uppercase tracking-widest opacity-40 block mb-1">Registered Entity</span>
+                <span className="text-2xl font-black uppercase tracking-tighter text-[var(--pigment-green)]">{profile.name || 'ANONYMOUS'}</span>
               </div>
-            )}
+              <div className="space-y-1">
+                <span className="font-mono text-[10px] uppercase tracking-widest opacity-40 block mb-1">Signal Channel</span>
+                <span className="font-bold text-lg uppercase tracking-tight">{profile.email || 'N/A'}</span>
+              </div>
+              <div className="space-y-1">
+                <span className="font-mono text-[10px] uppercase tracking-widest opacity-40 block mb-1">Connection Port</span>
+                <span className="font-mono text-sm tracking-widest">{profile.phone || 'N/A'}</span>
+              </div>
+              <div className="space-y-1">
+                <span className="font-mono text-[10px] uppercase tracking-widest opacity-40 block mb-1">Logistic Node</span>
+                <div className="flex items-start gap-2">
+                  <MapPin size={14} className="mt-1 opacity-20" />
+                  <span className="font-bold text-sm uppercase leading-relaxed">{(profile as any).streetName || 'UNDEFINED'}</span>
+                </div>
+                {(profile as any).area && (
+                  <span className="font-mono text-[10px] opacity-40 uppercase tracking-widest">
+                    {(profile as any).area}{(profile as any).province && `, ${(profile as any).province}`}{(profile as any).postalCode && ` ${(profile as any).postalCode}`}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
           </div>
 
           {/* History */}

@@ -93,22 +93,24 @@ router.post('/', authenticate, asyncHandler(async (req: Request, res: Response) 
       });
     }
 
-    if (error instanceof Error) {
-      // Handle business logic errors
-      if (error.message.includes('Delivery date must be') ||
-        error.message.includes('Orders must be placed by') ||
-        error.message.includes('Products not available') ||
-        error.message.includes('Some products do not exist')) {
-        return res.status(400).json({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: error.message,
-          },
-        });
+      if (error instanceof Error) {
+        // Handle business logic errors
+        if (error.message.includes('Delivery date must be') ||
+            error.message.includes('Orders must be placed by') ||
+            error.message.includes('Products not available') ||
+            error.message.includes('Some products do not exist') ||
+            error.message.includes('Customer not found') ||
+            error.message.includes('Order is not eligible')) {
+          return res.status(400).json({
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: error.message,
+            },
+          });
+        }
       }
-    }
 
-    console.error('Create order error:', error);
+      console.error('Create order error:', error);
     return res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -372,12 +374,17 @@ router.post('/bulk/send', authenticate, requireAdmin, asyncHandler(async (req: R
 router.patch('/:id', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const schema = z.object({
-      packerId: z.string().nullable().optional(),
-      driverId: z.string().nullable().optional(),
-      area: z.string().nullable().optional(),
-      status: z.enum(['pending', 'confirmed', 'packed', 'delivered', 'out_for_delivery', 'cancelled']).optional(),
-    });
+  const schema = z.object({
+    packerId: z.string().nullable().optional(),
+    driverId: z.string().nullable().optional(),
+    area: z.string().nullable().optional(),
+    status: z.enum(['pending', 'confirmed', 'packed', 'delivered', 'out_for_delivery', 'cancelled']).optional(),
+    items: z.array(z.object({
+      productId: z.string(),
+      quantity: z.number().int().positive(),
+      priceAtOrder: z.number().optional(),
+    })).optional(),
+  });
 
     const data = schema.parse(req.body);
 
@@ -517,6 +524,118 @@ router.get('/delivery/:date/packing-list', authenticate, requireAdmin, asyncHand
       error: {
         code: 'INTERNAL_ERROR',
         message: 'Failed to fetch packing list',
+      },
+    });
+  }
+}));
+
+/**
+ * GET /api/orders/quotations
+ * Get all quotations (orders with unpaid invoices)
+ */
+router.get('/quotations', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate, customerId } = req.query;
+
+    const quotations = await orderService.getQuotations({
+      startDate: startDate as string,
+      endDate: endDate as string,
+      customerId: customerId as string,
+    });
+
+    return res.json(quotations);
+  } catch (error) {
+    console.error('Get quotations error:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to fetch quotations',
+      },
+    });
+  }
+}));
+
+/**
+ * POST /api/orders/:id/deduct-item
+ * Deduct an item from a quotation
+ */
+router.post('/:id/deduct-item', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { itemId, quantity, reason } = req.body;
+
+    // Validate input
+    if (!itemId || !quantity || !reason) {
+      return res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'itemId, quantity, and reason are required',
+        },
+      });
+    }
+
+    const order = await orderService.deductItemFromQuotation(
+      id,
+      itemId,
+      Number(quantity),
+      reason
+    );
+
+    return res.json(order);
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('not found')) {
+        return res.status(404).json({
+          error: {
+            code: 'NOT_FOUND',
+            message: error.message,
+          },
+        });
+      }
+      if (error.message.includes('exceeds')) {
+        return res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: error.message,
+          },
+        });
+      }
+    }
+    console.error('Deduct item error:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to deduct item',
+      },
+    });
+  }
+}));
+
+/**
+ * POST /api/orders/:id/convert
+ * Convert a quotation to an order (after payment)
+ */
+router.post('/:id/convert', authenticate, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const order = await orderService.convertQuotationToOrder(id);
+
+    return res.json(order);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('not found')) {
+      return res.status(404).json({
+        error: {
+          code: 'NOT_FOUND',
+          message: error.message,
+        },
+      });
+    }
+    console.error('Convert quotation error:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to convert quotation',
       },
     });
   }

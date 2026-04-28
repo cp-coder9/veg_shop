@@ -13,6 +13,11 @@ export interface CreateCustomerDto {
   email?: string;
   name: string;
   address?: string;
+  streetName?: string;
+  area?: string;
+  province?: string;
+  postalCode?: string;
+  countryCode?: string;
   deliveryPreference?: 'delivery' | 'collection';
 }
 
@@ -21,6 +26,11 @@ export interface UpdateCustomerDto {
   email?: string;
   name?: string;
   address?: string;
+  streetName?: string;
+  area?: string;
+  province?: string;
+  postalCode?: string;
+  countryCode?: string;
   deliveryPreference?: 'delivery' | 'collection';
 }
 
@@ -75,20 +85,25 @@ export class CustomerService {
         }
       }
 
-      const customer = await prisma.user.create({
-        data: {
-          phone: data.phone || null,
-          email: data.email || null,
-          name: data.name,
-          address: data.address || null,
-          deliveryPreference: data.deliveryPreference || 'delivery',
-          role: 'customer',
-        },
-      });
+    const customer = await prisma.user.create({
+      data: {
+        phone: data.phone || null,
+        email: data.email || null,
+        name: data.name,
+        address: data.address || null,
+        streetName: data.streetName || null,
+        area: data.area || null,
+        province: data.province || null,
+        postalCode: data.postalCode || null,
+        countryCode: data.countryCode || 'ZA',
+        deliveryPreference: data.deliveryPreference || 'delivery',
+        role: 'customer',
+      },
+    });
 
-      return customer;
-    }
+    return customer;
   }
+}
 
   /**
    * Update an existing customer
@@ -129,20 +144,25 @@ export class CustomerService {
         }
       }
 
-      const customer = await prisma.user.update({
-        where: { id },
-        data: {
-          phone: data.phone !== undefined ? data.phone : undefined,
-          email: data.email !== undefined ? data.email : undefined,
-          name: data.name,
-          address: data.address !== undefined ? data.address : undefined,
-          deliveryPreference: data.deliveryPreference,
-        },
-      });
+    const customer = await prisma.user.update({
+      where: { id },
+      data: {
+        phone: data.phone !== undefined ? data.phone : undefined,
+        email: data.email !== undefined ? data.email : undefined,
+        name: data.name,
+        address: data.address !== undefined ? data.address : undefined,
+        streetName: data.streetName !== undefined ? data.streetName : undefined,
+        area: data.area !== undefined ? data.area : undefined,
+        province: data.province !== undefined ? data.province : undefined,
+        postalCode: data.postalCode !== undefined ? data.postalCode : undefined,
+        countryCode: data.countryCode !== undefined ? data.countryCode : undefined,
+        deliveryPreference: data.deliveryPreference,
+      },
+    });
 
-      return customer;
-    }
+    return customer;
   }
+}
 
   /**
    * Get a single customer by ID

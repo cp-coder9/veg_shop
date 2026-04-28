@@ -940,6 +940,7 @@ export class OrderService {
 
   /**
    * Get all orders with optional limit and filtering
+   * By default, excludes quotations (orders with unpaid invoices)
    */
   async getOrders(options: {
     limit?: number;
@@ -950,8 +951,9 @@ export class OrderService {
     customerId?: string;
     packerId?: string;
     driverId?: string;
+    includeQuotations?: boolean;
   } = {}): Promise<OrderWithItems[]> {
-    const { limit, status, deliveryDate, startDate, endDate, customerId, packerId, driverId } = options;
+    const { limit, status, deliveryDate, startDate, endDate, customerId, packerId, driverId, includeQuotations = false } = options;
 
     if (env.USE_FIREBASE) {
       const filters: { field: string; operator: string; value: any }[] = [];
@@ -997,6 +999,15 @@ export class OrderService {
       if (packerId) where.packerId = packerId;
       if (driverId) where.driverId = driverId;
 
+      // By default, exclude quotations (orders with unpaid invoices)
+      // Unless specifically requesting quotations
+      if (!includeQuotations) {
+        where.OR = [
+          { invoice: { none: {} } },
+          { invoice: { some: { status: { not: 'unpaid' } } } },
+        ];
+      }
+
       const orders = await prisma.order.findMany({
         where: where as { [key: string]: any },
         take: limit,
@@ -1010,18 +1021,29 @@ export class OrderService {
             },
           },
           customer: true,
+          invoice: true,
         },
       });
 
       return orders.map((order) => {
+        // Calculate total excluding deducted items
         const totalAmount = order.items.reduce((sum: number, item) => {
-          return sum + (Number(item.priceAtOrder) * item.quantity);
+          const effectiveQuantity = item.isDeducted
+            ? Math.max(0, item.quantity - (item.deductedQuantity || 0))
+            : item.quantity;
+          return sum + (Number(item.priceAtOrder) * effectiveQuantity);
         }, Number(order.deliveryFees || 0));
+
+        // Determine if this is a quotation (has unpaid invoice)
+        const isQuotation = order.invoice && order.invoice.length > 0
+          ? order.invoice.some((inv: any) => inv.status === 'unpaid')
+          : false;
 
         return {
           ...order,
-          customerName: order.customer.name,
+          customerName: order.customer?.name ?? 'Unknown',
           totalAmount,
+          isQuotation,
           items: order.items.map(item => ({
             ...item,
             priceAtOrder: Number(item.priceAtOrder),
@@ -1062,34 +1084,276 @@ export class OrderService {
       },
     });
 
-    const collationMap = new Map<string, CollationItem>();
+  const collationMap = new Map<string, CollationItem>();
 
-    orders.forEach((order) => {
-      order.items.forEach((item) => {
-        const existing = collationMap.get(item.productId);
-        if (existing) {
-          existing.totalQuantity += item.quantity;
-          existing.orderCount += 1;
-        } else {
-          collationMap.set(item.productId, {
-            productId: item.productId,
-            productName: item.product.name,
-            totalQuantity: item.quantity,
-            unit: item.product.unit,
-            orderCount: 1,
-            categoryId: item.product.category,
-            supplierId: item.product.supplierId || 'unassigned',
-            supplierName: item.product.supplier?.name || 'Unassigned',
-          });
-        }
+  orders.forEach((order) => {
+    order.items.forEach((item) => {
+      const existing = collationMap.get(item.productId);
+      if (existing) {
+        existing.totalQuantity += item.quantity;
+        existing.orderCount += 1;
+      } else {
+        collationMap.set(item.productId, {
+          productId: item.productId,
+          productName: item.product.name,
+          totalQuantity: item.quantity,
+          unit: item.product.unit,
+          orderCount: 1,
+          categoryId: item.product.category,
+          supplierId: item.product.supplierId || 'unassigned',
+          supplierName: item.product.supplier?.name || 'Unassigned',
+        });
+      }
+    });
+  });
+
+  return Array.from(collationMap.values()).sort((a, b) =>
+    a.supplierName.localeCompare(b.supplierName) ||
+    a.categoryId.localeCompare(b.categoryId) ||
+    a.productName.localeCompare(b.productName)
+  );
+}
+
+  /**
+   * Deduct an item from a quotation (before it's paid/converted to order)
+   * This removes the item and credits the customer
+   */
+  async deductItemFromQuotation(
+    orderId: string,
+    itemId: string,
+    quantity: number,
+    reason: string
+  ): Promise<OrderWithItems> {
+    if (env.USE_FIREBASE) {
+      throw new Error('Deduct item not implemented for Firebase');
+    }
+
+    return await prisma.$transaction(async (tx: any) => {
+      // Get the order with invoice info
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        include: {
+          items: { include: { product: true } },
+          invoice: true,
+          customer: true,
+        },
       });
+
+      if (!order) {
+        throw new Error('Order not found');
+      }
+
+      // Find the item to deduct
+      const item = order.items.find((i: any) => i.id === itemId);
+      if (!item) {
+        throw new Error('Order item not found');
+      }
+
+      // Validate quantity
+      if (quantity > item.quantity) {
+        throw new Error('Deduct quantity exceeds ordered quantity');
+      }
+
+      const deductAmount = Number(item.priceAtOrder) * quantity;
+
+      // Update the order item to mark it as deducted
+      await tx.orderItem.update({
+        where: { id: itemId },
+        data: {
+          isDeducted: true,
+          deductedQuantity: quantity,
+          deductedReason: reason,
+          deductedAt: new Date(),
+        },
+      });
+
+      // Create credit for the customer
+      await tx.credit.create({
+        data: {
+          customerId: order.customerId,
+          amount: new Decimal(deductAmount),
+          reason: `Item deducted from quotation: ${item.product.name} - ${reason} (Order ${orderId})`,
+          type: 'deducted',
+        },
+      });
+
+      // If invoice exists (quotation), update it
+      if (order.invoice) {
+        const newSubtotal = Number(order.invoice.subtotal) - deductAmount;
+        const newTotal = Number(order.invoice.total) - deductAmount;
+
+        await tx.invoice.update({
+          where: { id: order.invoice.id },
+          data: {
+            subtotal: newSubtotal,
+            total: newTotal,
+            pdfUrl: null, // Force regeneration
+          },
+        });
+      }
+
+      // Send notification to customer
+      try {
+        await notificationService.sendOrderNotification(order.customerId, {
+          type: 'item_deducted',
+          message: `${quantity}x ${item.product.name} has been removed from your quotation. R${deductAmount.toFixed(2)} has been credited to your account.`,
+        });
+      } catch (err) {
+        console.warn('Failed to send deduction notification:', err);
+      }
+
+      // Return updated order
+      const updatedOrder = await tx.order.findUnique({
+        where: { id: orderId },
+        include: {
+          items: { include: { product: true } },
+          customer: true,
+          invoice: true,
+        },
+      });
+
+      return updatedOrder as unknown as OrderWithItems;
+    });
+  }
+
+  /**
+   * Convert a quotation to an order (when invoice is paid)
+   * Removes deducted items from the order
+   */
+  async convertQuotationToOrder(orderId: string): Promise<OrderWithItems> {
+    if (env.USE_FIREBASE) {
+      throw new Error('Convert quotation not implemented for Firebase');
+    }
+
+    return await prisma.$transaction(async (tx: any) => {
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        include: {
+          items: { include: { product: true } },
+          invoice: true,
+        },
+      });
+
+      if (!order) {
+        throw new Error('Order not found');
+      }
+
+      // Get deducted items
+      const deductedItems = order.items.filter((item: any) => item.isDeducted);
+
+      // Delete fully deducted items (where deductedQuantity equals quantity)
+      const fullyDeductedItems = deductedItems.filter(
+        (item: any) => item.deductedQuantity >= item.quantity
+      );
+
+      for (const item of fullyDeductedItems) {
+        await tx.orderItem.delete({ where: { id: item.id } });
+      }
+
+      // Update partially deducted items
+      const partiallyDeductedItems = deductedItems.filter(
+        (item: any) => item.deductedQuantity > 0 && item.deductedQuantity < item.quantity
+      );
+
+      for (const item of partiallyDeductedItems) {
+        const newQuantity = item.quantity - item.deductedQuantity;
+        await tx.orderItem.update({
+          where: { id: item.id },
+          data: {
+            quantity: newQuantity,
+            isDeducted: false,
+            deductedQuantity: 0,
+            deductedReason: null,
+            deductedAt: null,
+          },
+        });
+      }
+
+      // Update order status
+      const updatedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: { status: 'confirmed' },
+        include: {
+          items: { include: { product: true } },
+          customer: true,
+          invoice: true,
+        },
+      });
+
+      return updatedOrder as unknown as OrderWithItems;
+    });
+  }
+
+  /**
+   * Get all quotations (orders with unpaid invoices)
+   */
+  async getQuotations(options: {
+    startDate?: string;
+    endDate?: string;
+    customerId?: string;
+  } = {}): Promise<OrderWithItems[]> {
+    if (env.USE_FIREBASE) {
+      throw new Error('Get quotations not implemented for Firebase');
+    }
+
+    const { startDate, endDate, customerId } = options;
+
+    const where: Record<string, unknown> = {
+      invoice: {
+        status: 'unpaid',
+      },
+      status: { not: 'cancelled' },
+    };
+
+    if (startDate || endDate) {
+      where.deliveryDate = {
+        ...(startDate ? { gte: new Date(startDate) } : {}),
+        ...(endDate ? { lte: new Date(endDate) } : {}),
+      };
+    }
+
+    if (customerId) {
+      where.customerId = customerId;
+    }
+
+    const orders = await prisma.order.findMany({
+      where: where as any,
+      orderBy: { deliveryDate: 'desc' },
+      include: {
+        items: {
+          include: { product: true },
+        },
+        customer: true,
+        invoice: true,
+      },
     });
 
-    return Array.from(collationMap.values()).sort((a, b) =>
-      a.supplierName.localeCompare(b.supplierName) ||
-      a.categoryId.localeCompare(b.categoryId) ||
-      a.productName.localeCompare(b.productName)
-    );
+    return orders.map((order) => {
+      const totalAmount = order.items.reduce((sum: number, item: any) => {
+        const effectiveQuantity = item.isDeducted
+          ? item.quantity - item.deductedQuantity
+          : item.quantity;
+        return sum + (Number(item.priceAtOrder) * effectiveQuantity);
+      }, Number(order.deliveryFees || 0));
+
+      return {
+        ...order,
+        customerName: order.customer?.name ?? 'Unknown',
+        totalAmount,
+        isQuotation: true,
+        items: order.items.map((item: any) => ({
+          ...item,
+          priceAtOrder: Number(item.priceAtOrder),
+          effectiveQuantity: item.isDeducted
+            ? item.quantity - item.deductedQuantity
+            : item.quantity,
+          product: item.product ? {
+            ...item.product,
+            price: Number(item.product.price),
+          } : undefined,
+        })),
+      } as unknown as OrderWithItems;
+    });
   }
 }
 

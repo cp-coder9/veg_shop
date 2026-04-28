@@ -1,0 +1,812 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - link "Logo Admin DASHBOARD" [ref=e6] [cursor=pointer]:
+        - /url: /admin
+        - img "Logo" [ref=e7]
+        - generic [ref=e8]:
+          - generic [ref=e9]: Admin
+          - generic [ref=e10]: DASHBOARD
+      - button "Close menu" [ref=e11] [cursor=pointer]:
+        - img [ref=e12]
+    - navigation [ref=e14]:
+      - list [ref=e15]:
+        - listitem [ref=e16]:
+          - link "Dashboard" [ref=e17] [cursor=pointer]:
+            - /url: /admin
+            - img [ref=e19]
+            - generic [ref=e21]: Dashboard
+        - listitem [ref=e22]:
+          - link "Orders" [ref=e23] [cursor=pointer]:
+            - /url: /admin/orders
+            - img [ref=e25]
+            - generic [ref=e27]: Orders
+        - listitem [ref=e28]:
+          - link "Products" [ref=e29] [cursor=pointer]:
+            - /url: /admin/products
+            - img [ref=e31]
+            - generic [ref=e33]: Products
+        - listitem [ref=e34]:
+          - link "Suppliers" [ref=e35] [cursor=pointer]:
+            - /url: /admin/suppliers
+            - img [ref=e37]
+            - generic [ref=e39]: Suppliers
+        - listitem [ref=e40]:
+          - link "Availability" [ref=e41] [cursor=pointer]:
+            - /url: /admin/availability
+            - img [ref=e43]
+            - generic [ref=e45]: Availability
+        - listitem [ref=e46]:
+          - link "Invoices" [ref=e47] [cursor=pointer]:
+            - /url: /admin/invoices
+            - img [ref=e49]
+            - generic [ref=e51]: Invoices
+        - listitem [ref=e52]:
+          - link "Payments" [ref=e53] [cursor=pointer]:
+            - /url: /admin/payments
+            - img [ref=e55]
+            - generic [ref=e57]: Payments
+        - listitem [ref=e58]:
+          - link "Customers" [ref=e59] [cursor=pointer]:
+            - /url: /admin/customers
+            - img [ref=e61]
+            - generic [ref=e63]: Customers
+        - listitem [ref=e64]:
+          - link "Reports" [ref=e65] [cursor=pointer]:
+            - /url: /admin/reports
+            - img [ref=e67]
+            - generic [ref=e69]: Reports
+        - listitem [ref=e70]:
+          - link "Staff" [ref=e71] [cursor=pointer]:
+            - /url: /admin/staff
+            - img [ref=e73]
+            - generic [ref=e75]: Staff
+        - listitem [ref=e76]:
+          - link "Settings" [ref=e77] [cursor=pointer]:
+            - /url: /admin/settings
+            - img [ref=e79]
+            - generic [ref=e82]: Settings
+    - generic [ref=e83]:
+      - generic [ref=e84]:
+        - generic [ref=e86]: A
+        - generic [ref=e87]:
+          - generic [ref=e88]: Admin User
+          - generic [ref=e89]: Administrator
+      - button "Logout" [ref=e90] [cursor=pointer]:
+        - img [ref=e91]
+        - generic [ref=e93]: Logout
+  - generic [ref=e94]:
+    - banner [ref=e95]:
+      - generic [ref=e96]:
+        - button "Toggle Menu" [ref=e97] [cursor=pointer]:
+          - img [ref=e98]
+        - generic [ref=e100]:
+          - img "Logo" [ref=e101]
+          - generic [ref=e102]: Admin
+        - heading "Orders" [level=1] [ref=e103]
+        - link "A" [ref=e104] [cursor=pointer]:
+          - /url: /admin/profile
+          - generic [ref=e106]: A
+      - button "Switch to dark mode" [ref=e107] [cursor=pointer]:
+        - img [ref=e108]
+        - img [ref=e110]
+    - main [ref=e112]:
+      - generic [ref=e113]:
+        - generic [ref=e114]:
+          - generic [ref=e115]:
+            - heading "Orders Management" [level=1] [ref=e116]
+            - paragraph [ref=e117]:
+              - img [ref=e118]
+              - text: Manage customer orders, packing, and dispatch.
+          - generic [ref=e123]:
+            - button "Weekly Collation" [ref=e124] [cursor=pointer]:
+              - img [ref=e126]
+              - text: Weekly Collation
+            - button "Product Breakdown" [ref=e129] [cursor=pointer]:
+              - img [ref=e131]
+              - text: Product Breakdown
+            - button "Stock Orders" [ref=e133] [cursor=pointer]:
+              - img [ref=e135]
+              - text: Stock Orders
+            - button "Generate Bulk Order" [ref=e139] [cursor=pointer]:
+              - img [ref=e141]
+              - text: Generate Bulk Order
+            - button "Add Order" [ref=e144] [cursor=pointer]:
+              - img [ref=e146]
+              - text: Add Order
+        - generic [ref=e148]:
+          - generic [ref=e149]:
+            - img [ref=e150]
+            - generic [ref=e152]: Advanced Filtering
+          - generic [ref=e153]:
+            - generic [ref=e154]:
+              - generic [ref=e155]: Specific Delivery Date
+              - textbox [ref=e158]
+            - generic [ref=e159]:
+              - generic [ref=e160]: Status Filter
+              - combobox [ref=e161]:
+                - option "All Statuses" [selected]
+                - option "Pending"
+                - option "Confirmed"
+                - option "Packed"
+                - option "Out for Delivery"
+                - option "Delivered"
+                - option "Cancelled"
+            - generic [ref=e162]:
+              - generic [ref=e163]: Date Range Start
+              - textbox [ref=e166]
+            - generic [ref=e167]:
+              - generic [ref=e168]: Date Range End
+              - textbox [ref=e171]
+        - table [ref=e174]:
+          - rowgroup [ref=e175]:
+            - row "Order ID Customer Delivery Area Status Packer Driver Items Packing Actions" [ref=e176]:
+              - columnheader [ref=e177]:
+                - checkbox [ref=e178]
+              - columnheader "Order ID" [ref=e179]
+              - columnheader "Customer" [ref=e180]
+              - columnheader "Delivery" [ref=e181]
+              - columnheader "Area" [ref=e182]
+              - columnheader "Status" [ref=e183]
+              - columnheader "Packer" [ref=e184]
+              - columnheader "Driver" [ref=e185]
+              - columnheader "Items" [ref=e186]
+              - columnheader "Packing" [ref=e187]
+              - columnheader "Actions" [ref=e188]
+          - rowgroup [ref=e189]:
+            - row "JOHNSMIT... John Smith 4/18/2026 collection Confirmed Packer Tom Unassigned 4 items Standard View Details Adjust Items" [ref=e190]:
+              - cell [ref=e191]:
+                - checkbox [ref=e192]
+              - cell "JOHNSMIT..." [ref=e193]
+              - cell "John Smith" [ref=e194]
+              - cell "4/18/2026 collection" [ref=e195]:
+                - text: 4/18/2026
+                - text: collection
+              - cell [ref=e196]:
+                - textbox "Area" [ref=e197]
+              - cell "Confirmed" [ref=e198]:
+                - combobox [ref=e199]:
+                  - option "Pending"
+                  - option "Confirmed" [selected]
+                  - option "Packed"
+                  - option "Delivered"
+                  - option "Cancelled"
+              - cell "Packer Tom" [ref=e200]:
+                - combobox [ref=e201]:
+                  - option "Unassigned"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom" [selected]
+                  - option "Packer Tom"
+                  - option "Packer User"
+              - cell "Unassigned" [ref=e202]:
+                - combobox [ref=e203]:
+                  - option "Unassigned" [selected]
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver User"
+              - cell "4 items" [ref=e204]
+              - cell "Standard" [ref=e205]:
+                - generic [ref=e207]: Standard
+              - cell "View Details Adjust Items" [ref=e208]:
+                - generic [ref=e209]:
+                  - button "View Details" [ref=e210] [cursor=pointer]
+                  - button "Adjust Items" [ref=e211] [cursor=pointer]
+            - row "TESTVERI... Test Verification User 4/18/2026 delivery Confirmed Packer Tom Unassigned 1 items Standard View Details Adjust Items" [ref=e212]:
+              - cell [ref=e213]:
+                - checkbox [ref=e214]
+              - cell "TESTVERI..." [ref=e215]
+              - cell "Test Verification User" [ref=e216]
+              - cell "4/18/2026 delivery" [ref=e217]:
+                - text: 4/18/2026
+                - text: delivery
+              - cell [ref=e218]:
+                - textbox "Area" [ref=e219]
+              - cell "Confirmed" [ref=e220]:
+                - combobox [ref=e221]:
+                  - option "Pending"
+                  - option "Confirmed" [selected]
+                  - option "Packed"
+                  - option "Delivered"
+                  - option "Cancelled"
+              - cell "Packer Tom" [ref=e222]:
+                - combobox [ref=e223]:
+                  - option "Unassigned"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom" [selected]
+                  - option "Packer Tom"
+                  - option "Packer User"
+              - cell "Unassigned" [ref=e224]:
+                - combobox [ref=e225]:
+                  - option "Unassigned" [selected]
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver User"
+              - cell "1 items" [ref=e226]
+              - cell "Standard" [ref=e227]:
+                - generic [ref=e229]: Standard
+              - cell "View Details Adjust Items" [ref=e230]:
+                - generic [ref=e231]:
+                  - button "View Details" [ref=e232] [cursor=pointer]
+                  - button "Adjust Items" [ref=e233] [cursor=pointer]
+            - row "JOHNSMIT... John Smith 4/18/2026 delivery Confirmed Packer User Driver User 6 items Standard View Details Adjust Items" [ref=e234]:
+              - cell [ref=e235]:
+                - checkbox [ref=e236]
+              - cell "JOHNSMIT..." [ref=e237]
+              - cell "John Smith" [ref=e238]
+              - cell "4/18/2026 delivery" [ref=e239]:
+                - text: 4/18/2026
+                - text: delivery
+              - cell [ref=e240]:
+                - textbox "Area" [ref=e241]
+              - cell "Confirmed" [ref=e242]:
+                - combobox [ref=e243]:
+                  - option "Pending"
+                  - option "Confirmed" [selected]
+                  - option "Packed"
+                  - option "Delivered"
+                  - option "Cancelled"
+              - cell "Packer User" [ref=e244]:
+                - combobox [ref=e245]:
+                  - option "Unassigned"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer User" [selected]
+              - cell "Driver User" [ref=e246]:
+                - combobox [ref=e247]:
+                  - option "Unassigned"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver User" [selected]
+              - cell "6 items" [ref=e248]
+              - cell "Standard" [ref=e249]:
+                - generic [ref=e251]: Standard
+              - cell "View Details Adjust Items" [ref=e252]:
+                - generic [ref=e253]:
+                  - button "View Details" [ref=e254] [cursor=pointer]
+                  - button "Adjust Items" [ref=e255] [cursor=pointer]
+            - row "JOHNSMIT... John Smith 4/18/2026 delivery Confirmed Unassigned Unassigned 6 items Standard View Details Adjust Items" [ref=e256]:
+              - cell [ref=e257]:
+                - checkbox [ref=e258]
+              - cell "JOHNSMIT..." [ref=e259]
+              - cell "John Smith" [ref=e260]
+              - cell "4/18/2026 delivery" [ref=e261]:
+                - text: 4/18/2026
+                - text: delivery
+              - cell [ref=e262]:
+                - textbox "Area" [ref=e263]
+              - cell "Confirmed" [ref=e264]:
+                - combobox [ref=e265]:
+                  - option "Pending"
+                  - option "Confirmed" [selected]
+                  - option "Packed"
+                  - option "Delivered"
+                  - option "Cancelled"
+              - cell "Unassigned" [ref=e266]:
+                - combobox [ref=e267]:
+                  - option "Unassigned" [selected]
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer User"
+              - cell "Unassigned" [ref=e268]:
+                - combobox [ref=e269]:
+                  - option "Unassigned" [selected]
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver User"
+              - cell "6 items" [ref=e270]
+              - cell "Standard" [ref=e271]:
+                - generic [ref=e273]: Standard
+              - cell "View Details Adjust Items" [ref=e274]:
+                - generic [ref=e275]:
+                  - button "View Details" [ref=e276] [cursor=pointer]
+                  - button "Adjust Items" [ref=e277] [cursor=pointer]
+            - row "NEWCLIEN... New Client 4/18/2026 collection Confirmed Packer Tom Driver User 1 items Standard View Details Adjust Items" [ref=e278]:
+              - cell [ref=e279]:
+                - checkbox [ref=e280]
+              - cell "NEWCLIEN..." [ref=e281]
+              - cell "New Client" [ref=e282]
+              - cell "4/18/2026 collection" [ref=e283]:
+                - text: 4/18/2026
+                - text: collection
+              - cell [ref=e284]:
+                - textbox "Area" [ref=e285]
+              - cell "Confirmed" [ref=e286]:
+                - combobox [ref=e287]:
+                  - option "Pending"
+                  - option "Confirmed" [selected]
+                  - option "Packed"
+                  - option "Delivered"
+                  - option "Cancelled"
+              - cell "Packer Tom" [ref=e288]:
+                - combobox [ref=e289]:
+                  - option "Unassigned"
+                  - option "Packer Tom" [selected]
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer User"
+              - cell "Driver User" [ref=e290]:
+                - combobox [ref=e291]:
+                  - option "Unassigned"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver User" [selected]
+              - cell "1 items" [ref=e292]
+              - cell "Standard" [ref=e293]:
+                - generic [ref=e295]: Standard
+              - cell "View Details Adjust Items" [ref=e296]:
+                - generic [ref=e297]:
+                  - button "View Details" [ref=e298] [cursor=pointer]
+                  - button "Adjust Items" [ref=e299] [cursor=pointer]
+            - row "NEWCLIEN... New Client 4/18/2026 delivery Packed Unassigned Unassigned 1 items Standard View Details Adjust Items" [ref=e300]:
+              - cell [ref=e301]:
+                - checkbox [ref=e302]
+              - cell "NEWCLIEN..." [ref=e303]
+              - cell "New Client" [ref=e304]
+              - cell "4/18/2026 delivery" [ref=e305]:
+                - text: 4/18/2026
+                - text: delivery
+              - cell [ref=e306]:
+                - textbox "Area" [ref=e307]
+              - cell "Packed" [ref=e308]:
+                - combobox [ref=e309]:
+                  - option "Pending"
+                  - option "Confirmed"
+                  - option "Packed" [selected]
+                  - option "Delivered"
+                  - option "Cancelled"
+              - cell "Unassigned" [ref=e310]:
+                - combobox [ref=e311]:
+                  - option "Unassigned" [selected]
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer User"
+              - cell "Unassigned" [ref=e312]:
+                - combobox [ref=e313]:
+                  - option "Unassigned" [selected]
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver User"
+              - cell "1 items" [ref=e314]
+              - cell "Standard" [ref=e315]:
+                - generic [ref=e317]: Standard
+              - cell "View Details Adjust Items" [ref=e318]:
+                - generic [ref=e319]:
+                  - button "View Details" [ref=e320] [cursor=pointer]
+                  - button "Adjust Items" [ref=e321] [cursor=pointer]
+            - row "NEWCLIEN... New Client 1/10/2026 delivery Delivered Packer Tom Driver Dan 1 items Standard View Details Adjust Items" [ref=e322]:
+              - cell [ref=e323]:
+                - checkbox [ref=e324]
+              - cell "NEWCLIEN..." [ref=e325]
+              - cell "New Client" [ref=e326]
+              - cell "1/10/2026 delivery" [ref=e327]:
+                - text: 1/10/2026
+                - text: delivery
+              - cell [ref=e328]:
+                - textbox "Area" [ref=e329]
+              - cell "Delivered" [ref=e330]:
+                - combobox [ref=e331]:
+                  - option "Pending"
+                  - option "Confirmed"
+                  - option "Packed"
+                  - option "Delivered" [selected]
+                  - option "Cancelled"
+              - cell "Packer Tom" [ref=e332]:
+                - combobox [ref=e333]:
+                  - option "Unassigned"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom" [selected]
+                  - option "Packer User"
+              - cell "Driver Dan" [ref=e334]:
+                - combobox [ref=e335]:
+                  - option "Unassigned"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan" [selected]
+                  - option "Driver User"
+              - cell "1 items" [ref=e336]
+              - cell "Standard" [ref=e337]:
+                - generic [ref=e339]: Standard
+              - cell "View Details Adjust Items" [ref=e340]:
+                - generic [ref=e341]:
+                  - button "View Details" [ref=e342] [cursor=pointer]
+                  - button "Adjust Items" [ref=e343] [cursor=pointer]
+            - row "NEWCLIEN... New Client 1/10/2026 collection Pending Unassigned Unassigned 1 items Standard View Details Adjust Items" [ref=e344]:
+              - cell [ref=e345]:
+                - checkbox [ref=e346]
+              - cell "NEWCLIEN..." [ref=e347]
+              - cell "New Client" [ref=e348]
+              - cell "1/10/2026 collection" [ref=e349]:
+                - text: 1/10/2026
+                - text: collection
+              - cell [ref=e350]:
+                - textbox "Area" [ref=e351]
+              - cell "Pending" [ref=e352]:
+                - combobox [ref=e353]:
+                  - option "Pending" [selected]
+                  - option "Confirmed"
+                  - option "Packed"
+                  - option "Delivered"
+                  - option "Cancelled"
+              - cell "Unassigned" [ref=e354]:
+                - combobox [ref=e355]:
+                  - option "Unassigned" [selected]
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer User"
+              - cell "Unassigned" [ref=e356]:
+                - combobox [ref=e357]:
+                  - option "Unassigned" [selected]
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver User"
+              - cell "1 items" [ref=e358]
+              - cell "Standard" [ref=e359]:
+                - generic [ref=e361]: Standard
+              - cell "View Details Adjust Items" [ref=e362]:
+                - generic [ref=e363]:
+                  - button "View Details" [ref=e364] [cursor=pointer]
+                  - button "Adjust Items" [ref=e365] [cursor=pointer]
+            - row "NEWCLIEN... New Client 1/10/2026 delivery Delivered Packer Tom Driver Dan 1 items Standard View Details Adjust Items" [ref=e366]:
+              - cell [ref=e367]:
+                - checkbox [ref=e368]
+              - cell "NEWCLIEN..." [ref=e369]
+              - cell "New Client" [ref=e370]
+              - cell "1/10/2026 delivery" [ref=e371]:
+                - text: 1/10/2026
+                - text: delivery
+              - cell [ref=e372]:
+                - textbox "Area" [ref=e373]
+              - cell "Delivered" [ref=e374]:
+                - combobox [ref=e375]:
+                  - option "Pending"
+                  - option "Confirmed"
+                  - option "Packed"
+                  - option "Delivered" [selected]
+                  - option "Cancelled"
+              - cell "Packer Tom" [ref=e376]:
+                - combobox [ref=e377]:
+                  - option "Unassigned"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom" [selected]
+                  - option "Packer Tom"
+                  - option "Packer User"
+              - cell "Driver Dan" [ref=e378]:
+                - combobox [ref=e379]:
+                  - option "Unassigned"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan" [selected]
+                  - option "Driver Dan"
+                  - option "Driver User"
+              - cell "1 items" [ref=e380]
+              - cell "Standard" [ref=e381]:
+                - generic [ref=e383]: Standard
+              - cell "View Details Adjust Items" [ref=e384]:
+                - generic [ref=e385]:
+                  - button "View Details" [ref=e386] [cursor=pointer]
+                  - button "Adjust Items" [ref=e387] [cursor=pointer]
+            - row "NEWCLIEN... New Client 1/10/2026 collection Pending Unassigned Unassigned 1 items Standard View Details Adjust Items" [ref=e388]:
+              - cell [ref=e389]:
+                - checkbox [ref=e390]
+              - cell "NEWCLIEN..." [ref=e391]
+              - cell "New Client" [ref=e392]
+              - cell "1/10/2026 collection" [ref=e393]:
+                - text: 1/10/2026
+                - text: collection
+              - cell [ref=e394]:
+                - textbox "Area" [ref=e395]
+              - cell "Pending" [ref=e396]:
+                - combobox [ref=e397]:
+                  - option "Pending" [selected]
+                  - option "Confirmed"
+                  - option "Packed"
+                  - option "Delivered"
+                  - option "Cancelled"
+              - cell "Unassigned" [ref=e398]:
+                - combobox [ref=e399]:
+                  - option "Unassigned" [selected]
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer User"
+              - cell "Unassigned" [ref=e400]:
+                - combobox [ref=e401]:
+                  - option "Unassigned" [selected]
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver User"
+              - cell "1 items" [ref=e402]
+              - cell "Standard" [ref=e403]:
+                - generic [ref=e405]: Standard
+              - cell "View Details Adjust Items" [ref=e406]:
+                - generic [ref=e407]:
+                  - button "View Details" [ref=e408] [cursor=pointer]
+                  - button "Adjust Items" [ref=e409] [cursor=pointer]
+            - row "NEWCLIEN... New Client 1/10/2026 delivery Delivered Packer Tom Driver Dan 1 items Standard View Details Adjust Items" [ref=e410]:
+              - cell [ref=e411]:
+                - checkbox [ref=e412]
+              - cell "NEWCLIEN..." [ref=e413]
+              - cell "New Client" [ref=e414]
+              - cell "1/10/2026 delivery" [ref=e415]:
+                - text: 1/10/2026
+                - text: delivery
+              - cell [ref=e416]:
+                - textbox "Area" [ref=e417]
+              - cell "Delivered" [ref=e418]:
+                - combobox [ref=e419]:
+                  - option "Pending"
+                  - option "Confirmed"
+                  - option "Packed"
+                  - option "Delivered" [selected]
+                  - option "Cancelled"
+              - cell "Packer Tom" [ref=e420]:
+                - combobox [ref=e421]:
+                  - option "Unassigned"
+                  - option "Packer Tom"
+                  - option "Packer Tom" [selected]
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer User"
+              - cell "Driver Dan" [ref=e422]:
+                - combobox [ref=e423]:
+                  - option "Unassigned"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan" [selected]
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver User"
+              - cell "1 items" [ref=e424]
+              - cell "Standard" [ref=e425]:
+                - generic [ref=e427]: Standard
+              - cell "View Details Adjust Items" [ref=e428]:
+                - generic [ref=e429]:
+                  - button "View Details" [ref=e430] [cursor=pointer]
+                  - button "Adjust Items" [ref=e431] [cursor=pointer]
+            - row "NEWCLIEN... New Client 1/10/2026 collection Pending Unassigned Unassigned 1 items Standard View Details Adjust Items" [ref=e432]:
+              - cell [ref=e433]:
+                - checkbox [ref=e434]
+              - cell "NEWCLIEN..." [ref=e435]
+              - cell "New Client" [ref=e436]
+              - cell "1/10/2026 collection" [ref=e437]:
+                - text: 1/10/2026
+                - text: collection
+              - cell [ref=e438]:
+                - textbox "Area" [ref=e439]
+              - cell "Pending" [ref=e440]:
+                - combobox [ref=e441]:
+                  - option "Pending" [selected]
+                  - option "Confirmed"
+                  - option "Packed"
+                  - option "Delivered"
+                  - option "Cancelled"
+              - cell "Unassigned" [ref=e442]:
+                - combobox [ref=e443]:
+                  - option "Unassigned" [selected]
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer User"
+              - cell "Unassigned" [ref=e444]:
+                - combobox [ref=e445]:
+                  - option "Unassigned" [selected]
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver User"
+              - cell "1 items" [ref=e446]
+              - cell "Standard" [ref=e447]:
+                - generic [ref=e449]: Standard
+              - cell "View Details Adjust Items" [ref=e450]:
+                - generic [ref=e451]:
+                  - button "View Details" [ref=e452] [cursor=pointer]
+                  - button "Adjust Items" [ref=e453] [cursor=pointer]
+            - row "NEWCLIEN... New Client 1/10/2026 collection Pending Unassigned Unassigned 1 items Standard View Details Adjust Items" [ref=e454]:
+              - cell [ref=e455]:
+                - checkbox [ref=e456]
+              - cell "NEWCLIEN..." [ref=e457]
+              - cell "New Client" [ref=e458]
+              - cell "1/10/2026 collection" [ref=e459]:
+                - text: 1/10/2026
+                - text: collection
+              - cell [ref=e460]:
+                - textbox "Area" [ref=e461]
+              - cell "Pending" [ref=e462]:
+                - combobox [ref=e463]:
+                  - option "Pending" [selected]
+                  - option "Confirmed"
+                  - option "Packed"
+                  - option "Delivered"
+                  - option "Cancelled"
+              - cell "Unassigned" [ref=e464]:
+                - combobox [ref=e465]:
+                  - option "Unassigned" [selected]
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer User"
+              - cell "Unassigned" [ref=e466]:
+                - combobox [ref=e467]:
+                  - option "Unassigned" [selected]
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver User"
+              - cell "1 items" [ref=e468]
+              - cell "Standard" [ref=e469]:
+                - generic [ref=e471]: Standard
+              - cell "View Details Adjust Items" [ref=e472]:
+                - generic [ref=e473]:
+                  - button "View Details" [ref=e474] [cursor=pointer]
+                  - button "Adjust Items" [ref=e475] [cursor=pointer]
+            - row "NEWCLIEN... New Client 1/10/2026 delivery Delivered Packer Tom Driver Dan 1 items Standard View Details Adjust Items" [ref=e476]:
+              - cell [ref=e477]:
+                - checkbox [ref=e478]
+              - cell "NEWCLIEN..." [ref=e479]
+              - cell "New Client" [ref=e480]
+              - cell "1/10/2026 delivery" [ref=e481]:
+                - text: 1/10/2026
+                - text: delivery
+              - cell [ref=e482]:
+                - textbox "Area" [ref=e483]
+              - cell "Delivered" [ref=e484]:
+                - combobox [ref=e485]:
+                  - option "Pending"
+                  - option "Confirmed"
+                  - option "Packed"
+                  - option "Delivered" [selected]
+                  - option "Cancelled"
+              - cell "Packer Tom" [ref=e486]:
+                - combobox [ref=e487]:
+                  - option "Unassigned"
+                  - option "Packer Tom" [selected]
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer User"
+              - cell "Driver Dan" [ref=e488]:
+                - combobox [ref=e489]:
+                  - option "Unassigned"
+                  - option "Driver Dan" [selected]
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver User"
+              - cell "1 items" [ref=e490]
+              - cell "Standard" [ref=e491]:
+                - generic [ref=e493]: Standard
+              - cell "View Details Adjust Items" [ref=e494]:
+                - generic [ref=e495]:
+                  - button "View Details" [ref=e496] [cursor=pointer]
+                  - button "Adjust Items" [ref=e497] [cursor=pointer]
+            - row "NEWCLIEN... New Client 1/10/2026 collection Delivered Unassigned Unassigned 1 items Standard View Details Adjust Items" [ref=e498]:
+              - cell [ref=e499]:
+                - checkbox [ref=e500]
+              - cell "NEWCLIEN..." [ref=e501]
+              - cell "New Client" [ref=e502]
+              - cell "1/10/2026 collection" [ref=e503]:
+                - text: 1/10/2026
+                - text: collection
+              - cell [ref=e504]:
+                - textbox "Area" [ref=e505]
+              - cell "Delivered" [ref=e506]:
+                - combobox [ref=e507]:
+                  - option "Pending"
+                  - option "Confirmed"
+                  - option "Packed"
+                  - option "Delivered" [selected]
+                  - option "Cancelled"
+              - cell "Unassigned" [ref=e508]:
+                - combobox [ref=e509]:
+                  - option "Unassigned" [selected]
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer User"
+              - cell "Unassigned" [ref=e510]:
+                - combobox [ref=e511]:
+                  - option "Unassigned" [selected]
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver User"
+              - cell "1 items" [ref=e512]
+              - cell "Standard" [ref=e513]:
+                - generic [ref=e515]: Standard
+              - cell "View Details Adjust Items" [ref=e516]:
+                - generic [ref=e517]:
+                  - button "View Details" [ref=e518] [cursor=pointer]
+                  - button "Adjust Items" [ref=e519] [cursor=pointer]
+            - row "NEWCLIEN... New Client 1/10/2026 delivery Delivered Unassigned Driver User 1 items Standard View Details Adjust Items" [ref=e520]:
+              - cell [ref=e521]:
+                - checkbox [ref=e522]
+              - cell "NEWCLIEN..." [ref=e523]
+              - cell "New Client" [ref=e524]
+              - cell "1/10/2026 delivery" [ref=e525]:
+                - text: 1/10/2026
+                - text: delivery
+              - cell [ref=e526]:
+                - textbox "Area" [ref=e527]
+              - cell "Delivered" [ref=e528]:
+                - combobox [ref=e529]:
+                  - option "Pending"
+                  - option "Confirmed"
+                  - option "Packed"
+                  - option "Delivered" [selected]
+                  - option "Cancelled"
+              - cell "Unassigned" [ref=e530]:
+                - combobox [ref=e531]:
+                  - option "Unassigned" [selected]
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer Tom"
+                  - option "Packer User"
+              - cell "Driver User" [ref=e532]:
+                - combobox [ref=e533]:
+                  - option "Unassigned"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver Dan"
+                  - option "Driver User" [selected]
+              - cell "1 items" [ref=e534]
+              - cell "Standard" [ref=e535]:
+                - generic [ref=e537]: Standard
+              - cell "View Details Adjust Items" [ref=e538]:
+                - generic [ref=e539]:
+                  - button "View Details" [ref=e540] [cursor=pointer]
+                  - button "Adjust Items" [ref=e541] [cursor=pointer]

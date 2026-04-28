@@ -17,7 +17,10 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "ci": "npm run lint && npm run build && npm run test",
     "deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1",
-    "deploy:push": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1 -Push"
+    "deploy:push": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1 -Push",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

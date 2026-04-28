@@ -1,0 +1,42 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e5]:
+  - button "Back to home" [ref=e6] [cursor=pointer]:
+    - img [ref=e7]
+  - generic [ref=e9]:
+    - img "Our Harvest Tote" [ref=e10]
+    - heading "Welcome" [level=1] [ref=e11]
+    - paragraph [ref=e12]:
+      - text: Harvesting connection
+      - text: through better food.
+  - generic [ref=e13]:
+    - generic [ref=e14]:
+      - text: Identity
+      - textbox "Phone or Email" [ref=e15]: driver@vegshop.com
+    - button "Processing..." [disabled] [ref=e16]
+  - generic [ref=e17]:
+    - generic [ref=e20]: Sandbox Access
+    - generic [ref=e22]:
+      - button "Admin admin" [ref=e23] [cursor=pointer]:
+        - generic [ref=e25]:
+          - generic [ref=e26]: Admin
+          - generic [ref=e27]: admin
+      - button "Admin (Alt) admin" [ref=e28] [cursor=pointer]:
+        - generic [ref=e30]:
+          - generic [ref=e31]: Admin (Alt)
+          - generic [ref=e32]: admin
+      - button "Customer customer" [ref=e33] [cursor=pointer]:
+        - generic [ref=e35]:
+          - generic [ref=e36]: Customer
+          - generic [ref=e37]: customer
+      - button "Packer packer" [ref=e38] [cursor=pointer]:
+        - generic [ref=e40]:
+          - generic [ref=e41]: Packer
+          - generic [ref=e42]: packer
+      - button "Driver driver" [ref=e43] [cursor=pointer]:
+        - generic [ref=e45]:
+          - generic [ref=e46]: Driver
+          - generic [ref=e47]: driver
+  - paragraph [ref=e49]: Secured by nature — verified by code.
+```

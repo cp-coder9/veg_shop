@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useClientDashboard } from '../hooks/useClientDashboard.js';
 import { useProducts } from '../hooks/useProducts.js';
@@ -9,12 +9,25 @@ import { formatPrice } from '../lib/utils.js';
 import { Button, Input, Card, Badge } from '../components/ui/index.js';
 
 export default function DashboardPage() {
-    const navigate = useNavigate();
-    const { data: dashboard, isLoading, isError } = useClientDashboard();
-    const { data: productsData, isLoading: productsLoading } = useProducts();
-    const { addItem, getItemQuantity, updateQuantity } = useCartStore();
-    const setCartItems = useCartStore((state: any) => state.setItems);
-    const [searchTerm, setSearchTerm] = useState('');
+const navigate = useNavigate();
+const { data: dashboard, isLoading, isError } = useClientDashboard();
+const { data: productsData, isLoading: productsLoading } = useProducts();
+const { addItem, getItemQuantity, updateQuantity } = useCartStore();
+const setCartItems = useCartStore((state: any) => state.setItems);
+const [searchTerm, setSearchTerm] = useState('');
+const [showBackToTop, setShowBackToTop] = useState(false);
+
+useEffect(() => {
+const handleScroll = () => {
+setShowBackToTop(window.scrollY > 400);
+};
+window.addEventListener('scroll', handleScroll);
+return () => window.removeEventListener('scroll', handleScroll);
+}, []);
+
+const scrollToTop = () => {
+window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
     interface OrderItem {
         productId: string;
@@ -74,12 +87,12 @@ export default function DashboardPage() {
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-300 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-200"></span>
                             </span>
-                            <span className="font-accent text-caption font-bold text-green-50 uppercase tracking-wider">Ordering is Open</span>
+                            <span className="font-accent text-caption font-bold text-white uppercase tracking-wider">Ordering is Open</span>
                         </div>
                         <h2 className="font-display text-display-sm">
                             Fresh Harvest Available!
                         </h2>
-                        <p className="font-body text-body-lg text-green-50 max-w-xl opacity-90">
+                        <p className="font-body text-body-lg text-white max-w-xl opacity-95">
                             The deadline for orders is <span className="font-bold underline italic">Friday at 12:00 PM</span> for next week's delivery. Don't miss out on this week's fresh picks.
                         </p>
                     </div>
@@ -374,18 +387,31 @@ export default function DashboardPage() {
                 </section>
             )}
 
-            {/* Quick Navigation Footer */}
-            <footer className="pt-8 border-t border-light-gray flex flex-wrap gap-4">
-                <Link to="/products">
-                    <Button>Start New Shop</Button>
-                </Link>
-                <Link to="/payments">
-                    <Button variant="secondary">View Payment History</Button>
-                </Link>
-                <Link to="/profile">
-                    <Button variant="ghost">Account Settings</Button>
-                </Link>
-            </footer>
-        </div>
-    );
+{/* Quick Navigation Footer */}
+<footer className="pt-8 border-t border-light-gray flex flex-wrap gap-4">
+<Link to="/products">
+<Button>Start New Shop</Button>
+</Link>
+<Link to="/payments">
+<Button variant="secondary">View Payment History</Button>
+</Link>
+<Link to="/profile">
+<Button variant="ghost">Account Settings</Button>
+</Link>
+</footer>
+
+{/* Back to Top Button */}
+{showBackToTop && (
+<button
+onClick={scrollToTop}
+className="fixed bottom-6 right-6 z-50 p-3 bg-terracotta text-white rounded-full shadow-lg hover:bg-terracotta/90 transition-all hover:scale-110 active:scale-95"
+aria-label="Back to top"
+>
+<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+</svg>
+</button>
+)}
+</div>
+);
 }

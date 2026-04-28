@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminCustomers, useCreateAdminCustomer, CreateCustomerRequest } from '../../hooks/useAdminCustomers.js';
+import { PhoneInput, type CountryCode } from '../../components/ui/PhoneInput.js';
+import { AddressFields, formatFullAddress, type AddressData } from '../../components/ui/AddressFields.js';
 
 export default function CustomersManagement() {
   const navigate = useNavigate();
@@ -12,13 +14,42 @@ export default function CustomersManagement() {
   const [alphabetFilter, setAlphabetFilter] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [countryCode, setCountryCode] = useState<CountryCode>('ZA');
+  const [addressData, setAddressData] = useState<AddressData>({
+    streetName: '',
+    area: '',
+    province: '',
+    postalCode: '',
+  });
   const [newCustomer, setNewCustomer] = useState<CreateCustomerRequest>({
     name: '',
     email: '',
     phone: '',
+    countryCode: 'ZA',
     address: '',
+    streetName: '',
+    area: '',
+    province: '',
+    postalCode: '',
     deliveryPreference: 'delivery',
   });
+  const [phoneError, setPhoneError] = useState<string>('');
+
+  const validatePhone = (phone: string): boolean => {
+    if (!phone && !newCustomer.email) {
+      setPhoneError('Either phone or email is required');
+      return false;
+    }
+    if (phone) {
+      const digits = phone.replace(/\D/g, '');
+      if (digits.length < 9) {
+        setPhoneError('Please enter a valid phone number');
+        return false;
+      }
+    }
+    setPhoneError('');
+    return true;
+  };
 
   const filteredCustomers = customers?.filter((customer: any) => {
     const name = customer.name || '';
@@ -47,16 +78,42 @@ export default function CustomersManagement() {
 
   const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate phone
+    if (!validatePhone(newCustomer.phone || '')) {
+      return;
+    }
+
+    // Build full address
+    const fullAddress = formatFullAddress(addressData);
+    
     try {
-      await createCustomer.mutateAsync(newCustomer);
+      await createCustomer.mutateAsync({
+        ...newCustomer,
+        ...addressData,
+        address: fullAddress || newCustomer.address,
+      });
       setIsModalOpen(false);
       setNewCustomer({
         name: '',
         email: '',
         phone: '',
+        countryCode: 'ZA',
         address: '',
+        streetName: '',
+        area: '',
+        province: '',
+        postalCode: '',
         deliveryPreference: 'delivery',
       });
+      setAddressData({
+        streetName: '',
+        area: '',
+        province: '',
+        postalCode: '',
+      });
+      setCountryCode('ZA');
+      setPhoneError('');
     } catch (error) {
       console.error('Failed to create customer:', error);
       alert('Failed to create customer. Please ensure phone or email is provided and unique.');
@@ -110,39 +167,53 @@ export default function CustomersManagement() {
                   placeholder="John Doe"
                 />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                  <input
-                    type="tel"
-                    value={newCustomer.phone}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="082 123 4567"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={newCustomer.email}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="john@example.com"
-                  />
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 italic">* At least Phone or Email is required for registration.</p>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Address</label>
-                <textarea
-                  value={newCustomer.address}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  rows={2}
-                  placeholder="123 Veggie Lane, Farmtown"
-                />
-              </div>
+            {/* Phone with Country Selector */}
+            <PhoneInput
+              label="Phone"
+              value={newCustomer.phone || ''}
+              onChange={(phone, code) => {
+                setNewCustomer({ ...newCustomer, phone, countryCode: code });
+                setCountryCode(code);
+                setPhoneError('');
+              }}
+              countryCode={countryCode}
+              onCountryChange={setCountryCode}
+              error={phoneError}
+              placeholder="Enter phone number"
+            />
+
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                value={newCustomer.email}
+                onChange={(e) => {
+                  setNewCustomer({ ...newCustomer, email: e.target.value });
+                  setPhoneError('');
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="john@example.com"
+              />
+            </div>
+            <p className="text-xs text-gray-500 italic">* At least Phone or Email is required for registration.</p>
+
+            {/* Address Fields */}
+            <div className="border-t border-gray-200 pt-4">
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Delivery Address</h3>
+              <AddressFields
+                data={addressData}
+                onChange={setAddressData}
+                showLabels={true}
+              />
+            </div>
+
+            {/* Legacy Address field (hidden but kept for compatibility) */}
+            <input
+              type="hidden"
+              value={formatFullAddress(addressData)}
+              onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
+            />
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Preference</label>
                 <select

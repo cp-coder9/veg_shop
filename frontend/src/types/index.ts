@@ -24,6 +24,10 @@ export interface Product {
 export interface OrderItem {
   productId: string;
   quantity: number;
+  isDeducted?: boolean;
+  deductedQuantity?: number;
+  deductedReason?: string;
+  deductedAt?: string;
 }
 
 export interface Order {
@@ -56,9 +60,14 @@ export interface Order {
     product?: Product;
     quantity: number;
     priceAtOrder: number | string; // Prisma Decimal serializes as string
+    isDeducted?: boolean;
+    deductedQuantity?: number;
+    deductedReason?: string;
+    deductedAt?: string;
   }[];
   customerName?: string;
   totalAmount?: number;
+  isQuotation?: boolean;
   customer: {
     id: string;
     name: string;
@@ -195,6 +204,11 @@ export interface User {
   email: string | null;
   name: string;
   address: string | null;
+  streetName: string | null;
+  area: string | null;
+  province: string | null;
+  postalCode: string | null;
+  countryCode: string | null;
   deliveryPreference: string;
   birthday: string;
   role: 'customer' | 'admin' | 'packer' | 'driver';

@@ -1,19 +1,24 @@
 import { BaseRepository } from '../lib/firestore-repo.js';
 
 export interface User {
-    id: string;
-    phone?: string | null;
-    email?: string | null;
-    password?: string | null;
-    name: string;
-    address?: string | null;
-    deliveryPreference: string;
-    role: string;
-    status: string;
-    birthday?: Date | null;
-    loyaltyPoints: number;
-    createdAt: Date;
-    updatedAt: Date;
+  id: string;
+  phone?: string | null;
+  email?: string | null;
+  password?: string | null;
+  name: string;
+  address?: string | null;
+  streetName?: string | null;
+  area?: string | null;
+  province?: string | null;
+  postalCode?: string | null;
+  countryCode?: string | null;
+  deliveryPreference: string;
+  role: string;
+  status: string;
+  birthday?: Date | null;
+  loyaltyPoints: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export class UserRepository extends BaseRepository<User> {

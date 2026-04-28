@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAdminCustomer, useUpdateAdminCustomer, CustomerProfile } from '../../hooks/useAdminCustomers.js';
-import { Button, Input, Card, CardContent, Badge, Select, Textarea } from '../../components/ui/index.js';
+import { Button, Input, Card, CardContent, Badge, Select } from '../../components/ui/index.js';
 import { ArrowLeft, User, Package, DollarSign, CreditCard, Gift, MessageSquare } from 'lucide-react';
 import { usePollItems, useCreatePollItem, useDeletePollItem, useGeneratePollItemsInvoice } from '../../hooks/usePollItems.js';
 import { useAdminProducts } from '../../hooks/useAdminProducts.js';
+import { PhoneInput, type CountryCode } from '../../components/ui/PhoneInput.js';
+import { AddressFields, formatFullAddress, type AddressData } from '../../components/ui/AddressFields.js';
 
 type TabType = 'info' | 'orders' | 'invoices' | 'payments' | 'credits' | 'poll';
 
@@ -125,11 +127,23 @@ interface InfoTabProps {
 
 function InfoTab({ customer }: InfoTabProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [countryCode, setCountryCode] = useState<CountryCode>(customer.countryCode as CountryCode || 'ZA');
+  const [addressData, setAddressData] = useState<AddressData>({
+    streetName: customer.streetName || '',
+    area: customer.area || '',
+    province: customer.province || '',
+    postalCode: customer.postalCode || '',
+  });
   const [formData, setFormData] = useState({
     name: customer.name,
     email: customer.email || '',
     phone: customer.phone || '',
+    countryCode: customer.countryCode || 'ZA',
     address: customer.address || '',
+    streetName: customer.streetName || '',
+    area: customer.area || '',
+    province: customer.province || '',
+    postalCode: customer.postalCode || '',
     deliveryPreference: customer.deliveryPreference,
   });
 
@@ -139,9 +153,17 @@ function InfoTab({ customer }: InfoTabProps) {
     e.preventDefault();
 
     try {
+      // Build full address from components
+      const fullAddress = formatFullAddress(addressData);
+      
       await updateCustomer.mutateAsync({
         customerId: customer.id,
-        data: formData,
+        data: {
+          ...formData,
+          ...addressData,
+          address: fullAddress || formData.address,
+          countryCode,
+        },
       });
       setIsEditing(false);
       alert('Customer updated successfully!');
@@ -169,16 +191,18 @@ function InfoTab({ customer }: InfoTabProps) {
               />
             </div>
 
-            <div>
-              <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">
-                Phone
-              </label>
-              <Input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
-            </div>
+            {/* Phone with Country Selector */}
+            <PhoneInput
+              label="Phone"
+              value={formData.phone}
+              onChange={(phone, code) => {
+                setFormData({ ...formData, phone, countryCode: code });
+                setCountryCode(code);
+              }}
+              countryCode={countryCode}
+              onCountryChange={setCountryCode}
+              placeholder="Enter phone number"
+            />
 
             <div>
               <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">
@@ -191,14 +215,18 @@ function InfoTab({ customer }: InfoTabProps) {
               />
             </div>
 
+            {/* Address Fields */}
             <div>
               <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">
-                Address
+                Delivery Address
               </label>
-              <Textarea
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                rows={3}
+              <AddressFields
+                data={addressData}
+                onChange={(newData) => {
+                  setAddressData(newData);
+                  setFormData({ ...formData, ...newData });
+                }}
+                showLabels={false}
               />
             </div>
 
@@ -272,8 +300,30 @@ function InfoTab({ customer }: InfoTabProps) {
             <p className="font-body text-body-md text-primary-dark capitalize">{customer.deliveryPreference}</p>
           </div>
 
+          {/* Address Components */}
+          <div>
+            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1 block">Street</label>
+            <p className="font-body text-body-md text-primary-dark">{customer.streetName || '-'}</p>
+          </div>
+
+          <div>
+            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1 block">Area</label>
+            <p className="font-body text-body-md text-primary-dark">{customer.area || '-'}</p>
+          </div>
+
+          <div>
+            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1 block">Province</label>
+            <p className="font-body text-body-md text-primary-dark">{customer.province || '-'}</p>
+          </div>
+
+          <div>
+            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1 block">Postal Code</label>
+            <p className="font-body text-body-md text-primary-dark">{customer.postalCode || '-'}</p>
+          </div>
+
+          {/* Legacy Address */}
           <div className="md:col-span-2">
-            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1 block">Address</label>
+            <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-1 block">Full Address</label>
             <p className="font-body text-body-md text-primary-dark">{customer.address || '-'}</p>
           </div>
 

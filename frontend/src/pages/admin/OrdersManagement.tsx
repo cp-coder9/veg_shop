@@ -317,9 +317,16 @@ export default function OrdersManagement() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {order.id.slice(0, 8)}...
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {order.customerName || order.customerId.slice(0, 8)}
-                  </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div className="flex items-center gap-2">
+                              {order.customerName || order.customerId.slice(0, 8)}
+                              {(order as any).isQuotation && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded">
+                                  QUOTATION
+                                </span>
+                              )}
+                            </div>
+                          </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(order.deliveryDate).toLocaleDateString()}
                     <br/><span className="text-xs opacity-60 uppercase">{order.deliveryMethod}</span>
@@ -417,16 +424,23 @@ export default function OrdersManagement() {
         </div>
       </div>
 
-      {/* Orders Cards - Mobile */}
-      <div className="md:hidden space-y-4">
-        {orders?.map((order) => (
-          <Card key={order.id} className="border-light-gray/50 space-y-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="font-display font-bold text-primary-dark">#{order.id.slice(0, 8)}</p>
-                <p className="font-body text-body-sm text-warm-gray mt-0.5">{order.customerName || 'Unknown Customer'}</p>
-              </div>
-              <Badge variant={
+          {/* Orders Cards - Mobile */}
+          <div className="md:hidden space-y-4">
+            {orders?.map((order) => (
+              <Card key={order.id} className={`border-light-gray/50 space-y-4 ${(order as any).isQuotation ? 'border-l-4 border-l-blue-500' : ''}`}>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-display font-bold text-primary-dark">#{order.id.slice(0, 8)}</p>
+                    <p className="font-body text-body-sm text-warm-gray mt-0.5">
+                      {order.customerName || 'Unknown Customer'}
+                      {(order as any).isQuotation && (
+                        <span className="ml-2 inline-flex items-center px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded">
+                          QUOTATION
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <Badge variant={
                 order.status === 'delivered' ? 'success' :
                   order.status === 'cancelled' ? 'error' :
                     order.status === 'pending' ? 'warning' : 'info'

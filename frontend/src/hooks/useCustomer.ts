@@ -7,7 +7,12 @@ export interface Customer {
   name: string;
   email: string | null;
   phone: string | null;
+  countryCode: string | null;
   address: string | null;
+  streetName: string | null;
+  area: string | null;
+  province: string | null;
+  postalCode: string | null;
   deliveryPreference: 'delivery' | 'collection';
   creditBalance: number;
 }
@@ -16,7 +21,12 @@ interface UpdateCustomerRequest {
   name?: string;
   email?: string;
   phone?: string;
+  countryCode?: string;
   address?: string;
+  streetName?: string;
+  area?: string;
+  province?: string;
+  postalCode?: string;
   deliveryPreference?: 'delivery' | 'collection';
 }
 

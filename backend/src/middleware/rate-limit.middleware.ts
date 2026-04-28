@@ -1,12 +1,15 @@
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import { env } from '../config/env.js';
 
 /**
  * Rate limiter for verification code sending
- * Limit: 3 requests per hour per contact
+ * Limit: 3 requests per hour per contact (development: 10 requests)
  */
+const verificationCodeLimit = env.NODE_ENV === 'development' ? 10 : 3;
+
 export const verificationCodeLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3,
+  max: verificationCodeLimit,
   message: {
     error: {
       code: 'RATE_LIMIT_EXCEEDED',

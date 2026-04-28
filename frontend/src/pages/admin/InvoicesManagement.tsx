@@ -529,50 +529,111 @@ function InvoiceDetailModal({ invoiceId, onClose }: InvoiceDetailModalProps) {
             </div>
           )}
 
-          {/* Order Items */}
-          {invoice.order && (
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Order Items</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                        Product
-                      </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                        Quantity
-                      </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                        Price
-                      </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                        Subtotal
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {invoice.order.items.map((item: { id: string; productId: string; quantity: number; priceAtOrder: number | string; product?: { name: string; unit?: string } }) => (
-                      <tr key={item.id}>
-                        <td className="px-4 py-2 text-sm text-gray-900">
-                          {item.product?.name || 'Unknown Product'}
+        {/* Order Items */}
+        {invoice.order && (
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-2">Order Items</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Product
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Quantity
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Price
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Subtotal
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {invoice.order.items.map((item: any) => {
+                    const isDeducted = item.isDeducted;
+                    const effectiveQuantity = isDeducted
+                      ? Math.max(0, item.quantity - (item.deductedQuantity || 0))
+                      : item.quantity;
+                    const subtotal = toNumber(item.priceAtOrder) * effectiveQuantity;
+                    const originalSubtotal = toNumber(item.priceAtOrder) * item.quantity;
+
+                    return (
+                      <tr key={item.id} className={isDeducted ? 'bg-red-50/30' : ''}>
+                        <td className="px-4 py-2 text-sm">
+                          {isDeducted ? (
+                            <span className="line-through text-red-500">
+                              {item.product?.name || 'Unknown Product'}
+                            </span>
+                          ) : (
+                            <span className="text-gray-900">
+                              {item.product?.name || 'Unknown Product'}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-2 text-sm text-gray-500">
-                          {item.quantity} {item.product?.unit || ''}
+                          {isDeducted ? (
+                            <div className="flex flex-col">
+                              <span className="line-through text-red-500">{item.quantity}</span>
+                              <span className="text-green-600 text-xs">
+                                {effectiveQuantity} {item.product?.unit || ''}
+                              </span>
+                            </div>
+                          ) : (
+                            <span>{item.quantity} {item.product?.unit || ''}</span>
+                          )}
                         </td>
                         <td className="px-4 py-2 text-sm text-gray-500">
                           R {toNumber(item.priceAtOrder).toFixed(2)}
                         </td>
-                        <td className="px-4 py-2 text-sm text-gray-900">
-                          R {(toNumber(item.priceAtOrder) * item.quantity).toFixed(2)}
+                        <td className="px-4 py-2 text-sm">
+                          {isDeducted ? (
+                            <div className="flex flex-col">
+                              <span className="line-through text-red-500">
+                                R {originalSubtotal.toFixed(2)}
+                              </span>
+                              <span className="text-green-600 text-xs">
+                                R {subtotal.toFixed(2)}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-900">
+                              R {subtotal.toFixed(2)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 text-sm">
+                          {isDeducted && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                              Credited
+                              {item.deductedReason && (
+                                <span className="text-[10px] opacity-75">: {item.deductedReason}</span>
+                              )}
+                            </span>
+                          )}
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          )}
+            {invoice.order.items.some((item: any) => item.isDeducted) && (
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Some items have been credited. The customer has received
+                  credit for these items in their account.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
           {/* Credit Breakdown */}
           <div className="bg-blue-50 p-4 rounded-lg">

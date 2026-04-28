@@ -1,0 +1,86 @@
+- main [ref=e4]:
+  - generic [ref=e5]:
+    - navigation [ref=e7]:
+      - link "All33" [ref=e8] [cursor=pointer]:
+        - /url: "#?"
+      - link "Passed0" [ref=e9] [cursor=pointer]:
+        - /url: "#?q=s%3Apassed"
+      - link "Failed33" [ref=e10] [cursor=pointer]:
+        - /url: "#?q=s%3Afailed"
+        - img [ref=e11]
+        - text: Failed33
+      - link "Flaky0" [ref=e13] [cursor=pointer]:
+        - /url: "#?q=s%3Aflaky"
+      - link "Skipped0" [ref=e14] [cursor=pointer]:
+        - /url: "#?q=s%3Askipped"
+      - link "Speedboard" [ref=e15] [cursor=pointer]:
+        - /url: "#?speedboard"
+        - img [ref=e16]
+      - button "Settings" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - generic [ref=e21]:
+      - img
+      - textbox "Search tests" [ref=e22]: s:failed
+  - generic [ref=e590]:
+    - generic [ref=e591]:
+      - generic [ref=e592]:
+        - generic [ref=e593]: Public Pages
+        - link "« previous" [ref=e596] [cursor=pointer]:
+          - /url: "#?q=s%3Afailed&testId=a116fd012cc38ae48e7b-7ae376f8b12b16e6cf4b"
+        - link "next »" [ref=e599] [cursor=pointer]:
+          - /url: "#?q=s%3Afailed&testId=e87f96acaad393366f41-abfbe1457b3e4db9514e"
+      - generic [ref=e600]: shop page loads without authentication and supports search
+    - generic [ref=e601]:
+      - generic [ref=e603]: public-pages.spec.ts:4
+      - generic [ref=e605]: 3.6s
+    - generic [ref=e608] [cursor=pointer]: chromium
+    - generic [ref=e610]:
+      - tablist [ref=e612]:
+        - tab "Run" [selected] [ref=e613] [cursor=pointer]:
+          - generic [ref=e615]:
+            - img [ref=e616]
+            - text: Run
+      - tabpanel "Run" [ref=e618]:
+        - generic [ref=e619]:
+          - generic [ref=e620]:
+            - button "Errors" [expanded] [ref=e621] [cursor=pointer]:
+              - img [ref=e622]
+              - text: Errors
+            - region [ref=e624]:
+              - button "Copy prompt" [ref=e626] [cursor=pointer]
+              - generic [ref=e628]: "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5174/shop Call log: - navigating to \"http://localhost:5174/shop\", waiting until \"load\" 3 | test.describe('Public Pages', () => { 4 | test('shop page loads without authentication and supports search', async ({ page }) => { > 5 | await page.goto('/shop'); | ^ 6 | await expect(page.getByText('Our Fresh List')).toBeVisible(); 7 | await expect(page.getByPlaceholder('Search products...')).toBeVisible(); 8 | at D:\\veg_shop\\e2e\\public-pages.spec.ts:5:16"
+          - generic [ref=e629]:
+            - button "Test Steps" [expanded] [ref=e630] [cursor=pointer]:
+              - img [ref=e631]
+              - text: Test Steps
+            - region [ref=e633]:
+              - treeitem "Before Hooks" [ref=e634]:
+                - generic [ref=e635] [cursor=pointer]:
+                  - img [ref=e636]
+                  - generic "Before Hooks" [ref=e638]:
+                    - img [ref=e639]
+                    - generic [ref=e641]: Before Hooks
+                    - generic [ref=e642]: 464ms
+              - treeitem "Navigate to \"/shop\"" [ref=e643]:
+                - generic [ref=e644] [cursor=pointer]:
+                  - img [ref=e645]
+                  - generic "Navigate to \"/shop\"" [ref=e647]:
+                    - img [ref=e648]
+                    - generic [ref=e650]:
+                      - text: Navigate to "/shop"
+                      - generic [ref=e651]: — public-pages.spec.ts:5
+                    - generic [ref=e652]: 2.4s
+              - treeitem "After Hooks" [ref=e653]:
+                - generic [ref=e654] [cursor=pointer]:
+                  - img [ref=e655]
+                  - generic "After Hooks" [ref=e657]:
+                    - img [ref=e658]
+                    - generic [ref=e660]: After Hooks
+                    - generic [ref=e661]: 1.1s
+              - treeitem "Worker Cleanup" [ref=e662]:
+                - generic [ref=e663] [cursor=pointer]:
+                  - img [ref=e664]
+                  - generic "Worker Cleanup" [ref=e666]:
+                    - img [ref=e667]
+                    - generic [ref=e669]: Worker Cleanup
+                    - generic [ref=e670]: 163ms

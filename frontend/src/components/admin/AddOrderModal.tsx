@@ -2,8 +2,11 @@ import { useState, useMemo } from 'react';
 import { useAdminUsers } from '../../hooks/useAdminUsers.js';
 import { useProducts } from '../../hooks/useProducts.js';
 import { useCreateOrder } from '../../hooks/useAdminOrders.js';
+import { useCreateAdminCustomer, CreateCustomerRequest } from '../../hooks/useAdminCustomers.js';
 import { Button, Input } from '../ui/index.js';
-import { Search, Plus, User, Package, Calendar, MapPin, Info, PlusCircle, MinusCircle, Check } from 'lucide-react';
+import { PhoneInput, type CountryCode } from '../ui/PhoneInput.js';
+import { AddressFields, formatFullAddress, type AddressData } from '../ui/AddressFields.js';
+import { Search, Plus, User, Package, Calendar, MapPin, Info, PlusCircle, MinusCircle, Check, UserPlus, X } from 'lucide-react';
 
 interface AddOrderModalProps {
   onClose: () => void;
@@ -20,10 +23,32 @@ export default function AddOrderModal({ onClose }: AddOrderModalProps) {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [coolerBagOption, setCoolerBagOption] = useState(false);
+  const [showAddCustomer, setShowAddCustomer] = useState(false);
+  const [countryCode, setCountryCode] = useState<CountryCode>('ZA');
+  const [addressData, setAddressData] = useState<AddressData>({
+    streetName: '',
+    area: '',
+    province: '',
+    postalCode: '',
+  });
+  const [newCustomer, setNewCustomer] = useState<CreateCustomerRequest>({
+    name: '',
+    email: '',
+    phone: '',
+    countryCode: 'ZA',
+    address: '',
+    streetName: '',
+    area: '',
+    province: '',
+    postalCode: '',
+    deliveryPreference: 'delivery',
+  });
+  const [phoneError, setPhoneError] = useState<string>('');
 
-  const { data: customers } = useAdminUsers('customer');
+  const { data: customers, refetch: refetchCustomers } = useAdminUsers('customer');
   const { data: products } = useProducts();
   const createOrder = useCreateOrder();
+  const createCustomer = useCreateAdminCustomer();
 
   const filteredCustomers = useMemo(() => {
     if (!customers) return [];
@@ -96,6 +121,71 @@ export default function AddOrderModal({ onClose }: AddOrderModalProps) {
     }
   };
 
+  const handleCreateCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCustomer.name) {
+      alert('Please enter a customer name');
+      return;
+    }
+
+    // Validate phone
+    if (!newCustomer.phone && !newCustomer.email) {
+      setPhoneError('Either phone or email is required');
+      return;
+    }
+
+    if (newCustomer.phone) {
+      const digits = newCustomer.phone.replace(/\D/g, '');
+      if (digits.length < 9) {
+        setPhoneError('Please enter a valid phone number');
+        return;
+      }
+    }
+
+    // Build full address
+    const fullAddress = formatFullAddress(addressData);
+
+    try {
+      const result = await createCustomer.mutateAsync({
+        ...newCustomer,
+        ...addressData,
+        address: fullAddress || newCustomer.address,
+      });
+      // Select the newly created customer
+      setSelectedCustomerId(result.id);
+      setDeliveryAddress(fullAddress || result.address || '');
+      // Reset form and close modal
+      setNewCustomer({
+        name: '',
+        email: '',
+        phone: '',
+        countryCode: 'ZA',
+        address: '',
+        streetName: '',
+        area: '',
+        province: '',
+        postalCode: '',
+        deliveryPreference: 'delivery',
+      });
+      setAddressData({
+        streetName: '',
+        area: '',
+        province: '',
+        postalCode: '',
+      });
+      setCountryCode('ZA');
+      setPhoneError('');
+      setShowAddCustomer(false);
+      // Refresh customers list
+      refetchCustomers();
+      // Move to next step
+      setStep(2);
+    } catch (error) {
+      console.error('Failed to create customer:', error);
+      alert('Failed to create customer. Please ensure phone or email is provided and unique.');
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
@@ -112,15 +202,132 @@ export default function AddOrderModal({ onClose }: AddOrderModalProps) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {step === 1 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-              <div className="flex items-center gap-3 mb-2">
+        {step === 1 && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
                   <User size={20} />
                 </div>
                 <h3 className="text-lg font-bold text-gray-900">Select Customer</h3>
               </div>
-              <div className="relative">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowAddCustomer(true)}
+                className="flex items-center gap-2"
+              >
+                <UserPlus size={16} />
+                Add New Client
+              </Button>
+            </div>
+
+            {/* Add New Customer Inline Form */}
+            {showAddCustomer && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-bold text-blue-900 flex items-center gap-2">
+                    <UserPlus size={18} />
+                    Add New Client
+                  </h4>
+                  <button
+                    onClick={() => setShowAddCustomer(false)}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <form onSubmit={handleCreateCustomer} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-blue-800 uppercase tracking-wider mb-1">
+                        Name *
+                      </label>
+                      <Input
+                        value={newCustomer.name}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                        placeholder="Customer name"
+                        required
+                      />
+                    </div>
+                    {/* Phone with Country Selector */}
+                    <div>
+                      <PhoneInput
+                        label="Phone"
+                        value={newCustomer.phone || ''}
+                        onChange={(phone, code) => {
+                          setNewCustomer({ ...newCustomer, phone, countryCode: code });
+                          setCountryCode(code);
+                          setPhoneError('');
+                        }}
+                        countryCode={countryCode}
+                        onCountryChange={setCountryCode}
+                        error={phoneError}
+                        placeholder="Enter phone number"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-blue-800 uppercase tracking-wider mb-1">
+                        Email
+                      </label>
+                      <Input
+                        type="email"
+                        value={newCustomer.email}
+                        onChange={(e) => {
+                          setNewCustomer({ ...newCustomer, email: e.target.value });
+                          setPhoneError('');
+                        }}
+                        placeholder="Email address"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-blue-800 uppercase tracking-wider mb-1">
+                        Default Preference
+                      </label>
+                      <select
+                        value={newCustomer.deliveryPreference}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, deliveryPreference: e.target.value as 'delivery' | 'collection' })}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                      >
+                        <option value="delivery">Delivery</option>
+                        <option value="collection">Collection</option>
+                      </select>
+                    </div>
+                  </div>
+                  {/* Address Fields */}
+                  <div>
+                    <label className="block text-xs font-bold text-blue-800 uppercase tracking-wider mb-1">
+                      Delivery Address
+                    </label>
+                    <AddressFields
+                      data={addressData}
+                      onChange={setAddressData}
+                      showLabels={false}
+                    />
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAddCustomer(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="harvest"
+                      size="sm"
+                      disabled={createCustomer.isPending}
+                    >
+                      {createCustomer.isPending ? 'Creating...' : 'Create & Select Customer'}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-light-gray" size={18} />
                 <Input
                   className="pl-10"

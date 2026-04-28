@@ -59,17 +59,24 @@ describe('CustomerService', () => {
         deliveryPreference: 'delivery' as const,
       };
 
-      const mockCustomer = {
-        id: 'customer-1',
-        phone: customerData.phone,
-        email: null,
-        name: customerData.name,
-        address: customerData.address,
-        deliveryPreference: customerData.deliveryPreference,
-        role: 'customer',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+  const mockCustomer = {
+    id: 'customer-1',
+    phone: customerData.phone,
+    email: null,
+    name: customerData.name,
+    address: customerData.address,
+    streetName: null,
+    area: null,
+    province: null,
+    postalCode: null,
+    countryCode: 'ZA',
+    deliveryPreference: customerData.deliveryPreference,
+    role: 'customer',
+    status: 'active',
+    password: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
 
       vi.mocked(prisma.user.findFirst).mockResolvedValue(null);
       vi.mocked(prisma.user.create).mockResolvedValue(mockCustomer);

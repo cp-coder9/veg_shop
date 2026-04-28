@@ -1,0 +1,321 @@
+- generic [ref=e58]:
+  - complementary [ref=e59]:
+    - generic [ref=e60]:
+      - link "Logo Admin DASHBOARD" [ref=e61] [cursor=pointer]:
+        - /url: /admin
+        - img "Logo" [ref=e62]
+        - generic [ref=e63]:
+          - generic [ref=e64]: Admin
+          - generic [ref=e65]: DASHBOARD
+      - button "Close menu" [ref=e66] [cursor=pointer]:
+        - img [ref=e67]
+    - navigation [ref=e69]:
+      - list [ref=e70]:
+        - listitem [ref=e71]:
+          - link "Dashboard" [ref=e72] [cursor=pointer]:
+            - /url: /admin
+            - img [ref=e74]
+            - generic [ref=e76]: Dashboard
+        - listitem [ref=e77]:
+          - link "Orders" [ref=e78] [cursor=pointer]:
+            - /url: /admin/orders
+            - img [ref=e80]
+            - generic [ref=e82]: Orders
+        - listitem [ref=e83]:
+          - link "Products" [ref=e84] [cursor=pointer]:
+            - /url: /admin/products
+            - img [ref=e86]
+            - generic [ref=e88]: Products
+        - listitem [ref=e89]:
+          - link "Suppliers" [ref=e90] [cursor=pointer]:
+            - /url: /admin/suppliers
+            - img [ref=e92]
+            - generic [ref=e94]: Suppliers
+        - listitem [ref=e95]:
+          - link "Availability" [ref=e96] [cursor=pointer]:
+            - /url: /admin/availability
+            - img [ref=e98]
+            - generic [ref=e100]: Availability
+        - listitem [ref=e101]:
+          - link "Invoices" [ref=e102] [cursor=pointer]:
+            - /url: /admin/invoices
+            - img [ref=e104]
+            - generic [ref=e106]: Invoices
+        - listitem [ref=e107]:
+          - link "Payments" [ref=e108] [cursor=pointer]:
+            - /url: /admin/payments
+            - img [ref=e110]
+            - generic [ref=e112]: Payments
+        - listitem [ref=e113]:
+          - link "Customers" [ref=e114] [cursor=pointer]:
+            - /url: /admin/customers
+            - img [ref=e116]
+            - generic [ref=e118]: Customers
+        - listitem [ref=e119]:
+          - link "Reports" [ref=e120] [cursor=pointer]:
+            - /url: /admin/reports
+            - img [ref=e122]
+            - generic [ref=e124]: Reports
+        - listitem [ref=e125]:
+          - link "Staff" [ref=e126] [cursor=pointer]:
+            - /url: /admin/staff
+            - img [ref=e128]
+            - generic [ref=e130]: Staff
+        - listitem [ref=e131]:
+          - link "Settings" [ref=e132] [cursor=pointer]:
+            - /url: /admin/settings
+            - img [ref=e134]
+            - generic [ref=e137]: Settings
+    - generic [ref=e138]:
+      - generic [ref=e139]:
+        - generic [ref=e141]: A
+        - generic [ref=e142]:
+          - generic [ref=e143]: Admin User
+          - generic [ref=e144]: Administrator
+      - button "Logout" [ref=e145] [cursor=pointer]:
+        - img [ref=e146]
+        - generic [ref=e148]: Logout
+  - generic [ref=e149]:
+    - banner [ref=e150]:
+      - generic [ref=e151]:
+        - button "Toggle Menu" [ref=e152] [cursor=pointer]:
+          - img [ref=e153]
+        - generic [ref=e155]:
+          - img "Logo" [ref=e156]
+          - generic [ref=e157]: Admin
+        - heading "Dashboard" [level=1] [ref=e158]
+        - link "A" [ref=e159] [cursor=pointer]:
+          - /url: /admin/profile
+          - generic [ref=e161]: A
+      - button "Switch to dark mode" [ref=e162] [cursor=pointer]:
+        - img [ref=e163]
+        - img [ref=e165]
+    - main [ref=e167]:
+      - generic [ref=e168]:
+        - generic [ref=e169]:
+          - heading "Admin Dashboard" [level=1] [ref=e170]
+          - paragraph [ref=e171]: Welcome back! Here's what's happening with your store.
+        - generic [ref=e172]:
+          - generic [ref=e174]:
+            - img [ref=e176]
+            - generic [ref=e180]:
+              - paragraph [ref=e181]: Total Orders
+              - paragraph [ref=e182]: "16"
+          - generic [ref=e184]:
+            - img [ref=e186]
+            - generic [ref=e189]:
+              - paragraph [ref=e190]: Pending Orders
+              - paragraph [ref=e191]: "4"
+          - generic [ref=e193]:
+            - img [ref=e195]
+            - generic [ref=e197]:
+              - paragraph [ref=e198]: Total Revenue
+              - paragraph [ref=e199]: R820.00
+          - generic [ref=e201]:
+            - img [ref=e203]
+            - generic [ref=e206]:
+              - paragraph [ref=e207]: Unpaid Invoices
+              - paragraph [ref=e208]: "1"
+          - generic [ref=e210]:
+            - img [ref=e212]
+            - generic [ref=e217]:
+              - paragraph [ref=e218]: Active Customers
+              - paragraph [ref=e219]: "12"
+        - generic [ref=e220]:
+          - generic [ref=e221]:
+            - generic [ref=e223]:
+              - heading "Payment Methods" [level=3] [ref=e224]
+              - paragraph [ref=e225]: Today's payment breakdown
+            - generic [ref=e227]:
+              - img [ref=e228]
+              - paragraph [ref=e230]: No payments today
+          - generic [ref=e231]:
+            - generic [ref=e233]:
+              - heading "Recent Payments" [level=3] [ref=e234]
+              - paragraph [ref=e235]: Latest payment activity
+            - generic [ref=e237]:
+              - generic [ref=e238]:
+                - generic [ref=e239]:
+                  - img [ref=e241]
+                  - generic [ref=e244]:
+                    - paragraph [ref=e245]: New Client
+                    - paragraph [ref=e246]: Cash • 02:00 AM
+                - generic [ref=e247]:
+                  - paragraph [ref=e248]: R5.00
+                  - text: partial
+              - generic [ref=e249]:
+                - generic [ref=e250]:
+                  - img [ref=e252]
+                  - generic [ref=e255]:
+                    - paragraph [ref=e256]: New Client
+                    - paragraph [ref=e257]: EFT • 02:00 AM
+                - generic [ref=e258]:
+                  - paragraph [ref=e259]: R20.00
+                  - text: partial
+              - generic [ref=e260]:
+                - generic [ref=e261]:
+                  - img [ref=e263]
+                  - generic [ref=e265]:
+                    - paragraph [ref=e266]: Test Verification User
+                    - paragraph [ref=e267]: Yoco • 09:59 PM
+                - generic [ref=e268]:
+                  - paragraph [ref=e269]: R30.00
+                  - text: paid
+              - generic [ref=e270]:
+                - generic [ref=e271]:
+                  - img [ref=e273]
+                  - generic [ref=e275]:
+                    - paragraph [ref=e276]: New Client
+                    - paragraph [ref=e277]: Yoco • 02:00 AM
+                - generic [ref=e278]:
+                  - paragraph [ref=e279]: R0.94
+                  - text: partial
+              - generic [ref=e280]:
+                - generic [ref=e281]:
+                  - img [ref=e283]
+                  - generic [ref=e286]:
+                    - paragraph [ref=e287]: New Client
+                    - paragraph [ref=e288]: EFT • 01:11 PM
+                - generic [ref=e289]:
+                  - paragraph [ref=e290]: R85.00
+                  - text: paid
+              - generic [ref=e291]:
+                - generic [ref=e292]:
+                  - img [ref=e294]
+                  - generic [ref=e297]:
+                    - paragraph [ref=e298]: New Client
+                    - paragraph [ref=e299]: EFT • 12:57 PM
+                - generic [ref=e300]:
+                  - paragraph [ref=e301]: R85.00
+                  - text: paid
+              - generic [ref=e302]:
+                - generic [ref=e303]:
+                  - img [ref=e305]
+                  - generic [ref=e308]:
+                    - paragraph [ref=e309]: New Client
+                    - paragraph [ref=e310]: EFT • 12:56 PM
+                - generic [ref=e311]:
+                  - paragraph [ref=e312]: R85.00
+                  - text: paid
+              - generic [ref=e313]:
+                - generic [ref=e314]:
+                  - img [ref=e316]
+                  - generic [ref=e319]:
+                    - paragraph [ref=e320]: John Smith
+                    - paragraph [ref=e321]: EFT • 02:00 AM
+                - generic [ref=e322]:
+                  - paragraph [ref=e323]: R590.00
+                  - text: paid
+        - generic [ref=e324]:
+          - generic [ref=e326]:
+            - heading "Payment Overview" [level=3] [ref=e327]
+            - paragraph [ref=e328]: Payment statistics for different periods
+          - generic [ref=e330]:
+            - generic [ref=e331]:
+              - heading "Today" [level=4] [ref=e332]
+              - generic [ref=e333]:
+                - generic [ref=e334]:
+                  - generic [ref=e335]: Total
+                  - generic [ref=e336]: R0.00
+                - generic [ref=e337]:
+                  - generic [ref=e338]: 💳 Yoco
+                  - generic [ref=e339]: R0.00
+                - generic [ref=e340]:
+                  - generic [ref=e341]: 💵 Cash
+                  - generic [ref=e342]: R0.00
+                - generic [ref=e343]:
+                  - generic [ref=e344]: 🏦 EFT
+                  - generic [ref=e345]: R0.00
+                - generic [ref=e346]: 0 transactions
+            - generic [ref=e347]:
+              - heading "This Week" [level=4] [ref=e348]
+              - generic [ref=e349]:
+                - generic [ref=e350]:
+                  - generic [ref=e351]: Total
+                  - generic [ref=e352]: R0.00
+                - generic [ref=e353]:
+                  - generic [ref=e354]: 💳 Yoco
+                  - generic [ref=e355]: R0.00
+                - generic [ref=e356]:
+                  - generic [ref=e357]: 💵 Cash
+                  - generic [ref=e358]: R0.00
+                - generic [ref=e359]:
+                  - generic [ref=e360]: 🏦 EFT
+                  - generic [ref=e361]: R0.00
+                - generic [ref=e362]: 0 transactions
+            - generic [ref=e363]:
+              - heading "This Month" [level=4] [ref=e364]
+              - generic [ref=e365]:
+                - generic [ref=e366]:
+                  - generic [ref=e367]: Total
+                  - generic [ref=e368]: R0.00
+                - generic [ref=e369]:
+                  - generic [ref=e370]: 💳 Yoco
+                  - generic [ref=e371]: R0.00
+                - generic [ref=e372]:
+                  - generic [ref=e373]: 💵 Cash
+                  - generic [ref=e374]: R0.00
+                - generic [ref=e375]:
+                  - generic [ref=e376]: 🏦 EFT
+                  - generic [ref=e377]: R0.00
+                - generic [ref=e378]: 0 transactions
+        - generic [ref=e379]:
+          - generic [ref=e381]:
+            - heading "Recent Orders" [level=3] [ref=e382]
+            - paragraph [ref=e383]: Latest pending orders requiring attention
+          - generic [ref=e385]:
+            - generic [ref=e386]:
+              - generic [ref=e387]:
+                - img [ref=e389]
+                - generic [ref=e393]:
+                  - paragraph [ref=e394]: "Order #9-VGA1"
+                  - paragraph [ref=e395]: New Client
+              - generic [ref=e396]:
+                - paragraph [ref=e397]: R0.00
+                - paragraph [ref=e398]: pending
+            - generic [ref=e399]:
+              - generic [ref=e400]:
+                - img [ref=e402]
+                - generic [ref=e406]:
+                  - paragraph [ref=e407]: "Order #9-JTSJ"
+                  - paragraph [ref=e408]: New Client
+              - generic [ref=e409]:
+                - paragraph [ref=e410]: R0.00
+                - paragraph [ref=e411]: pending
+            - generic [ref=e412]:
+              - generic [ref=e413]:
+                - img [ref=e415]
+                - generic [ref=e419]:
+                  - paragraph [ref=e420]: "Order #9-V68L"
+                  - paragraph [ref=e421]: New Client
+              - generic [ref=e422]:
+                - paragraph [ref=e423]: R0.00
+                - paragraph [ref=e424]: pending
+            - generic [ref=e425]:
+              - generic [ref=e426]:
+                - img [ref=e428]
+                - generic [ref=e432]:
+                  - paragraph [ref=e433]: "Order #9-CNH5"
+                  - paragraph [ref=e434]: New Client
+              - generic [ref=e435]:
+                - paragraph [ref=e436]: R0.00
+                - paragraph [ref=e437]: pending
+        - generic [ref=e438]:
+          - link "Manage Orders View and process orders" [ref=e439] [cursor=pointer]:
+            - /url: /admin/orders
+            - img [ref=e440]
+            - generic [ref=e444]:
+              - paragraph [ref=e445]: Manage Orders
+              - paragraph [ref=e446]: View and process orders
+          - link "Manage Products Update your catalog" [ref=e447] [cursor=pointer]:
+            - /url: /admin/products
+            - img [ref=e448]
+            - generic [ref=e452]:
+              - paragraph [ref=e453]: Manage Products
+              - paragraph [ref=e454]: Update your catalog
+          - link "View Reports Sales analytics" [ref=e455] [cursor=pointer]:
+            - /url: /admin/reports
+            - img [ref=e456]
+            - generic [ref=e459]:
+              - paragraph [ref=e460]: View Reports
+              - paragraph [ref=e461]: Sales analytics

@@ -42,3 +42,21 @@ export { Badge, type BadgeVariant } from './Badge.js';
 
 // Icons component
 export { UserIcon, CartIcon, BackIcon } from './Icons.js';
+
+// Phone Input component with country selector
+export {
+  PhoneInput,
+  COUNTRY_CODES,
+  formatFullPhoneNumber,
+  parsePhoneNumber,
+  type CountryCode
+} from './PhoneInput.js';
+
+// Address Fields component
+export {
+  AddressFields,
+  formatFullAddress,
+  validateAddress,
+  PROVINCES,
+  type AddressData
+} from './AddressFields.js';

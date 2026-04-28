@@ -165,77 +165,121 @@ export class PaymentService {
         gatewayReference = yocoResult.chargeId;
       }
 
-      // Record payment and update invoice in a transaction
-      const payment = await prisma.$transaction(async (tx: any) => {
-        // Create payment record
-        const newPayment = await tx.payment.create({
+    // Record payment and update invoice in a transaction
+    const payment = await prisma.$transaction(async (tx: any) => {
+      // Create payment record
+      const newPayment = await tx.payment.create({
+        data: {
+          invoiceId: data.invoiceId,
+          customerId: data.customerId,
+          amount: new Decimal(data.amount),
+          method: data.method,
+          paymentDate: data.paymentDate,
+          notes: gatewayReference ? `${data.notes || ''} (Yoco Ref: ${gatewayReference})`.trim() : data.notes,
+        },
+        include: {
+          invoice: true,
+          customer: true,
+        },
+      });
+
+      // Calculate total payments for this invoice
+      const allPayments = await tx.payment.findMany({
+        where: { invoiceId: data.invoiceId },
+      });
+
+      const totalPaid = allPayments.reduce((sum: number, p: any) => {
+        return sum + Number(p.amount);
+      }, 0);
+
+      const invoiceTotal = Number(invoice.total);
+
+      // Determine new invoice status
+      let newStatus: string;
+      let wasPaid = false;
+      if (totalPaid >= invoiceTotal) {
+        newStatus = 'paid';
+        wasPaid = true;
+        const overpayment = totalPaid - invoiceTotal;
+
+        if (overpayment > 0) {
+          await tx.credit.create({
+            data: {
+              customerId: data.customerId,
+              amount: new Decimal(overpayment),
+              reason: `Overpayment on invoice ${data.invoiceId}`,
+              type: 'overpayment',
+            },
+          });
+        }
+      } else if (totalPaid > 0) {
+        newStatus = 'partial';
+      } else {
+        newStatus = 'unpaid';
+      }
+
+      // Award Loyalty Points for EFT
+      if (data.method === 'eft') {
+        await tx.user.update({
+          where: { id: data.customerId },
           data: {
-            invoiceId: data.invoiceId,
-            customerId: data.customerId,
-            amount: new Decimal(data.amount),
-            method: data.method,
-            paymentDate: data.paymentDate,
-            notes: gatewayReference ? `${data.notes || ''} (Yoco Ref: ${gatewayReference})`.trim() : data.notes,
-          },
-          include: {
-            invoice: true,
-            customer: true,
-          },
+            loyaltyPoints: {
+              increment: 5
+            }
+          }
+        });
+      }
+
+      // Update invoice status
+      await tx.invoice.update({
+        where: { id: data.invoiceId },
+        data: { status: newStatus },
+      });
+
+      // If invoice is now paid, convert quotation to order
+      if (wasPaid) {
+        const invoiceWithOrder = await tx.invoice.findUnique({
+          where: { id: data.invoiceId },
+          include: { order: { include: { items: true } } },
         });
 
-        // Calculate total payments for this invoice
-        const allPayments = await tx.payment.findMany({
-          where: { invoiceId: data.invoiceId },
-        });
+        if (invoiceWithOrder?.order) {
+          // Delete fully deducted items
+          const deductedItems = invoiceWithOrder.order.items.filter(
+            (item: any) => item.isDeducted && item.deductedQuantity >= item.quantity
+          );
+          for (const item of deductedItems) {
+            await tx.orderItem.delete({ where: { id: item.id } });
+          }
 
-        const totalPaid = allPayments.reduce((sum: number, p: any) => {
-          return sum + Number(p.amount);
-        }, 0);
-
-        const invoiceTotal = Number(invoice.total);
-
-        // Determine new invoice status
-        let newStatus: string;
-        if (totalPaid >= invoiceTotal) {
-          newStatus = 'paid';
-          const overpayment = totalPaid - invoiceTotal;
-
-          if (overpayment > 0) {
-            await tx.credit.create({
+          // Update partially deducted items
+          const partiallyDeductedItems = invoiceWithOrder.order.items.filter(
+            (item: any) => item.isDeducted && item.deductedQuantity > 0 && item.deductedQuantity < item.quantity
+          );
+          for (const item of partiallyDeductedItems) {
+            const newQuantity = item.quantity - item.deductedQuantity;
+            await tx.orderItem.update({
+              where: { id: item.id },
               data: {
-                customerId: data.customerId,
-                amount: new Decimal(overpayment),
-                reason: `Overpayment on invoice ${data.invoiceId}`,
-                type: 'overpayment',
+                quantity: newQuantity,
+                isDeducted: false,
+                deductedQuantity: 0,
+                deductedReason: null,
+                deductedAt: null,
               },
             });
           }
-        } else if (totalPaid > 0) {
-          newStatus = 'partial';
-        } else {
-          newStatus = 'unpaid';
-        }
 
-        // Award Loyalty Points for EFT
-        if (data.method === 'eft') {
-          await tx.user.update({
-            where: { id: data.customerId },
-            data: {
-              loyaltyPoints: {
-                increment: 5
-              }
-            }
+          // Update order status to confirmed
+          await tx.order.update({
+            where: { id: invoiceWithOrder.orderId },
+            data: { status: 'confirmed' },
           });
         }
+      }
 
-        // Update invoice status
-        await tx.invoice.update({
-          where: { id: data.invoiceId },
-          data: { status: newStatus },
-        });
-
-        return newPayment;
-      });
+      return newPayment;
+    });
 
       // Emit event for real-time updates
       appEvents.emit('paymentReceived', { invoiceId: data.invoiceId, amount: data.amount });

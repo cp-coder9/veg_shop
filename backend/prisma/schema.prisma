@@ -8,38 +8,38 @@ datasource db {
 }
 
 model User {
-  id                 String    @id @default(uuid())
-  phone              String?   @unique
-  email              String?   @unique
-  password           String?   // Hashed password for email login
-  name               String
-  address            String?
-  deliveryPreference String    @default("delivery")
-  role               String    @default("customer")
-  status             String    @default("active")
+  id String @id @default(uuid())
+  phone String? @unique
+  email String? @unique
+  password String?
+  name String
+  address String?
+  // New address fields
+  streetName String?
+  area String?
+  province String?
+  postalCode String?
+  // Phone country code
+  countryCode String? @default("ZA")
+  deliveryPreference String @default("delivery")
+  role               String         @default("customer")
+  status             String         @default("active")
   birthday           DateTime?
-  loyaltyPoints      Int       @default(0)
-  popiConsentGiven   Boolean   @default(false)
+  loyaltyPoints      Int            @default(0)
+  popiConsentGiven   Boolean        @default(false)
   popiConsentDate    DateTime?
   popiConsentVersion String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  orders        Order[]
-  invoices      Invoice[] @relation("CustomerInvoices")
-  payments      Payment[]
-  credits       Credit[]
-  notifications Notification[]
-  
-  // Driver relations
-  driverOrders  Order[]     @relation("DriverOrders")
-  driverLogs    DriverLog[]
-
-  // Packer relations
-  packerOrders  Order[]     @relation("PackerOrders")
-
-  // Poll Items
-  pollItems     PollItem[]  @relation("CustomerPollItems")
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  credits            Credit[]
+  driverLogs         DriverLog[]
+  invoices           Invoice[]      @relation("CustomerInvoices")
+  notifications      Notification[]
+  packerOrders       Order[]        @relation("PackerOrders")
+  driverOrders       Order[]        @relation("DriverOrders")
+  orders             Order[]
+  payments           Payment[]
+  pollItems          PollItem[]     @relation("CustomerPollItems")
 
   @@map("users")
 }
@@ -53,53 +53,49 @@ model ProductCategory {
   sortOrder   Int       @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-
-  products Product[]
+  products    Product[]
 
   @@map("product_categories")
 }
 
 model Product {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  price       Decimal 
-  category    String
-  unit        String
-  description String?
-  imageUrl    String?
-  isAvailable Boolean  @default(true)
-  isSeasonal  Boolean  @default(false)
-  isPerishable Boolean @default(false) // Determines delivery grouping eligibility
-  packingType String   @default("ambient") 
-  deliveryDay String?  // "Wednesday" | "Friday" - delivery day for the product
-  packQuantity Int?      // For pack items (e.g., 6 items per pack)
-  supplierId  String?
-  supplier    Supplier? @relation(fields: [supplierId], references: [id])
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  categoryRef        ProductCategory? @relation(fields: [category], references: [key])
+  id                 String               @id @default(cuid())
+  name               String               @unique
+  price              Decimal
+  category           String
+  unit               String
+  description        String?
+  imageUrl           String?
+  isAvailable        Boolean              @default(true)
+  isSeasonal         Boolean              @default(false)
+  isPerishable       Boolean              @default(false)
+  packingType        String               @default("ambient")
+  deliveryDay        String?
+  packQuantity       Int?
+  supplierId         String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
   orderItems         OrderItem[]
+  pollItems          PollItem[]           @relation("ProductPollItems")
   priceHistory       PriceHistory[]
+  categoryRef        ProductCategory      @relation(fields: [category], references: [key])
+  supplier           Supplier?            @relation(fields: [supplierId], references: [id])
   weeklyAvailability WeeklyAvailability[]
-  pollItems          PollItem[] @relation("ProductPollItems")
 
-  @@map("products")
   @@index([supplierId])
+  @@map("products")
 }
 
-// Weekly availability toggle — admin confirms per-week product availability (Mon/Tue)
 model WeeklyAvailability {
   id          String    @id @default(uuid())
   productId   String
-  weekStart   DateTime  // Monday of the target week (ISO date, time 00:00:00)
+  weekStart   DateTime
   isAvailable Boolean   @default(true)
-  confirmedBy String?   // Admin user ID who confirmed
+  confirmedBy String?
   confirmedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([productId, weekStart])
   @@index([weekStart])
@@ -111,60 +107,46 @@ model Supplier {
   name        String    @unique
   contactInfo String?
   isAvailable Boolean   @default(true)
-  products    Product[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  products    Product[]
 
   @@map("suppliers")
 }
 
 model Order {
-  id                  String    @id @default(uuid())
+  id                  String      @id @default(uuid())
   customerId          String
   deliveryDate        DateTime
-  deliveryMethod      String    @default("delivery")
+  deliveryMethod      String      @default("delivery")
   deliveryAddress     String?
-  area                String?   // Delivery area/zone
   specialInstructions String?
-  deliveryFees        Decimal   @default(0)
-  status              String    @default("pending")
-  stage               String    @default("pending") // pending, prepping, packed, handed_over, delivering, completed
-  tcAccepted          Boolean   @default(false)
-  coolerBagOption     Boolean   @default(false)
-  coolerBagStatus     String    @default("none") // "none", "taken", "returned"
-  groupDelivery       Boolean   @default(false)
-  deliveryInstruction String?   // "door", "hand_to_me", "inside_fridge", "inside_freezer"
+  deliveryFees        Decimal     @default(0)
+  status              String      @default("pending")
+  coolerBagOption     Boolean     @default(false)
+  coolerBagStatus     String      @default("none")
+  groupDelivery       Boolean     @default(false)
+  deliveryInstruction String?
   packerSignature     String?
   deliveryNotes       String?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-
-  customer User        @relation(fields: [customerId], references: [id])
-  items    OrderItem[]
-  invoice  Invoice?
-
-  // Driver fields
-  driverId      String?
-  driver        User?   @relation("DriverOrders", fields: [driverId], references: [id])
-  deliveryProof String? // "handed_to_client" | "left_at_door" | "placed_inside"
-  driverNotes   String?
-
-  // Packer fields
-  packerId      String?
-  packer        User?   @relation("PackerOrders", fields: [packerId], references: [id])
-  packerNotes   String?
-
-  // Handover fields
-  handoverConfirmed   Boolean   @default(false)
-  handoverConfirmedAt DateTime?
-  packageDetails      String?   // JSON string of package units (e.g. {"bags": 2, "coolers": 1, "eggs": 1})
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  driverId            String?
+  deliveryProof       String?
+  driverNotes         String?
+  packerId            String?
+  packerNotes         String?
+  invoice             Invoice?
+  items               OrderItem[]
+  packer              User?       @relation("PackerOrders", fields: [packerId], references: [id])
+  driver              User?       @relation("DriverOrders", fields: [driverId], references: [id])
+  customer            User        @relation(fields: [customerId], references: [id])
 
   @@index([customerId])
   @@index([deliveryDate])
   @@index([status])
   @@index([driverId])
   @@index([packerId])
-  @@index([area])
   @@map("orders")
 }
 
@@ -178,8 +160,7 @@ model DriverLog {
   notes      String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-
-  driver User @relation(fields: [driverId], references: [id])
+  driver     User     @relation(fields: [driverId], references: [id])
 
   @@index([driverId])
   @@index([date])
@@ -187,38 +168,39 @@ model DriverLog {
 }
 
 model OrderItem {
-  id           String  @id @default(uuid())
-  orderId      String
-  productId    String
-  quantity     Int
+  id String @id @default(uuid())
+  orderId String
+  productId String
+  quantity Int
   priceAtOrder Decimal
-  isPrepped    Boolean @default(false) // For Sasha's 2-step picking process
-
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  isDeducted Boolean @default(false)
+  deductedQuantity Int @default(0)
+  deductedReason String?
+  deductedAt DateTime?
   product Product @relation(fields: [productId], references: [id])
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@map("order_items")
 }
 
 model Invoice {
-  id            String    @id @default(uuid())
-  orderId       String    @unique
+  id            String     @id @default(uuid())
+  orderId       String     @unique
   customerId    String
   subtotal      Decimal
-  creditApplied Decimal   @default(0)
+  creditApplied Decimal    @default(0)
   total         Decimal
-  status        String    @default("unpaid")
+  status        String     @default("unpaid")
   pdfUrl        String?
-  type          String    @default("proforma") // "proforma" | "final"
+  type          String     @default("proforma")
   finalisedAt   DateTime?
-  finalisedBy   String?   // Admin user ID
-  createdAt     DateTime  @default(now())
+  finalisedBy   String?
+  createdAt     DateTime   @default(now())
   dueDate       DateTime
-
-  order    Order     @relation(fields: [orderId], references: [id])
-  customer User      @relation("CustomerInvoices", fields: [customerId], references: [id])
-  payments Payment[]
-  pollItems PollItem[] @relation("InvoicePollItems")
+  customer      User       @relation("CustomerInvoices", fields: [customerId], references: [id])
+  order         Order      @relation(fields: [orderId], references: [id])
+  payments      Payment[]
+  pollItems     PollItem[] @relation("InvoicePollItems")
 
   @@index([customerId])
   @@index([status])
@@ -234,9 +216,8 @@ model Payment {
   method      String
   paymentDate DateTime
   notes       String?
-
-  invoice  Invoice @relation(fields: [invoiceId], references: [id])
-  customer User    @relation(fields: [customerId], references: [id])
+  customer    User     @relation(fields: [customerId], references: [id])
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
 
   @@index([customerId])
   @@map("payments")
@@ -249,8 +230,7 @@ model Credit {
   reason     String
   type       String
   createdAt  DateTime @default(now())
-
-  customer User @relation(fields: [customerId], references: [id])
+  customer   User     @relation(fields: [customerId], references: [id])
 
   @@map("credits")
 }
@@ -260,8 +240,7 @@ model PriceHistory {
   productId     String
   price         Decimal
   effectiveDate DateTime @default(now())
-
-  product Product @relation(fields: [productId], references: [id])
+  product       Product  @relation(fields: [productId], references: [id])
 
   @@map("price_history")
 }
@@ -275,8 +254,7 @@ model Notification {
   status     String    @default("pending")
   sentAt     DateTime?
   createdAt  DateTime  @default(now())
-
-  customer User @relation(fields: [customerId], references: [id])
+  customer   User      @relation(fields: [customerId], references: [id])
 
   @@map("notifications")
 }
@@ -310,92 +288,84 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-// Stock Order - tracks orders placed to suppliers based on weekly collation
 model StockOrder {
-  id                String    @id @default(uuid())
-  weekStartDate     DateTime
-  supplierId        String?
-  supplierName      String?
-  status            String    @default("pending") // "pending", "partial", "received", "fulfilled"
-  totalItems        Int       @default(0)
-  totalOrdered      Decimal   @default(0)
-  totalReceived     Decimal   @default(0)
-  totalCredits      Decimal   @default(0)
-  notes             String?
-  createdById       String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  items             StockOrderItem[]
-  history           WeeklyCollationHistory[]
+  id            String                   @id @default(uuid())
+  weekStartDate DateTime
+  supplierId    String?
+  supplierName  String?
+  status        String                   @default("pending")
+  totalItems    Int                      @default(0)
+  totalOrdered  Decimal                  @default(0)
+  totalReceived Decimal                  @default(0)
+  totalCredits  Decimal                  @default(0)
+  notes         String?
+  createdById   String?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  items         StockOrderItem[]
+  history       WeeklyCollationHistory[]
 
   @@index([weekStartDate])
   @@index([status])
   @@map("stock_orders")
 }
 
-// Individual items in a stock order
 model StockOrderItem {
-  id              String   @id @default(uuid())
-  stockOrderId    String
-  productId       String
-  productName     String
-  category        String
-  unit            String
-  orderedQuantity Int
-  receivedQuantity Int     @default(0)
-  pricePerUnit    Decimal  @default(0)
-  isShort         Boolean  @default(false)
-  shortQuantity   Int      @default(0)
-  creditAmount    Decimal  @default(0)
-  customerId      String?  // If this item is for a specific customer's order
-  orderId         String?  // Reference to the original order
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  stockOrder      StockOrder @relation(fields: [stockOrderId], references: [id], onDelete: Cascade)
+  id               String     @id @default(uuid())
+  stockOrderId     String
+  productId        String
+  productName      String
+  category         String
+  unit             String
+  orderedQuantity  Int
+  receivedQuantity Int        @default(0)
+  pricePerUnit     Decimal    @default(0)
+  isShort          Boolean    @default(false)
+  shortQuantity    Int        @default(0)
+  creditAmount     Decimal    @default(0)
+  customerId       String?
+  orderId          String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  stockOrder       StockOrder @relation(fields: [stockOrderId], references: [id], onDelete: Cascade)
 
   @@index([stockOrderId])
   @@index([productId])
   @@map("stock_order_items")
 }
 
-// History of weekly collation reports
 model WeeklyCollationHistory {
-  id              String    @id @default(uuid())
-  stockOrderId    String?
-  weekStartDate   DateTime
-  weekEndDate     DateTime
-  reportData      String    // JSON string of the collation report
-  totalProducts   Int       @default(0)
-  totalOrders     Int       @default(0)
-  totalValue      Decimal   @default(0)
-  status          String    @default("generated") // "generated", "sent", "received", "fulfilled"
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  stockOrder      StockOrder? @relation(fields: [stockOrderId], references: [id])
+  id            String      @id @default(uuid())
+  stockOrderId  String?
+  weekStartDate DateTime
+  weekEndDate   DateTime
+  reportData    String
+  totalProducts Int         @default(0)
+  totalOrders   Int         @default(0)
+  totalValue    Decimal     @default(0)
+  status        String      @default("generated")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  stockOrder    StockOrder? @relation(fields: [stockOrderId], references: [id])
 
   @@index([weekStartDate])
   @@index([status])
   @@map("weekly_collation_history")
 }
 
-// WhatsApp Poll items recorded by admin
 model PollItem {
-  id          String   @id @default(uuid())
-  customerId  String
-  productId   String
-  quantity    Int
-  price       Decimal 
-  status      String   @default("pending") // "pending" | "invoiced"
-  invoiceId   String?  // Reference to the invoice it eventually gets added to
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  customer    User     @relation("CustomerPollItems", fields: [customerId], references: [id])
-  product     Product  @relation("ProductPollItems", fields: [productId], references: [id])
-  invoice     Invoice? @relation("InvoicePollItems", fields: [invoiceId], references: [id])
+  id         String   @id @default(uuid())
+  customerId String
+  productId  String
+  quantity   Int
+  price      Decimal
+  status     String   @default("pending")
+  invoiceId  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  invoice    Invoice? @relation("InvoicePollItems", fields: [invoiceId], references: [id])
+  product    Product  @relation("ProductPollItems", fields: [productId], references: [id])
+  customer   User     @relation("CustomerPollItems", fields: [customerId], references: [id])
 
   @@index([customerId])
   @@index([status])

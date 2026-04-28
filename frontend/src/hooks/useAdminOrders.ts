@@ -168,3 +168,74 @@ export function useCreateOrder() {
     },
   });
 }
+
+// Quotations (orders with unpaid invoices)
+export function useQuotations(filters?: {
+  startDate?: string;
+  endDate?: string;
+  customerId?: string;
+}) {
+  return useQuery<Order[]>({
+    queryKey: ['quotations', filters],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filters?.startDate) params.append('startDate', filters.startDate);
+      if (filters?.endDate) params.append('endDate', filters.endDate);
+      if (filters?.customerId) params.append('customerId', filters.customerId);
+
+      const response = await api.get(`/orders/quotations?${params.toString()}`);
+      return response.data;
+    },
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+// Deduct item from quotation
+export function useDeductItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      orderId,
+      itemId,
+      quantity,
+      reason,
+    }: {
+      orderId: string;
+      itemId: string;
+      quantity: number;
+      reason: string;
+    }) => {
+      const response = await api.post(`/orders/${orderId}/deduct-item`, {
+        itemId,
+        quantity,
+        reason,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-invoices'] });
+    },
+  });
+}
+
+// Convert quotation to order
+export function useConvertQuotation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (orderId: string) => {
+      const response = await api.post(`/orders/${orderId}/convert`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
+    },
+  });
+}
