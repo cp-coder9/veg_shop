@@ -10,6 +10,8 @@ import { invoiceRepository } from '../repositories/invoice.repository.js';
 
 export interface CreateCustomerDto {
   phone?: string;
+  whatsappNumber?: string;
+  whatsappVerified?: boolean;
   email?: string;
   name: string;
   address?: string;
@@ -23,6 +25,8 @@ export interface CreateCustomerDto {
 
 export interface UpdateCustomerDto {
   phone?: string;
+  whatsappNumber?: string;
+  whatsappVerified?: boolean;
   email?: string;
   name?: string;
   address?: string;
@@ -88,6 +92,8 @@ export class CustomerService {
     const customer = await prisma.user.create({
       data: {
         phone: data.phone || null,
+        whatsappNumber: data.whatsappNumber || data.phone || null,
+        whatsappVerified: data.whatsappVerified || false,
         email: data.email || null,
         name: data.name,
         address: data.address || null,
@@ -148,6 +154,8 @@ export class CustomerService {
       where: { id },
       data: {
         phone: data.phone !== undefined ? data.phone : undefined,
+        whatsappNumber: data.whatsappNumber !== undefined ? data.whatsappNumber : undefined,
+        whatsappVerified: data.whatsappVerified !== undefined ? data.whatsappVerified : undefined,
         email: data.email !== undefined ? data.email : undefined,
         name: data.name,
         address: data.address !== undefined ? data.address : undefined,

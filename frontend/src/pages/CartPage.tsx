@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/authStore.js';
 import { useProducts } from '../hooks/useProducts.js';
 import { useCreateOrder, useOrderWindowStatus } from '../hooks/useOrders.js';
 import { formatPrice } from '../lib/utils.js';
+import { calculateDeliveryFee, DELIVERY_FEE_RULES } from '../lib/deliveryFees.js';
 import { toast } from 'react-hot-toast';
 import { ShoppingCart, Trash2, Plus, Minus, CreditCard, Truck, Package, ChevronRight, Info, Calendar, X } from 'lucide-react';
 
@@ -17,9 +18,8 @@ const CUTOFF_DAY = 1; // Monday (0 = Sunday, 1 = Monday, etc.)
 const DELIVERY_DAYS = [2, 6];
 
 const deliveryOptions = [
-  { value: 'collection_uitgezocht', label: 'Collection - Uitgezocht', price: 0, desc: 'Pick up from our central hub' },
-  { value: 'delivery_paarl', label: 'Delivery - Paarl', price: 50, desc: 'Paarl central areas' },
-  { value: 'delivery_surrounding', label: 'Surrounding Areas', price: 80, desc: 'Wellington, Franschhoek, etc.' },
+  { value: 'collection_uitgezocht', label: 'Collection - Uitgezocht', desc: 'Pick up from our central hub' },
+  { value: 'delivery', label: 'Delivery to Profile Address', desc: 'Calculated from your saved delivery address' },
 ];
 
 export default function CartPage() {
@@ -31,7 +31,7 @@ export default function CartPage() {
   const createOrder = useCreateOrder();
 
   const [isCheckout, setIsCheckout] = useState(false);
-  const [deliveryMethod, setDeliveryMethod] = useState('collection_uitgezocht');
+  const [deliveryMethod, setDeliveryMethod] = useState(user?.deliveryPreference === 'delivery' ? 'delivery' : 'collection_uitgezocht');
   const [deliveryAddress, setDeliveryAddress] = useState(user?.address || '');
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [deliveryInstruction, setDeliveryInstruction] = useState<'door' | 'hand_to_me' | 'inside_fridge' | 'inside_freezer' | undefined>(undefined);
@@ -39,6 +39,7 @@ export default function CartPage() {
   const [groupDelivery, setGroupDelivery] = useState(false);
   const [agreedToTnC, setAgreedToTnC] = useState(false);
   const [showTnCModal, setShowTnCModal] = useState(false);
+  const [showGroupDeliveryWarning, setShowGroupDeliveryWarning] = useState(false);
 
   const cartItems = items.map((item) => {
     const product = products?.find((p: any) => p.id === item.productId);
@@ -60,19 +61,23 @@ export default function CartPage() {
   }, [cartItems]);
 
   const isEligibleForGrouping = useMemo(() => {
-    // Eligible if no perishable items in Wednesday delivery, or overall
-    // For now, let's say it's ineligible if any item is perishable
-    const hasPerishables = cartItems.some(item => item.product?.isPerishable);
-    return !hasPerishables;
+    return cartItems.some(item => item.product?.groupDeliveryEligible);
   }, [cartItems]);
 
+  const handleToggleGroupDelivery = () => {
+    if (!isEligibleForGrouping) return;
+    const nextValue = !groupDelivery;
+    setGroupDelivery(nextValue);
+    if (nextValue) setShowGroupDeliveryWarning(true);
+  };
+
   const subtotal = cartItems.reduce((sum, item) => sum + item.subtotal, 0);
-  const selectedDelivery = deliveryOptions.find((opt) => opt.value === deliveryMethod);
-  const deliveryFee = selectedDelivery?.price || 0;
+  const deliveryFeeQuote = calculateDeliveryFee(deliveryAddress || user?.address, deliveryMethod === 'delivery' ? 'delivery' : 'collection');
+  const deliveryFee = deliveryFeeQuote.fee;
   const coolerBagFee = coolerBag ? 35 : 0;
   const total = subtotal + deliveryFee + coolerBagFee;
 
-  const requiresAddress = deliveryMethod.startsWith('delivery_');
+  const requiresAddress = deliveryMethod === 'delivery';
 
   const handleCheckout = async () => {
     if (windowStatus?.isOpen === false) {
@@ -93,7 +98,7 @@ export default function CartPage() {
     try {
       const orderData = {
         deliveryDate: selectedDeliveryDate || getNextDeliveryDate,
-        deliveryMethod: deliveryMethod.startsWith('delivery_') ? 'delivery' as const : 'collection' as const,
+        deliveryMethod: deliveryMethod === 'delivery' ? 'delivery' as const : 'collection' as const,
         deliveryAddress: requiresAddress ? deliveryAddress : undefined,
         specialInstructions: specialInstructions || undefined,
         deliveryInstruction: deliveryInstruction,
@@ -334,7 +339,9 @@ export default function CartPage() {
                     >
                       <div className="font-black uppercase tracking-tighter mb-1">{opt.label}</div>
                       <div className="text-[10px] font-mono opacity-60 uppercase tracking-widest mb-4">{opt.desc}</div>
-                      <div className="font-mono font-bold text-sm">R{opt.price}</div>
+                      <div className="font-mono font-bold text-sm">
+                        {opt.value === 'delivery' ? `R${deliveryFee}` : 'Free'}
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -383,6 +390,14 @@ export default function CartPage() {
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
                   />
+                  <div className="bg-white/40 border border-[var(--pigment-ochre)]/10 p-4 font-mono text-[10px] uppercase tracking-wider leading-relaxed">
+                    <div className="font-bold text-[var(--pigment-green)] mb-2">
+                      Delivery Fee: R{deliveryFee} — {deliveryFeeQuote.area}
+                    </div>
+                    <div className="opacity-50 whitespace-pre-line">
+                      {DELIVERY_FEE_RULES.map((rule) => `${rule.area}: R${rule.fee}`).join('\n')}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -443,12 +458,12 @@ export default function CartPage() {
                 <div className="font-mono font-bold">R35</div>
               </button>
 
+              {isEligibleForGrouping && (
               <div className="space-y-2">
                 <button
-                  onClick={() => isEligibleForGrouping && setGroupDelivery(!groupDelivery)}
-                  disabled={!isEligibleForGrouping}
+                  onClick={handleToggleGroupDelivery}
                   className={`w-full flex items-center justify-between p-6 border transition-all ${groupDelivery && isEligibleForGrouping ? 'bg-[var(--pigment-green)]/10 border-[var(--pigment-green)]' : 'bg-white/40 border-[var(--pigment-green)]/10 opacity-60'
-                    } ${!isEligibleForGrouping ? 'cursor-not-allowed grayscale' : ''}`}
+                    }`}
                 >
                   <div className="flex items-center gap-6">
                     <div className={`w-6 h-6 border flex items-center justify-center transition-all ${groupDelivery && isEligibleForGrouping ? 'bg-[var(--pigment-green)] border-[var(--pigment-green)] text-white' : 'border-[var(--ink)]/20'}`}>
@@ -461,12 +476,8 @@ export default function CartPage() {
                   </div>
                   <div className="font-mono font-bold uppercase text-[10px]">Optional</div>
                 </button>
-                {!isEligibleForGrouping && (
-                  <p className="text-[9px] font-mono text-[var(--pigment-oxide)] opacity-60 uppercase tracking-widest px-6">
-                    Ineligible for grouping: Your cart contains perishable items.
-                  </p>
-                )}
               </div>
+              )}
             </div>
           )}
         </div>
@@ -592,7 +603,33 @@ export default function CartPage() {
           </div>
         </div>
       )}
+
+      {showGroupDeliveryWarning && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#fcfaf7] w-full max-w-lg border border-[var(--pigment-ochre)]/20 shadow-2xl relative">
+            <div className="p-8 border-b border-[var(--pigment-ochre)]/20 flex justify-between items-center bg-white">
+              <h2 className="text-xl font-black uppercase tracking-tighter text-[var(--pigment-green)]">Group Delivery Notice</h2>
+              <button onClick={() => setShowGroupDeliveryWarning(false)} className="opacity-40 hover:opacity-100 transition-opacity">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-8 font-mono text-sm leading-relaxed text-[var(--pigment-oxide)]/80 space-y-4">
+              <p className="font-bold uppercase tracking-wider text-[var(--pigment-oxide)]">
+                Your ENTIRE order will only be delivered on that Friday.
+              </p>
+              <p className="opacity-70">Selecting group delivery applies to every item in your cart, not only the group-delivery product.</p>
+            </div>
+            <div className="p-6 border-t border-[var(--pigment-ochre)]/10 bg-white/50 flex justify-end">
+              <button
+                onClick={() => setShowGroupDeliveryWarning(false)}
+                className="bg-[var(--pigment-green)] text-white px-8 py-3 text-xs font-bold uppercase tracking-[2px] hover:bg-[var(--pigment-oxide)] transition-colors"
+              >
+                I Understand
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

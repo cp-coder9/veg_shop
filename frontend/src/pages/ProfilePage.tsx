@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCustomerProfile, useUpdateCustomer, useCustomerInvoices, useCustomerPayments } from '../hooks/useCustomer.js';
+import { useCustomerProfile, useUpdateCustomer, useCustomerInvoices, useCustomerPayments, useRepeatInvoiceAsQuotation, useSendWhatsAppVerificationCode, useVerifyWhatsAppNumber } from '../hooks/useCustomer.js';
 import { formatPrice } from '../lib/utils.js';
+import { calculateDeliveryFee } from '../lib/deliveryFees.js';
 import { toast } from 'react-hot-toast';
 import { User, MapPin, CreditCard, Receipt, History, Edit3, Save, ChevronRight, AlertCircle } from 'lucide-react';
 import { PhoneInput, type CountryCode } from '../components/ui/PhoneInput.js';
@@ -12,6 +13,9 @@ export default function ProfilePage() {
   const { data: invoices } = useCustomerInvoices();
   const { data: payments } = useCustomerPayments();
   const updateCustomer = useUpdateCustomer();
+  const repeatInvoice = useRepeatInvoiceAsQuotation();
+  const sendWhatsAppCode = useSendWhatsAppVerificationCode();
+  const verifyWhatsApp = useVerifyWhatsAppNumber();
   const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -26,6 +30,8 @@ export default function ProfilePage() {
     name: '',
     email: '',
     phone: '',
+    whatsappNumber: '',
+    whatsappCode: '',
     countryCode: 'ZA',
     address: '',
     streetName: '',
@@ -40,6 +46,8 @@ export default function ProfilePage() {
         name: profile.name || '',
         email: profile.email || '',
         phone: profile.phone || '',
+        whatsappNumber: (profile as any).whatsappNumber || profile.phone || '',
+        whatsappCode: '',
         countryCode: (profile as any).countryCode || 'ZA',
         address: profile.address || '',
         streetName: (profile as any).streetName || '',
@@ -73,6 +81,20 @@ export default function ProfilePage() {
       setIsEditing(false);
     } catch (error) {
       toast.error('Sync Failed');
+    }
+  };
+
+  const currentDeliveryFee = calculateDeliveryFee(profile?.address || (profile as any)?.area, 'delivery');
+
+  const handleRepeatInvoice = async (invoiceId: string) => {
+    try {
+      const result = await repeatInvoice.mutateAsync(invoiceId);
+      const unavailable = result.unavailableItems?.length
+        ? ` Unavailable this week: ${result.unavailableItems.join(', ')}.`
+        : '';
+      toast.success(`Repeat quotation issued.${unavailable}`);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error?.message || 'Could not issue repeat quotation');
     }
   };
 
@@ -174,6 +196,45 @@ export default function ProfilePage() {
               />
             </div>
 
+            <div className="space-y-3">
+              <label className="font-mono text-[10px] uppercase tracking-widest opacity-40">WhatsApp Number</label>
+              <input
+                type="text"
+                className="w-full bg-[var(--canvas)]/50 border-b border-[var(--pigment-green)]/20 focus:border-[var(--pigment-green)] py-3 px-1 outline-none font-bold uppercase tracking-tighter transition-all"
+                value={editForm.whatsappNumber}
+                onChange={(e) => setEditForm({ ...editForm, whatsappNumber: e.target.value, whatsappCode: '' })}
+                placeholder="WhatsApp number"
+              />
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await sendWhatsAppCode.mutateAsync(editForm.whatsappNumber);
+                    toast.success('Verification code sent');
+                  }}
+                  className="px-4 py-2 bg-white/60 border border-[var(--pigment-green)]/10 font-mono text-[9px] uppercase tracking-widest"
+                >
+                  Send Code
+                </button>
+                <input
+                  value={editForm.whatsappCode}
+                  onChange={(e) => setEditForm({ ...editForm, whatsappCode: e.target.value })}
+                  className="flex-1 bg-white/50 border border-[var(--pigment-green)]/10 px-3 py-2 font-mono text-xs"
+                  placeholder="6-digit code"
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await verifyWhatsApp.mutateAsync({ whatsappNumber: editForm.whatsappNumber, code: editForm.whatsappCode });
+                    toast.success('WhatsApp verified');
+                  }}
+                  className="px-4 py-2 bg-[var(--pigment-green)] text-white font-mono text-[9px] uppercase tracking-widest"
+                >
+                  Verify
+                </button>
+              </div>
+            </div>
+
             {/* Address Fields */}
             <div className="space-y-4">
               <label className="font-mono text-[10px] uppercase tracking-widest opacity-40">Delivery Address</label>
@@ -211,6 +272,12 @@ export default function ProfilePage() {
                 <span className="font-mono text-sm tracking-widest">{profile.phone || 'N/A'}</span>
               </div>
               <div className="space-y-1">
+                <span className="font-mono text-[10px] uppercase tracking-widest opacity-40 block mb-1">WhatsApp Number</span>
+                <span className="font-mono text-sm tracking-widest">
+                  {(profile as any).whatsappNumber || 'N/A'} {(profile as any).whatsappVerified ? '✓ VERIFIED' : '— NOT VERIFIED'}
+                </span>
+              </div>
+              <div className="space-y-1">
                 <span className="font-mono text-[10px] uppercase tracking-widest opacity-40 block mb-1">Logistic Node</span>
                 <div className="flex items-start gap-2">
                   <MapPin size={14} className="mt-1 opacity-20" />
@@ -221,6 +288,9 @@ export default function ProfilePage() {
                     {(profile as any).area}{(profile as any).province && `, ${(profile as any).province}`}{(profile as any).postalCode && ` ${(profile as any).postalCode}`}
                   </span>
                 )}
+                <div className="font-mono text-[10px] text-[var(--pigment-green)] uppercase tracking-widest mt-2">
+                  Delivery Fee: R{currentDeliveryFee.fee} — {currentDeliveryFee.area}
+                </div>
               </div>
             </div>
           )}
@@ -261,6 +331,13 @@ export default function ProfilePage() {
                           <span className="font-mono text-[9px] opacity-40 uppercase">{new Date(inv.createdAt).toLocaleDateString('en-ZA')}</span>
                           <span className="text-xl font-black text-[var(--pigment-green)] group-hover:text-[var(--pigment-oxide)] transition-colors">R{formatPrice(inv.total)}</span>
                         </div>
+                        <button
+                          onClick={() => handleRepeatInvoice(inv.id)}
+                          disabled={repeatInvoice.isPending}
+                          className="mt-4 w-full border border-[var(--pigment-green)]/20 py-2 font-mono text-[9px] uppercase tracking-widest hover:bg-[var(--pigment-green)] hover:text-white transition-all disabled:opacity-50"
+                        >
+                          Repeat as Quotation
+                        </button>
                       </div>
                     ))}
                   </div>

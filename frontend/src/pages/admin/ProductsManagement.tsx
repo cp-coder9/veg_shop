@@ -12,6 +12,7 @@ interface Product {
     price: number;
     unit: string;
     isAvailable: boolean;
+    groupDeliveryEligible?: boolean;
     imageUrl?: string;
     deliveryDay?: 'Wednesday' | 'Friday';
     description?: string | null;
@@ -56,6 +57,7 @@ interface ProductFormData {
     price: number;
     unit: string;
     isAvailable: boolean;
+    groupDeliveryEligible: boolean;
     imageUrl?: string;
     deliveryDay?: 'Wednesday' | 'Friday';
     description?: string;
@@ -158,6 +160,7 @@ const ProductsManagement = () => {
         price: 0,
         unit: 'unit',
         isAvailable: true,
+        groupDeliveryEligible: false,
         deliveryDay: undefined,
         description: '',
         supplierId: '',
@@ -411,6 +414,7 @@ const ProductsManagement = () => {
             price: product.price,
             unit: product.unit,
             isAvailable: product.isAvailable,
+            groupDeliveryEligible: product.groupDeliveryEligible ?? false,
             imageUrl: product.imageUrl || '',
             deliveryDay: product.deliveryDay,
             description: product.description || '',
@@ -433,6 +437,7 @@ const ProductsManagement = () => {
             price: 0,
             unit: 'unit',
             isAvailable: true,
+            groupDeliveryEligible: false,
             imageUrl: '',
             deliveryDay: undefined,
             description: '',
@@ -1083,6 +1088,19 @@ const ProductsManagement = () => {
                                 ]}
                             />
                         </div>
+                    </div>
+
+                    <div>
+                        <label className="font-accent text-caption text-warm-gray uppercase tracking-wide mb-2 block">Group Delivery</label>
+                        <Select
+                            value={formData.groupDeliveryEligible ? 'adequate' : 'non-adequate'}
+                            onChange={(e) => setFormData({ ...formData, groupDeliveryEligible: e.target.value === 'adequate' })}
+                            options={[
+                                { value: 'adequate', label: 'adequate' },
+                                { value: 'non-adequate', label: 'non-adequate' }
+                            ]}
+                        />
+                        <p className="text-xs text-warm-gray mt-1">adequate = available for group delivery; non-adequate = not available.</p>
                     </div>
 
                     <div>

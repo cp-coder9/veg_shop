@@ -30,7 +30,8 @@ export interface CreateProductDto {
   packingType?: string;
   deliveryDay?: string | null;
   supplierId?: string | null;
-  isPerishable: boolean;
+  isPerishable?: boolean;
+  groupDeliveryEligible?: boolean;
 }
 
 export interface UpdateProductDto {
@@ -46,6 +47,7 @@ export interface UpdateProductDto {
   deliveryDay?: string | null;
   supplierId?: string | null;
   isPerishable?: boolean;
+  groupDeliveryEligible?: boolean;
 }
 
 export interface ProductFilters {
@@ -81,6 +83,8 @@ export class ProductService {
           imageUrl: data.imageUrl,
           isAvailable: data.isAvailable,
           isSeasonal: data.isSeasonal,
+          isPerishable: data.isPerishable,
+          groupDeliveryEligible: data.groupDeliveryEligible,
           packingType: data.packingType,
           deliveryDay: data.deliveryDay,
           supplierId: data.supplierId,

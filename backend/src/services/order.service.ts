@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js';
+import { Decimal } from '@prisma/client/runtime/library';
 import { appEvents } from '../lib/events.js';
 import { notificationService } from './notification.service.js';
 import { env } from '../config/env.js';
@@ -7,6 +8,8 @@ import { orderItemRepository, OrderItem as RepositoryOrderItem } from '../reposi
 import { productRepository, Product as RepositoryProduct } from '../repositories/product.repository.js';
 import { userRepository, User as RepositoryUser } from '../repositories/user.repository.js';
 import { invoiceRepository } from '../repositories/invoice.repository.js';
+import { deliveryFeeService } from './delivery-fee.service.js';
+import { invoiceService } from './invoice.service.js';
 
 export interface CreateOrderDto {
   deliveryDate: Date;
@@ -20,13 +23,6 @@ export interface CreateOrderDto {
   }[];
   coolerBagOption?: boolean;
 }
-
-const DELIVERY_FEES = [
-  { keyword: 'paarl', fee: 35 },
-  { keyword: 'val de vie', fee: 35 },
-  { keyword: 'wellington', fee: 50 },
-  { keyword: 'pearl valley', fee: 50 },
-];
 
 export interface OrderWithItems extends Order {
   items: (RepositoryOrderItem & { product?: RepositoryProduct })[];
@@ -57,6 +53,8 @@ export interface CollationItem {
   unit: string;
   orderCount: number;
   categoryId: string;
+  supplierId: string;
+  supplierName: string;
 }
 
 export interface CreateOrderData {
@@ -75,18 +73,6 @@ export interface CreateOrderData {
 }
 
 export class OrderService {
-  /**
-   * Determine delivery area based on address
-   */
-  private determineArea(address: string): string {
-    const addr = address.toLowerCase();
-    if (addr.includes('paarl') || addr.includes('val de vie') || addr.includes('pearl valley')) return 'Paarl';
-    if (addr.includes('wellington')) return 'Wellington';
-    if (addr.includes('franschhoek')) return 'Franschhoek';
-    if (addr.includes('stellenbosch')) return 'Stellenbosch';
-    return 'General';
-  }
-
   /**
    * Check if the ordering window is currently open
    * Window: Tuesday 00:00 to Friday 14:00
@@ -139,22 +125,22 @@ export class OrderService {
 
   /**
    * Determine if an order is eligible for delivery grouping
-   * (None of the products should be perishable)
+   * (At least one product must be marked group-delivery eligible by admin.)
    */
   async canGroupDelivery(items: { productId: string; quantity: number }[]): Promise<boolean> {
     const productIds = items.map(i => i.productId);
 
     if (env.USE_FIREBASE) {
       const products = await Promise.all(productIds.map(id => productRepository.findById(id)));
-      return !products.some(p => p?.isPerishable);
+      return products.some(p => p?.groupDeliveryEligible);
     } else {
-      const perishableCount = await prisma.product.count({
+      const eligibleCount = await prisma.product.count({
         where: {
           id: { in: productIds },
-          isPerishable: true,
+          groupDeliveryEligible: true,
         },
       });
-      return perishableCount === 0;
+      return eligibleCount > 0;
     }
   }
 
@@ -208,15 +194,9 @@ export class OrderService {
       const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
       const customId = `${sanitizedName}-${dateStr}-${randomSuffix}`;
 
-      // Calculate delivery fee and area
-      let deliveryFees = data.deliveryFees ?? 0;
-      let area = 'General';
-      if (data.deliveryMethod === 'delivery' && data.deliveryAddress) {
-        const address = data.deliveryAddress.toLowerCase();
-        const matchedOption = DELIVERY_FEES.find(opt => address.includes(opt.keyword));
-        if (matchedOption) deliveryFees = matchedOption.fee;
-        area = this.determineArea(data.deliveryAddress);
-      }
+      const deliveryFeeMatch = deliveryFeeService.calculate(data.deliveryAddress, data.deliveryMethod);
+      const deliveryFees = deliveryFeeMatch.fee;
+      const area = deliveryFeeMatch.area;
 
       // Create Order
       const order = await orderRepository.create({
@@ -281,24 +261,16 @@ export class OrderService {
       const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
       const customId = `${sanitizedName}-${dateStr}-${randomSuffix}`;
 
-      // Calculate delivery fee and area
-      let deliveryFees = data.deliveryFees ?? 0;
-      let area = 'General';
-      if (data.deliveryMethod === 'delivery' && data.deliveryAddress) {
-        const address = data.deliveryAddress.toLowerCase();
-        const matchedOption = DELIVERY_FEES.find(opt => address.includes(opt.keyword));
-        if (matchedOption) {
-          deliveryFees = matchedOption.fee;
-        }
-        area = this.determineArea(data.deliveryAddress);
-      }
+      const deliveryFeeMatch = deliveryFeeService.calculate(data.deliveryAddress || customer.address, data.deliveryMethod);
+      const deliveryFees = deliveryFeeMatch.fee;
+      const area = deliveryFeeMatch.area;
 
       // Validate group delivery eligibility
       let groupDelivery = data.groupDelivery ?? false;
       if (groupDelivery) {
         const isEligible = await this.canGroupDelivery(data.items);
         if (!isEligible) {
-          throw new Error('Order is not eligible for group delivery due to perishable items');
+          throw new Error('Order is not eligible for group delivery because it does not include a group-delivery product');
         }
       }
 
@@ -403,6 +375,69 @@ export class OrderService {
 
       return orders as unknown as OrderWithItems[];
     }
+  }
+
+  calculateDeliveryFee(address?: string | null, deliveryMethod: 'delivery' | 'collection' = 'delivery') {
+    return deliveryFeeService.calculate(address, deliveryMethod);
+  }
+
+  async repeatInvoiceAsQuotation(invoiceId: string, customerId: string): Promise<any> {
+    if (env.USE_FIREBASE) throw new Error('Repeat quotation not implemented for Firebase');
+
+    const sourceInvoice = await prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: { order: { include: { items: { include: { product: true } }, customer: true } } },
+    });
+
+    if (!sourceInvoice || sourceInvoice.customerId !== customerId) throw new Error('Invoice not found');
+
+    const deliveryDate = new Date();
+    deliveryDate.setDate(deliveryDate.getDate() + 7);
+    const productIds = sourceInvoice.order.items.map((item: any) => item.productId);
+    const weekStart = new Date(deliveryDate);
+    const day = weekStart.getDay();
+    weekStart.setDate(weekStart.getDate() + (day === 0 ? -6 : 1 - day));
+    weekStart.setHours(0, 0, 0, 0);
+
+    const availability = await prisma.weeklyAvailability.findMany({
+      where: { productId: { in: productIds }, weekStart },
+    });
+    const availabilityMap = new Map(availability.map((a: any) => [a.productId, a.isAvailable]));
+
+    const availableItems = sourceInvoice.order.items.filter((item: any) =>
+      item.product.isAvailable && availabilityMap.get(item.productId) !== false,
+    );
+    const unavailableItems = sourceInvoice.order.items
+      .filter((item: any) => !item.product.isAvailable || availabilityMap.get(item.productId) === false)
+      .map((item: any) => item.product.name);
+
+    if (availableItems.length === 0) throw new Error('None of the repeated order items are currently available');
+
+    const quotationOrder = await this.createOrder(customerId, {
+      deliveryDate,
+      deliveryMethod: sourceInvoice.order.deliveryMethod as 'delivery' | 'collection',
+      deliveryAddress: sourceInvoice.order.deliveryAddress || sourceInvoice.order.customer.address || undefined,
+      specialInstructions: `Repeat quotation from invoice #${invoiceId.slice(0, 8)}. Please ask client if they would like to add anything else.`,
+      items: availableItems.map((item: any) => ({ productId: item.productId, quantity: item.quantity })),
+      coolerBagOption: sourceInvoice.order.coolerBagOption,
+    }, true);
+
+    const quotationInvoice = await invoiceService.generateInvoice(quotationOrder.id);
+
+    const message = [
+      `Hi ${sourceInvoice.order.customer.name}, we created a repeat-order quotation from your previous invoice.`,
+      `Quotation total: R${Number(quotationInvoice.total).toFixed(2)}.`,
+      unavailableItems.length ? `Unavailable this week: ${unavailableItems.join(', ')}.` : '',
+      'Would you like to order anything else? Please reply on WhatsApp and we will add it for you.',
+    ].filter(Boolean).join('\n');
+
+    await notificationService.createNotification(customerId, 'other', 'whatsapp', message);
+    const whatsappContact = sourceInvoice.order.customer.whatsappNumber || sourceInvoice.order.customer.phone;
+    if (whatsappContact) {
+      await notificationService.sendWhatsAppMessage(whatsappContact, message).catch(() => undefined);
+    }
+
+    return { order: quotationOrder, invoice: quotationInvoice, unavailableItems };
   }
 
   /**
@@ -1035,9 +1070,7 @@ export class OrderService {
         }, Number(order.deliveryFees || 0));
 
         // Determine if this is a quotation (has unpaid invoice)
-        const isQuotation = order.invoice && order.invoice.length > 0
-          ? order.invoice.some((inv: any) => inv.status === 'unpaid')
-          : false;
+        const isQuotation = order.invoice?.status === 'unpaid';
 
         return {
           ...order,
@@ -1194,10 +1227,12 @@ export class OrderService {
 
       // Send notification to customer
       try {
-        await notificationService.sendOrderNotification(order.customerId, {
-          type: 'item_deducted',
-          message: `${quantity}x ${item.product.name} has been removed from your quotation. R${deductAmount.toFixed(2)} has been credited to your account.`,
-        });
+        await notificationService.createNotification(
+          order.customerId,
+          'other',
+          'whatsapp',
+          `${quantity}x ${item.product.name} has been removed from your quotation. R${deductAmount.toFixed(2)} has been credited to your account.`,
+        );
       } catch (err) {
         console.warn('Failed to send deduction notification:', err);
       }
@@ -1300,7 +1335,7 @@ export class OrderService {
 
     const where: Record<string, unknown> = {
       invoice: {
-        status: 'unpaid',
+        is: { status: 'unpaid' },
       },
       status: { not: 'cancelled' },
     };

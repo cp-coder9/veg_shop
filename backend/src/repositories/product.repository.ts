@@ -12,6 +12,7 @@ export interface Product {
     isSeasonal: boolean;
     supplierId?: string | null;
     isPerishable: boolean;
+    groupDeliveryEligible?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

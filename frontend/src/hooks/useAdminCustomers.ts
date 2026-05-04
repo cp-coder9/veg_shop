@@ -6,6 +6,8 @@ export interface Customer {
   name: string;
   email: string | null;
   phone: string | null;
+  whatsappNumber: string | null;
+  whatsappVerified: boolean;
   countryCode: string | null;
   address: string | null;
   streetName: string | null;
@@ -64,6 +66,8 @@ export interface UpdateCustomerRequest {
   name?: string;
   email?: string;
   phone?: string;
+  whatsappNumber?: string;
+  whatsappVerified?: boolean;
   countryCode?: string;
   address?: string;
   streetName?: string;
@@ -129,6 +133,8 @@ export interface CreateCustomerRequest {
   name: string;
   email?: string;
   phone?: string;
+  whatsappNumber?: string;
+  whatsappVerified?: boolean;
   countryCode?: string;
   address?: string;
   streetName?: string;

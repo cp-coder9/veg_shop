@@ -1,32 +1,24 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSendCode, useDevLogin } from '../hooks/useAuth.js';
+import { useSendCode } from '../hooks/useAuth.js';
 import logo from '../assets/our-harvest-tote-logo.png';
 import { ArrowLeft } from 'lucide-react';
-
-const TEST_ACCOUNTS = [
-  { email: 'admin@vegshop.com', name: 'Admin', role: 'admin' },
-  { email: 'admin@organicveg.com', name: 'Admin (Alt)', role: 'admin' },
-  { email: 'john@example.com', name: 'Customer', role: 'customer' },
-  { email: 'packer@vegshop.com', name: 'Packer', role: 'packer' },
-  { email: 'driver@vegshop.com', name: 'Driver', role: 'driver' },
-];
-
-// Check if dev login is enabled (default to false for security)
-const ENABLE_DEV_LOGIN = import.meta.env.VITE_ENABLE_DEV_LOGIN === 'true';
 
 export default function AuthPage() {
   const navigate = useNavigate();
   const sendCode = useSendCode();
-  const devLogin = useDevLogin();
 
   const [contact, setContact] = useState('');
   const [method, setMethod] = useState<'whatsapp' | 'email'>('whatsapp');
   const [error, setError] = useState('');
+  const [devAuthCode, setDevAuthCode] = useState<string | null>(null);
+  const [devAuthContact, setDevAuthContact] = useState('');
+  const [devAuthMethod, setDevAuthMethod] = useState<'whatsapp' | 'email'>('email');
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setDevAuthCode(null);
 
     if (!contact.trim()) {
       setError('Please enter your phone number or email');
@@ -42,6 +34,13 @@ export default function AuthPage() {
         method: selectedMethod,
       });
 
+      if (response.code) {
+        setDevAuthCode(response.code);
+        setDevAuthContact(contact.trim());
+        setDevAuthMethod(selectedMethod);
+        return;
+      }
+
       navigate('/verify', {
         state: {
           contact: contact.trim(),
@@ -54,13 +53,14 @@ export default function AuthPage() {
     }
   };
 
-  const handleDevLogin = async (email: string) => {
-    try {
-      await devLogin.mutateAsync({ email });
-      navigate('/');
-    } catch (err) {
-      setError('Dev login failed. Please try again.');
-    }
+  const handleContinueToVerify = () => {
+    navigate('/verify', {
+      state: {
+        contact: devAuthContact,
+        method: devAuthMethod,
+        devCode: devAuthCode,
+      },
+    });
   };
 
   return (
@@ -94,6 +94,7 @@ export default function AuthPage() {
                 onChange={(e) => {
                   setContact(e.target.value);
                   setError('');
+                  setDevAuthCode(null);
                 }}
                 className="w-full bg-transparent border-b-2 border-[var(--pigment-green)]/20 focus:border-[var(--pigment-green)] py-3 px-1 text-lg outline-none transition-all placeholder:opacity-30"
               />
@@ -134,31 +135,24 @@ export default function AuthPage() {
             </button>
           </form>
 
-          {/* Sandbox Access Section */}
-          {ENABLE_DEV_LOGIN && (
-            <div className="mt-12 pt-8 border-t border-[var(--pigment-green)]/10">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-[var(--pigment-green)]/20"></div>
-                <span className="text-[10px] uppercase font-black tracking-[4px] text-[var(--pigment-green)]/40">Sandbox Access</span>
-                <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-[var(--pigment-green)]/20"></div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                {TEST_ACCOUNTS.map((account) => (
-                  <button
-                    key={account.email}
-                    onClick={() => handleDevLogin(account.email)}
-                    disabled={devLogin.isPending}
-                    className="group relative p-4 bg-white/40 border border-transparent hover:border-[var(--pigment-green)]/30 hover:bg-white/60 transition-all text-left overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-[var(--pigment-green)]/5 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-                    <div className="relative">
-                      <div className="font-bold text-xs tracking-tight text-[var(--ink)]">{account.name}</div>
-                      <div className="text-[9px] opacity-40 uppercase font-bold tracking-widest mt-1">{account.role}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+          {devAuthCode && (
+            <div className="mt-8 p-5 bg-[var(--pigment-green)]/10 border border-[var(--pigment-green)]/20 rounded-lg text-center">
+              <p className="text-[10px] uppercase font-bold tracking-[2px] text-[var(--pigment-green)] opacity-60 mb-2">
+                Dev Auth Code
+              </p>
+              <p className="text-4xl font-black tracking-[0.2em] text-[var(--pigment-green)]">
+                {devAuthCode}
+              </p>
+              <p className="mt-3 text-[10px] font-mono opacity-50 uppercase tracking-widest">
+                Use this code for {devAuthContact}
+              </p>
+              <button
+                type="button"
+                onClick={handleContinueToVerify}
+                className="mt-4 w-full bg-[var(--pigment-green)] text-[var(--canvas)] py-3 font-bold uppercase tracking-[2px] hover:bg-[var(--pigment-oxide)] transition-all"
+              >
+                Continue to verification
+              </button>
             </div>
           )}
 

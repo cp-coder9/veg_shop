@@ -7,6 +7,7 @@ interface User {
   email: string | null;
   phone: string | null;
   address: string | null;
+  deliveryPreference?: string;
   role: 'customer' | 'admin' | 'driver' | 'packer';
   loyaltyPoints?: number;
   popiConsentGiven?: boolean;

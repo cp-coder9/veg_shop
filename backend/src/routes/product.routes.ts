@@ -21,6 +21,7 @@ const createProductSchema = z.object({
   isAvailable: z.boolean().optional(),
   isSeasonal: z.boolean().optional(),
   isPerishable: z.boolean().optional(),
+  groupDeliveryEligible: z.boolean().optional(),
   packingType: z.enum(PACKING_TYPES).optional(),
   deliveryDay: z.enum(deliveryDays).optional().nullable(),
   packQuantity: z.number().int().positive().optional().nullable(),
@@ -37,6 +38,7 @@ const updateProductSchema = z.object({
   isAvailable: z.boolean().optional(),
   isSeasonal: z.boolean().optional(),
   isPerishable: z.boolean().optional(),
+  groupDeliveryEligible: z.boolean().optional(),
   packingType: z.enum(PACKING_TYPES).optional(),
   deliveryDay: z.enum(deliveryDays).optional().nullable(),
   packQuantity: z.number().int().positive().optional().nullable(),
@@ -177,7 +179,8 @@ router.post('/', authenticate, requireAdmin, auditLog('CREATE', 'product'), asyn
       isAvailable: data.isAvailable ?? true,
       isSeasonal: data.isSeasonal ?? false,
       isPerishable: data.isPerishable ?? false,
-    });
+      groupDeliveryEligible: data.groupDeliveryEligible ?? false,
+    } as Parameters<typeof productService.createProduct>[0]);
 
     return res.status(201).json(product);
   } catch (error) {

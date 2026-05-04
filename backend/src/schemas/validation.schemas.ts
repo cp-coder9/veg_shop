@@ -60,6 +60,7 @@ export const createProductSchema = z.object({
   imageUrl: z.string().url('Invalid image URL').optional().or(z.literal('')),
   isAvailable: z.boolean().optional(),
   isSeasonal: z.boolean().optional(),
+  groupDeliveryEligible: z.boolean().optional(),
   packingType: z.enum(['box', 'bag', 'fridge', 'freezer']).optional(),
   deliveryDay: z.enum(deliveryDays).optional().nullable(),
 });

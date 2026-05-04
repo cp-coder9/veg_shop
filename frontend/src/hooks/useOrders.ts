@@ -10,6 +10,8 @@ interface CreateOrderRequest {
   specialInstructions?: string;
   deliveryFees?: number;
   coolerBagOption?: boolean;
+  groupDelivery?: boolean;
+  deliveryInstruction?: 'door' | 'hand_to_me' | 'inside_fridge' | 'inside_freezer';
   items: OrderItem[];
 }
 

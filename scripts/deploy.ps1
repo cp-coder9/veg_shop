@@ -11,6 +11,26 @@ param(
 $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 
+function Invoke-NativeCommand {
+    param(
+        [Parameter(Mandatory = $true)]
+        [scriptblock]$Command
+    )
+
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        # Windows PowerShell can treat native command stderr as a terminating
+        # error when $ErrorActionPreference is Stop. npm commonly writes
+        # warnings to stderr even when it exits successfully, so rely on the
+        # native process exit code instead.
+        $script:ErrorActionPreference = "Continue"
+        & $Command 2>&1 | Out-Null
+        return $LASTEXITCODE
+    } finally {
+        $script:ErrorActionPreference = $previousErrorActionPreference
+    }
+}
+
 Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "  ORGANIC VEG SHOP - DEPLOYMENT SCRIPT" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
@@ -20,8 +40,8 @@ Set-Location $ProjectRoot
 
 # Step 1: Install Dependencies
 Write-Host "[1/6] Installing dependencies..." -ForegroundColor Yellow
-npm install --workspaces --if-present 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
+$exitCode = Invoke-NativeCommand { npm install --workspaces --if-present }
+if ($exitCode -ne 0) {
     Write-Host "ERROR: Failed to install dependencies" -ForegroundColor Red
     exit 1
 }
@@ -30,8 +50,8 @@ Write-Host "  > Dependencies installed" -ForegroundColor Green
 # Step 2: Generate Prisma Client
 Write-Host "[2/6] Generating Prisma client..." -ForegroundColor Yellow
 Set-Location "$ProjectRoot\backend"
-npm run prisma:generate 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
+$exitCode = Invoke-NativeCommand { npm run prisma:generate }
+if ($exitCode -ne 0) {
     Write-Host "ERROR: Failed to generate Prisma client" -ForegroundColor Red
     exit 1
 }
@@ -39,8 +59,8 @@ Write-Host "  > Prisma client generated" -ForegroundColor Green
 
 # Step 3: Build Backend
 Write-Host "[3/6] Building backend..." -ForegroundColor Yellow
-npm run build 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
+$exitCode = Invoke-NativeCommand { npm run build }
+if ($exitCode -ne 0) {
     Write-Host "ERROR: Backend build failed" -ForegroundColor Red
     exit 1
 }
@@ -49,8 +69,8 @@ Write-Host "  > Backend built successfully" -ForegroundColor Green
 # Step 4: Build Frontend
 Write-Host "[4/6] Building frontend..." -ForegroundColor Yellow
 Set-Location "$ProjectRoot\frontend"
-npm run build 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
+$exitCode = Invoke-NativeCommand { npm run build }
+if ($exitCode -ne 0) {
     Write-Host "ERROR: Frontend build failed" -ForegroundColor Red
     exit 1
 }
@@ -60,8 +80,8 @@ Write-Host "  > Frontend built successfully" -ForegroundColor Green
 if (-not $SkipTests) {
     Write-Host "[5/6] Running tests..." -ForegroundColor Yellow
     Set-Location "$ProjectRoot\backend"
-    npm run test 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0) {
+    $exitCode = Invoke-NativeCommand { npm run test }
+    if ($exitCode -ne 0) {
         Write-Host "WARNING: Some tests failed. Use -SkipTests to skip." -ForegroundColor Yellow
     } else {
         Write-Host "  > All tests passed" -ForegroundColor Green
@@ -75,9 +95,9 @@ Set-Location $ProjectRoot
 if ($Push) {
     Write-Host "[6/6] Pushing to GitHub..." -ForegroundColor Yellow
     git add -A
-    git commit -m $CommitMessage 2>&1 | Out-Null
-    git push 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0) {
+    $commitExitCode = Invoke-NativeCommand { git commit -m $CommitMessage }
+    $pushExitCode = Invoke-NativeCommand { git push }
+    if ($commitExitCode -ne 0 -or $pushExitCode -ne 0) {
         Write-Host "ERROR: Failed to push to GitHub" -ForegroundColor Red
         exit 1
     }

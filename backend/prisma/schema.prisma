@@ -10,6 +10,8 @@ datasource db {
 model User {
   id String @id @default(uuid())
   phone String? @unique
+  whatsappNumber String?
+  whatsappVerified Boolean @default(false)
   email String? @unique
   password String?
   name String
@@ -69,6 +71,7 @@ model Product {
   isAvailable        Boolean              @default(true)
   isSeasonal         Boolean              @default(false)
   isPerishable       Boolean              @default(false)
+  groupDeliveryEligible Boolean            @default(false)
   packingType        String               @default("ambient")
   deliveryDay        String?
   packQuantity       Int?
@@ -120,6 +123,7 @@ model Order {
   deliveryDate        DateTime
   deliveryMethod      String      @default("delivery")
   deliveryAddress     String?
+  area                String?
   specialInstructions String?
   deliveryFees        Decimal     @default(0)
   status              String      @default("pending")

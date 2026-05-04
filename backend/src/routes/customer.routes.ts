@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { customerService, UpdateCustomerDto, CreateCustomerDto } from '../services/customer.service.js';
 import { authenticate, requireAdmin, requireOwnerOrAdmin } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
+import { authService } from '../services/auth.service.js';
+import { notificationService } from '../services/notification.service.js';
 
 const router = Router();
 
@@ -96,6 +98,30 @@ router.get('/me/dashboard', authenticate, asyncHandler(async (req: Request, res:
       },
     });
   }
+}));
+
+router.post('/me/whatsapp/send-code', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  const whatsappNumber = String(req.body.whatsappNumber || '').trim();
+  if (!whatsappNumber) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'WhatsApp number is required' } });
+  }
+
+  const code = authService.generateVerificationCode();
+  await authService.storeVerificationCode(whatsappNumber, code);
+  await notificationService.sendWhatsAppVerificationCode(whatsappNumber, code);
+  return res.json({ message: 'WhatsApp verification code sent' });
+}));
+
+router.post('/me/whatsapp/verify', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  const whatsappNumber = String(req.body.whatsappNumber || '').trim();
+  const code = String(req.body.code || '').trim();
+  if (!whatsappNumber || !code) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'WhatsApp number and code are required' } });
+  }
+
+  await authService.verifyCode(whatsappNumber, code);
+  const customer = await customerService.updateCustomer(req.user!.userId, { whatsappNumber, whatsappVerified: true });
+  return res.json(customer);
 }));
 
 /**

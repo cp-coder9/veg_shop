@@ -7,6 +7,8 @@ export interface Customer {
   name: string;
   email: string | null;
   phone: string | null;
+  whatsappNumber: string | null;
+  whatsappVerified: boolean;
   countryCode: string | null;
   address: string | null;
   streetName: string | null;
@@ -21,6 +23,8 @@ interface UpdateCustomerRequest {
   name?: string;
   email?: string;
   phone?: string;
+  whatsappNumber?: string;
+  whatsappVerified?: boolean;
   countryCode?: string;
   address?: string;
   streetName?: string;
@@ -88,12 +92,49 @@ export function useUpdateCustomer() {
   });
 }
 
+export function useSendWhatsAppVerificationCode() {
+  return useMutation({
+    mutationFn: async (whatsappNumber: string) => {
+      const response = await api.post('/customers/me/whatsapp/send-code', { whatsappNumber });
+      return response.data;
+    },
+  });
+}
+
+export function useVerifyWhatsAppNumber() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ whatsappNumber, code }: { whatsappNumber: string; code: string }) => {
+      const response = await api.post<Customer>('/customers/me/whatsapp/verify', { whatsappNumber, code });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customer', 'profile'] });
+    },
+  });
+}
+
 export function useCustomerInvoices() {
   return useQuery({
     queryKey: ['invoices', 'customer'],
     queryFn: async () => {
       const response = await api.get('/invoices/customer/me');
       return response.data;
+    },
+  });
+}
+
+export function useRepeatInvoiceAsQuotation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (invoiceId: string) => {
+      const response = await api.post(`/orders/repeat-invoice/${invoiceId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices', 'customer'] });
+      queryClient.invalidateQueries({ queryKey: ['orders', 'customer'] });
+      queryClient.invalidateQueries({ queryKey: ['client-dashboard'] });
     },
   });
 }

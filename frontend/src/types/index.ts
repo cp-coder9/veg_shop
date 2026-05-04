@@ -12,6 +12,7 @@ export interface Product {
   isAvailable: boolean;
   isSeasonal: boolean;
   isPerishable: boolean;
+  groupDeliveryEligible?: boolean;
   packingType: PackingType;
   supplierId?: string | null;
   supplier?: { id: string; name: string } | null;
@@ -201,6 +202,8 @@ export interface CustomerActivityReport {
 export interface User {
   id: string;
   phone: string | null;
+  whatsappNumber?: string | null;
+  whatsappVerified?: boolean;
   email: string | null;
   name: string;
   address: string | null;

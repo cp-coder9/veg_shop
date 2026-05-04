@@ -56,6 +56,28 @@ router.get('/window-status', authenticate, asyncHandler(async (_req: Request, re
   return res.json(status);
 }));
 
+router.get('/delivery-fee/quote', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  const address = typeof req.query.address === 'string' ? req.query.address : undefined;
+  const method = req.query.method === 'collection' ? 'collection' : 'delivery';
+  return res.json(orderService.calculateDeliveryFee(address, method));
+}));
+
+router.post('/repeat-invoice/:invoiceId', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const result = await orderService.repeatInvoiceAsQuotation(req.params.invoiceId, req.user!.userId);
+    return res.status(201).json(result);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('not found')) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: error.message } });
+    }
+    if (error instanceof Error && error.message.includes('available')) {
+      return res.status(400).json({ error: { code: 'NO_AVAILABLE_ITEMS', message: error.message } });
+    }
+    console.error('Repeat invoice error:', error);
+    return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to create repeat quotation' } });
+  }
+}));
+
 /**
  * POST /api/orders
  * Create a new order (authenticated customer)

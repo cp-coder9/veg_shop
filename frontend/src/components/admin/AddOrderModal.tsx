@@ -6,6 +6,7 @@ import { useCreateAdminCustomer, CreateCustomerRequest } from '../../hooks/useAd
 import { Button, Input } from '../ui/index.js';
 import { PhoneInput, type CountryCode } from '../ui/PhoneInput.js';
 import { AddressFields, formatFullAddress, type AddressData } from '../ui/AddressFields.js';
+import { calculateDeliveryFee, DELIVERY_FEE_RULES } from '../../lib/deliveryFees.js';
 import { Search, Plus, User, Package, Calendar, MapPin, Info, PlusCircle, MinusCircle, Check, UserPlus, X } from 'lucide-react';
 
 interface AddOrderModalProps {
@@ -78,6 +79,12 @@ export default function AddOrderModal({ onClose }: AddOrderModalProps) {
     }, 0);
   }, [orderItems, products]);
 
+  const deliveryFeeQuote = useMemo(
+    () => calculateDeliveryFee(deliveryAddress || selectedCustomer?.address, deliveryMethod),
+    [deliveryAddress, selectedCustomer?.address, deliveryMethod]
+  );
+  const finalTotal = totalPrice + deliveryFeeQuote.fee;
+
   const handleAddProduct = (productId: string) => {
     setOrderItems(prev => {
       const existing = prev.find(i => i.productId === productId);
@@ -110,6 +117,7 @@ export default function AddOrderModal({ onClose }: AddOrderModalProps) {
         deliveryDate,
         deliveryMethod,
         deliveryAddress: deliveryMethod === 'delivery' ? deliveryAddress : undefined,
+        deliveryFees: deliveryFeeQuote.fee,
         specialInstructions,
         items: orderItems,
         coolerBagOption
@@ -373,7 +381,7 @@ export default function AddOrderModal({ onClose }: AddOrderModalProps) {
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-warm-gray uppercase font-bold tracking-wider">Estimated Total</p>
-                  <p className="text-xl font-display font-bold text-primary-dark">R {totalPrice.toFixed(2)}</p>
+                  <p className="text-xl font-display font-bold text-primary-dark">R {finalTotal.toFixed(2)}</p>
                 </div>
               </div>
 
@@ -544,11 +552,18 @@ export default function AddOrderModal({ onClose }: AddOrderModalProps) {
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="opacity-70">Delivery</span>
-                        <span>{deliveryMethod === 'collection' ? 'Free' : 'Calculated'}</span>
+                        <span>{deliveryMethod === 'collection' ? 'Free' : `R ${deliveryFeeQuote.fee.toFixed(2)}`}</span>
                       </div>
+                      {deliveryMethod === 'delivery' && (
+                        <div className="text-xs opacity-70 leading-relaxed">
+                          Area: {deliveryFeeQuote.area}
+                          <br />
+                          {DELIVERY_FEE_RULES.map((rule) => `${rule.area} R${rule.fee}`).join(' • ')}
+                        </div>
+                      )}
                       <div className="flex justify-between text-xl font-bold pt-2">
                         <span>Total</span>
-                        <span>R {totalPrice.toFixed(2)}</span>
+                        <span>R {finalTotal.toFixed(2)}</span>
                       </div>
                     </div>
 
