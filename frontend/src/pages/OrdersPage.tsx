@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCustomerOrders } from '../hooks/useOrders.js';
 import { useCustomerInvoices } from '../hooks/useCustomer.js';
 import { formatPrice } from '../lib/utils.js';
-import { Package, ChevronDown, CreditCard, Truck, Calendar, CheckCircle2, Clock, XCircle, Info } from 'lucide-react';
+import CustomerInvoiceDetailModal from '../components/invoices/CustomerInvoiceDetailModal.js';
+import { Package, CreditCard, Truck, Calendar, CheckCircle2, Clock, XCircle, Info, FileText } from 'lucide-react';
 
 const RefreshCw = (props: any) => (
   <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg>
@@ -20,7 +21,8 @@ const statusConfig: Record<string, { label: string, color: string, icon: any }> 
 export default function OrdersPage() {
   const { data: orders, isLoading, isError } = useCustomerOrders();
   const { data: invoices } = useCustomerInvoices();
-  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -36,8 +38,15 @@ export default function OrdersPage() {
 
   const orderSuccess = searchParams.get('success');
 
-  const toggleOrder = (orderId: string) => {
-    setExpandedOrder(expandedOrder === orderId ? null : orderId);
+  const handleOpenOrderDocumentation = (orderId: string) => {
+    const invoice = invoiceMap.get(orderId);
+    if (invoice?.id) {
+      setSelectedInvoiceId(invoice.id);
+      setSelectedOrderId(null);
+      return;
+    }
+
+    setSelectedOrderId(orderId);
   };
 
   if (isLoading) {
@@ -90,7 +99,7 @@ export default function OrdersPage() {
           Transaction Archives
         </p>
         <h1 className="text-6xl font-[900] uppercase tracking-tighter text-[var(--pigment-green)] mb-6">
-          Order Ledger
+          Order History
         </h1>
         <p className="font-mono text-xs opacity-60 uppercase tracking-widest max-w-sm leading-relaxed">
           Track your harvests from field to door. <br /> Total cycles: {orders.length}
@@ -109,7 +118,6 @@ export default function OrdersPage() {
 
       <div className="space-y-4 border-t border-[var(--pigment-ochre)]/10">
         {orders.map((order) => {
-          const isExpanded = expandedOrder === order.id;
           const orderTotal = order.items.reduce(
             (sum, item) => sum + Number(item.priceAtOrder) * item.quantity,
             0
@@ -120,47 +128,59 @@ export default function OrdersPage() {
           const StatusIcon = config.icon;
 
           return (
-            <div
+            <article
               key={order.id}
-              className={`border-b border-[var(--pigment-ochre)]/10 transition-all duration-500 ${isExpanded ? 'bg-white/40 mb-4' : 'hover:bg-white/20'}`}
+              className="border-b border-[var(--pigment-ochre)]/10 transition-all duration-500 hover:bg-white/20"
             >
-              {/* Order Row */}
-              <div
-                className="p-8 flex flex-wrap md:flex-nowrap items-center justify-between gap-8 cursor-pointer group"
-                onClick={() => toggleOrder(order.id)}
+              <button
+                type="button"
+                className="w-full p-8 text-left flex flex-wrap md:flex-nowrap items-center justify-between gap-8 cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pigment-green)] focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--canvas)]"
+                onClick={() => handleOpenOrderDocumentation(order.id)}
+                aria-label={`Open documentation for order ${order.id.slice(0, 8)}`}
               >
                 <div className="flex gap-8 items-center min-w-[200px]">
-                  <div className={`w-12 h-12 flex items-center justify-center border transition-all ${isExpanded ? 'bg-[var(--pigment-green)] border-[var(--pigment-green)] text-[var(--canvas)]' : 'border-[var(--pigment-ochre)]/20 text-[var(--pigment-ochre)] group-hover:border-[var(--pigment-green)]'}`}>
-                    <Package size={20} />
+                  <div className="w-12 h-12 flex items-center justify-center border border-[var(--pigment-ochre)]/20 text-[var(--pigment-ochre)] transition-all group-hover:border-[var(--pigment-green)] group-hover:text-[var(--pigment-green)]">
+                    {invoice ? <FileText size={20} /> : <Package size={20} />}
                   </div>
                   <div>
-                    <span className="font-mono text-[10px] opacity-40 uppercase block mb-1">Entry #{order.id.slice(0, 8)}</span>
+                    <span className="font-mono text-[10px] opacity-40 uppercase block mb-1">Order #{order.id.slice(0, 8)}</span>
                     <span className="text-xl font-black uppercase tracking-tighter text-[var(--pigment-green)]">
                       {new Date(order.deliveryDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', weekday: 'short' })}
+                    </span>
+                    <span className="block font-mono text-[9px] opacity-50 uppercase tracking-widest mt-2">
+                      {order.items.length} items • {invoice ? `Invoice #${invoice.id.slice(0, 8)}` : 'Order details available'}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-6 md:gap-12">
                   <div className="flex flex-col items-end">
-                    <span className="font-mono text-[10px] opacity-40 uppercase mb-1">Cycle Status</span>
+                    <span className="font-mono text-[10px] opacity-40 uppercase mb-1">Order Status</span>
                     <div className="flex items-center gap-2" style={{ color: config.color }}>
                       <StatusIcon size={14} />
                       <span className="font-black text-[10px] tracking-widest uppercase">{config.label}</span>
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-end min-w-[100px]">
-                    <span className="font-mono text-[10px] opacity-40 uppercase mb-1">Fiscal Value</span>
-                    <span className="text-xl font-black italic text-[var(--pigment-oxide)]">R{formatPrice(orderTotal)}</span>
+                  <div className="flex flex-col items-end">
+                    <span className="font-mono text-[10px] opacity-40 uppercase mb-1">Payment</span>
+                    <span className={`font-black text-[10px] tracking-widest uppercase ${paymentStatus === 'paid' ? 'text-[var(--pigment-green)]' : 'text-[var(--pigment-oxide)]'}`}>
+                      {paymentStatus}
+                    </span>
                   </div>
 
-                  <ChevronDown size={20} className={`opacity-20 transition-transform duration-500 ${isExpanded ? 'rotate-180 opacity-100' : 'group-hover:opacity-100 group-hover:translate-y-1'}`} />
-                </div>
-              </div>
+                  <div className="flex flex-col items-end min-w-[100px]">
+                    <span className="font-mono text-[10px] opacity-40 uppercase mb-1">Value</span>
+                    <span className="text-xl font-black italic text-[var(--pigment-oxide)]">R{formatPrice(invoice ? Number(invoice.total) : orderTotal)}</span>
+                  </div>
 
-              {/* Order Detail Panel */}
-              {isExpanded && (
+                  <span className="font-mono text-[9px] uppercase tracking-widest text-[var(--pigment-green)] opacity-60 group-hover:opacity-100 transition-opacity">
+                    Open Docs
+                  </span>
+                </div>
+              </button>
+
+              {selectedOrderId === order.id && !invoice && (
                 <div className="px-8 pb-12 pt-4 grid grid-cols-1 lg:grid-cols-12 gap-12 animate-[slideDown_0.4s_ease-out]">
                   {/* Items List */}
                   <div className="lg:col-span-12 xl:col-span-8 space-y-6">
@@ -276,10 +296,17 @@ export default function OrdersPage() {
                   </div>
                 </div>
               )}
-            </div>
+            </article>
           );
         })}
       </div>
+
+      {selectedInvoiceId && (
+        <CustomerInvoiceDetailModal
+          invoiceId={selectedInvoiceId}
+          onClose={() => setSelectedInvoiceId(null)}
+        />
+      )}
     </div>
   );
 }

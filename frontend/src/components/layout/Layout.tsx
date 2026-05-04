@@ -20,7 +20,7 @@ export default function Layout() {
   const navItems = [
     { name: 'Home', path: '/' },
     { name: 'Shop', path: '/products' },
-    { name: 'Orders', path: '/orders' },
+    { name: 'Order History', path: '/orders' },
     { name: 'Profile', path: '/profile' },
   ];
 

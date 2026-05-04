@@ -396,6 +396,13 @@ export class NotificationService {
   async sendVerificationCode(contact: string, code: string): Promise<void> {
     const isEmail = contact.includes('@');
 
+    // In development, return the verification code in the auth response and do not
+    // depend on external SMTP/WhatsApp credentials being valid.
+    if (env.NODE_ENV === 'development') {
+      console.log(`[DEV MODE] Verification code for ${contact}: ${code}`);
+      return;
+    }
+
     // In development mode without API credentials, just log the code
     if (!SENDGRID_API_KEY && !WHATSAPP_API_URL) {
       console.log(`[DEV MODE] Verification code for ${contact}: ${code}`);

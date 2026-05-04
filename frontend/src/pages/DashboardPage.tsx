@@ -3,8 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useClientDashboard } from '../hooks/useClientDashboard.js';
 import { useProducts } from '../hooks/useProducts.js';
 import { useCartStore } from '../stores/cartStore.js';
-import api from '../lib/api.js';
-import { toast } from 'react-hot-toast';
 import { formatPrice } from '../lib/utils.js';
 import { Button, Input, Card, Badge } from '../components/ui/index.js';
 
@@ -13,7 +11,6 @@ const navigate = useNavigate();
 const { data: dashboard, isLoading, isError } = useClientDashboard();
 const { data: productsData, isLoading: productsLoading } = useProducts();
 const { addItem, getItemQuantity, updateQuantity } = useCartStore();
-const setCartItems = useCartStore((state: any) => state.setItems);
 const [searchTerm, setSearchTerm] = useState('');
 const [showBackToTop, setShowBackToTop] = useState(false);
 
@@ -28,26 +25,6 @@ return () => window.removeEventListener('scroll', handleScroll);
 const scrollToTop = () => {
 window.scrollTo({ top: 0, behavior: 'smooth' });
 };
-
-    interface OrderItem {
-        productId: string;
-        quantity: number;
-    }
-
-    const handleQuickReorder = async (orderId: string) => {
-        try {
-            const { data: order } = await api.get(`/orders/${orderId}`);
-            const items = order.items.map((item: OrderItem) => ({
-                productId: item.productId,
-                quantity: item.quantity
-            }));
-            setCartItems(items);
-            toast.success('Items added to cart!');
-            navigate('/cart');
-        } catch (error) {
-            toast.error('Failed to reorder items');
-        }
-    };
 
     if (isLoading) {
         return (
@@ -68,7 +45,7 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
         );
     }
 
-    const { stats, recentOrders, nextDelivery, outstandingInvoices } = dashboard;
+    const { stats, recentOrders, nextDelivery } = dashboard;
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
@@ -310,12 +287,12 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
                     </Card>
                 </section>
 
-                {/* Recent Orders Preview */}
+                {/* Consolidated Order History Preview */}
                 <section className="lg:col-span-2 space-y-4">
                     <div className="flex items-center justify-between">
-                        <h2 className="font-display text-display-sm text-primary-dark">Recent Activity</h2>
+                        <h2 className="font-display text-display-sm text-primary-dark">Order History</h2>
                         <Link to="/orders" className="font-body text-body-sm font-bold text-terracotta hover:text-terracotta/80 transition-colors">
-                            Full Order History →
+                            View All Orders →
                         </Link>
                     </div>
                     <Card padding="none" className="overflow-hidden">
@@ -327,7 +304,12 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
                         ) : (
                             <div className="divide-y divide-light-gray">
                                 {recentOrders.map(order => (
-                                    <div key={order.id} className="p-4 flex items-center justify-between hover:bg-cream/50 transition-colors">
+                                    <button
+                                        key={order.id}
+                                        type="button"
+                                        onClick={() => navigate('/orders')}
+                                        className="w-full p-4 text-left flex items-center justify-between hover:bg-cream/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta"
+                                    >
                                         <div className="space-y-1">
                                             <p className="font-body text-body-md font-bold text-primary-dark">Order #{order.id.slice(0, 8)}</p>
                                             <p className="font-accent text-caption text-warm-gray">
@@ -341,17 +323,16 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
                                                     {order.status}
                                                 </Badge>
                                             </div>
-                                            <button
-                                                onClick={() => handleQuickReorder(order.id)}
+                                            <span
                                                 className="p-2 text-terracotta hover:bg-terracotta/10 rounded-full transition-all hover:rotate-12 active:scale-90"
-                                                title="Quick Reorder (Add to Cart)"
+                                                title="Open Order History"
                                             >
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                                 </svg>
-                                            </button>
+                                            </span>
                                         </div>
-                                    </div>
+                                    </button>
                                 ))}
                             </div>
                         )}
@@ -359,41 +340,13 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
                 </section>
             </div>
 
-            {/* Outstanding Invoices Alert */}
-            {outstandingInvoices.length > 0 && (
-                <section className="space-y-4 animate-in slide-in-from-bottom duration-700">
-                    <h2 className="font-display text-display-sm text-error flex items-center gap-2">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        Attention Needed: Outstanding Invoices
-                    </h2>
-                    <Card padding="none" className="divide-y divide-light-gray overflow-hidden border-error/20">
-                        {outstandingInvoices.map(invoice => (
-                            <div key={invoice.id} className="p-4 flex items-center justify-between bg-error/5">
-                                <div>
-                                    <p className="font-body text-body-md font-bold text-primary-dark underline decoration-error/50">Invoice #{invoice.id.slice(0, 8)}</p>
-                                    <p className="font-accent text-caption text-warm-gray">
-                                        Due Date: {new Date(invoice.dueDate).toLocaleDateString('en-ZA')}
-                                    </p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="font-display text-body-lg font-bold text-error">R {invoice.total.toFixed(2)}</p>
-                                    <span className="font-accent text-caption font-bold text-warm-gray uppercase tracking-widest">{invoice.status}</span>
-                                </div>
-                            </div>
-                        ))}
-                    </Card>
-                </section>
-            )}
-
 {/* Quick Navigation Footer */}
 <footer className="pt-8 border-t border-light-gray flex flex-wrap gap-4">
 <Link to="/products">
 <Button>Start New Shop</Button>
 </Link>
-<Link to="/payments">
-<Button variant="secondary">View Payment History</Button>
+<Link to="/orders">
+<Button variant="secondary">View Order History</Button>
 </Link>
 <Link to="/profile">
 <Button variant="ghost">Account Settings</Button>
