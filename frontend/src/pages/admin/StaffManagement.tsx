@@ -50,15 +50,15 @@ const StaffManagement = () => {
         password: ''
     });
 
-    const { data: staff, isLoading } = useQuery<{ data: User[] }>({
+    const { data: staff, isLoading } = useQuery<User[]>({
         queryKey: ['staff', activeTab],
         queryFn: async () => {
             const response = await api.get(`/admin/users?role=${activeTab}`);
-            return response;
+            return response.data;
         }
     });
 
-    const users = Array.isArray(staff) ? staff : (staff as unknown as { data: User[] })?.data || [];
+    const users = staff || [];
 
     const createMutation = useMutation({
         mutationFn: (data: StaffFormData) => api.post('/admin/users', data),

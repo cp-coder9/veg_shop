@@ -44,6 +44,7 @@ import DriverDashboard from './pages/driver/DriverDashboard.js';
 import LogbookPage from './pages/driver/LogbookPage.js';
 import PackerDashboard from './pages/packer/PackerDashboard.js';
 import PublicProductList from './pages/PublicProductList.js';
+import StaffProfilePage from './pages/StaffProfilePage.js';
 
 
 const queryClient = new QueryClient({
@@ -170,6 +171,7 @@ function App() {
           >
             <Route path="/driver" element={<DriverDashboard />} />
             <Route path="/driver/logs" element={<LogbookPage />} />
+            <Route path="/driver/profile" element={<StaffProfilePage />} />
           </Route>
 
            {/* Packer Routes */}
@@ -181,6 +183,7 @@ function App() {
              }
            >
              <Route path="/packer" element={<PackerDashboard />} />
+             <Route path="/packer/profile" element={<StaffProfilePage />} />
            </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

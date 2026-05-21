@@ -35,7 +35,7 @@ export default function DriverLayout() {
     },
     {
       name: 'Profile',
-      path: '/profile',
+      path: '/driver/profile',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -75,7 +75,7 @@ export default function DriverLayout() {
           </div>
 
           {user && (
-            <div className="flex items-center gap-3" onClick={() => navigate('/profile')}>
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/driver/profile')}>
               <div className="w-8 h-8 rounded-full bg-sage-green flex items-center justify-center text-white font-bold text-xs">
                 {user?.name?.charAt(0).toUpperCase()}
               </div>

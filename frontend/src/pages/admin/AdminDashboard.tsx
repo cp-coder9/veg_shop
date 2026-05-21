@@ -42,20 +42,20 @@ interface RecentPayment {
 }
 
 const AdminDashboard = () => {
-    const { data: stats, isLoading } = useQuery<{ data: DashboardStats }>({
+    const { data: stats, isLoading } = useQuery<DashboardStats>({
         queryKey: ['admin-stats'],
         queryFn: async () => {
             const response = await api.get('/reports/dashboard');
-            return response;
+            return response.data;
         },
         retry: false, // Don't retry on 404 errors
     });
 
-    const { data: recentOrders } = useQuery<{ data: unknown[] }>({
+    const { data: recentOrders } = useQuery<unknown[]>({
         queryKey: ['recent-orders'],
         queryFn: async () => {
             const response = await api.get('/orders?limit=5&status=pending');
-            return response;
+            return response.data;
         },
         retry: false,
     });
@@ -69,11 +69,11 @@ const AdminDashboard = () => {
         retry: false,
     });
 
-    const { data: recentPayments } = useQuery<{ data: RecentPayment[] }>({
+    const { data: recentPayments } = useQuery<RecentPayment[]>({
         queryKey: ['recent-payments'],
         queryFn: async () => {
             const response = await api.get('/payments/recent?limit=10');
-            return response;
+            return response.data;
         },
         retry: false,
     });
@@ -81,31 +81,31 @@ const AdminDashboard = () => {
     const statCards = [
         {
             title: 'Total Orders',
-            value: stats?.data?.totalOrders ?? 0,
+            value: stats?.totalOrders ?? 0,
             icon: ShoppingCart,
             color: 'bg-sage-green/10 text-sage-green'
         },
         {
             title: 'Pending Orders',
-            value: stats?.data?.pendingOrders ?? 0,
+            value: stats?.pendingOrders ?? 0,
             icon: Clock,
             color: 'bg-warning/10 text-warning'
         },
         {
             title: 'Total Revenue',
-            value: `R${(stats?.data?.totalRevenue ?? 0).toFixed(2)}`,
+            value: `R${(stats?.totalRevenue ?? 0).toFixed(2)}`,
             icon: DollarSign,
             color: 'bg-info/10 text-info'
         },
         {
             title: 'Unpaid Invoices',
-            value: stats?.data?.unpaidInvoices ?? 0,
+            value: stats?.unpaidInvoices ?? 0,
             icon: Banknote,
             color: 'bg-terracotta/10 text-terracotta'
         },
         {
             title: 'Active Customers',
-            value: stats?.data?.activeCustomers ?? 0,
+            value: stats?.activeCustomers ?? 0,
             icon: Users,
             color: 'bg-primary/10 text-primary'
         }
@@ -274,14 +274,14 @@ const AdminDashboard = () => {
                         subtitle="Latest payment activity"
                     />
                     <CardContent>
-                        {!recentPayments?.data || recentPayments.data.length === 0 ? (
+                        {!recentPayments || recentPayments.length === 0 ? (
                             <div className="text-center py-8">
                                 <DollarSign className="mx-auto h-12 w-12 text-light-gray mb-4" />
                                 <p className="font-body text-body-md text-warm-gray">No recent payments</p>
                             </div>
                         ) : (
                             <div className="space-y-3 max-h-64 overflow-y-auto">
-                                {recentPayments.data.slice(0, 8).map((payment: RecentPayment) => (
+                                {recentPayments.slice(0, 8).map((payment: RecentPayment) => (
                                     <div
                                         key={payment.id}
                                         className="flex items-center justify-between p-3 bg-cream/30 rounded-lg"
@@ -416,14 +416,14 @@ const AdminDashboard = () => {
                     subtitle="Latest pending orders requiring attention"
                 />
                 <CardContent>
-                    {recentOrders?.data?.length === 0 ? (
+                    {recentOrders?.length === 0 ? (
                         <div className="text-center py-8">
                             <ShoppingCart className="mx-auto h-12 w-12 text-light-gray mb-4" />
                             <p className="font-body text-body-md text-warm-gray">No pending orders</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {(recentOrders?.data ?? []).slice(0, 5).map((order: unknown) => {
+                            {(recentOrders ?? []).slice(0, 5).map((order: unknown) => {
                                 const o = order as { id?: string; customerName?: string; total?: number; status?: string; createdAt?: string };
                                 return (
                                     <div

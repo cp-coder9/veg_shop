@@ -13,6 +13,9 @@ export interface AuthToken {
   user: {
     id: string;
     name: string;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
     role: string;
     popiConsentGiven: boolean;
   };
@@ -269,7 +272,7 @@ export class AuthService {
   /**
    * Generate JWT access and refresh tokens
    */
-  generateTokens(user: { id: string; name: string; role: string }): AuthToken {
+  generateTokens(user: { id: string; name: string; role: string; email?: string | null; phone?: string | null; address?: string | null }): AuthToken {
     const accessToken = jwt.sign(
       {
         userId: user.id,
@@ -294,6 +297,9 @@ export class AuthService {
       user: {
         id: user.id,
         name: user.name,
+        email: user.email ?? null,
+        phone: user.phone ?? null,
+        address: user.address ?? null,
         role: user.role,
         popiConsentGiven: (user as any).popiConsentGiven || false,
       },
